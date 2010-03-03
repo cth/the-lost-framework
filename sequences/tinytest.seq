@@ -1,0 +1,5 @@
+% A tiny test sequence.
+elem(1,a).
+elem(2,b).
+elem(3,c).
+elem(4,d).
