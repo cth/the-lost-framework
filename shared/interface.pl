@@ -1,3 +1,12 @@
+% Simple Prolog debugging trick
+:- op(800, fx,'>').
+
+'>'(X) :-
+        writeq(X),
+        write('\n'),
+        call(X).
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % get_annotation_file/4
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -10,18 +19,21 @@
 get_annotation_file(Model, ParametersId, Inputs, Filename) :-
 	lost_model_interface_file(Model, ModelFile),
 	lost_model_parameter_file(Model,ParametersId,ParamFile),
-	(file_exists(ModelFile) ; throw(interface_error(missing_model_file(ModelFile)))),
-	(file_exists(ParamFile) ; throw(interface_error(missing_param_file(ParamFile)))),
-	(lost_interface_supports(Model,lost_best_annotation,3) ;
-	 throw(interface_error(no_support(Model,lost_best_annotation/3)))),
+	
+	check_or_fail(file_exists(ModelFile),interface_error(missing_model_file(ModelFile))),
+	check_or_fail(file_exists(ParamFile),interface_error(missing_param_file(ParamFile))),
+	check_or_fail(lost_interface_supports(Model,lost_best_annotation,3),
+		      interface_error(no_support(Model,lost_best_annotation/3))),
 	% Check if a result allready exists:
 	lost_annotation_file(Model,ParametersId,Inputs,Filename),
-	write(lost_annotation_file(Model,ParametersId,Inputs,Filename)),nl,
-	(file_exists(Filename) ;
+	(file_exists(Filename) ->
+	 write('Using existing annotation file: '), write(Filename),nl
+	;
 	 term2atom(lost_best_annotation(ParamFile,Inputs,Filename),Goal),
-	 launch_prism_process(ModelFile,Goal)
-	),
-	(file_exists(Filename); throw(interface_error(missing_annotation_file(Filename)))).
+	 launch_prism_process(ModelFile,Goal),
+	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename)))
+	).
+
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Launching a PRISM process
@@ -45,11 +57,12 @@ launch_prism_process(PrismPrologFile, Goal) :-
 	atom_concat(Cmd1,'\'), ',Cmd2),
 	atom_concat(Cmd2, Goal, Cmd3),
 	atom_concat(Cmd3,'"',Cmd4),
+	write('working directory: '), write(Dirname), nl,
 	write('cmd: '), write(Cmd4),nl,
 	% FIXME: Setup some stdout redirection (this may be troublesome on windows)
 	% Run PRISM
 	system(Cmd4,ExitCode),
-	write(ExitCode),nl,
+	write('--> PRISM process exits with code '), write(ExitCode),nl,
 	% Unfortunately bprolog/prism does get the concept of exit codes. DOH!!!
 	(ExitCode == 0 ; throw(error(launch_prism_process(PrismPrologFile,Goal)))),
 	chdir(CurrentDir).
@@ -89,11 +102,11 @@ data_elements_to_sequence_terms(Pos,[Data|R1],[elem(Pos,Data)|R2]) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 lost_models_directory(ModelsDir) :-
-	lost_config(lost_base_directory, Basedir),
+	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir, '/models/', ModelsDir).
 
 lost_sequence_directory(Dir) :-
-	lost_config(lost_base_directory, Basedir),
+	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir,'/sequences/',Dir).
 
 lost_model_directory(Model,ModelDir) :-
@@ -119,8 +132,8 @@ lost_model_parameter_file(Model,ParameterId,ParameterFile) :-
 	atom_concat(ParameterFile1,'.prb',ParameterFile).
 
 lost_annotation_file(Model,ParamsId,InputFiles,Filename) :-
-	lost_sequence_directory(Model,AnnotDir),
-	lost_annotation_index_file(IndexFile),
+	lost_sequence_directory(AnnotDir),
+	atom_concat(AnnotDir,'annotations.idx',IndexFile),
 	lost_aidx_get_filename(IndexFile,Model,ParamsId,InputFiles,Filename).
 
 lost_sequence_file(SequenceId, SequenceFile) :-
@@ -140,39 +153,45 @@ lost_sequence_file(SequenceId, SequenceFile) :-
 % If no such filename exists in the index, then a new unique filename is created
 % and unified to Filename 
 lost_aidx_get_filename(IndexFile,Model,ParamsId,InputFiles,Filename) :-
-	(file_exists(IndexFile) ; lost_aidx_create_index_file(IndexFile)),
-	terms_from_file(IndexFile,Terms),
+	(file_exists(IndexFile) -> terms_from_file(IndexFile,Terms) ; Terms = []),
 	(lost_aidx_get_filename_from_terms(Terms,Model,ParamsId,InputFiles,Filename) ->
-	 ;
+	 true
+	;
+	 write(lost_aidx_next_available_index(Terms, Index)),nl,
 	 lost_aidx_next_available_index(Terms, Index),
-	 atom_concat_list([AnnotDir, Model, '_annot_',Index,'.seq'], Filename),
-	 append(Terms, [fileid(Index,Filename,Model,ParamsId,InputFiles)],NewTerms),
+	 lost_sequence_directory(AnnotDir),
+	 term2atom(Index,IndexAtom),
+	 atom_concat_list([AnnotDir, Model, '_annot_',IndexAtom,'.seq'], Filename),
+	 append(Terms, [fileid(IndexAtom,Filename,Model,ParamsId,InputFiles)],NewTerms),
 	 terms_to_file(IndexFile,NewTerms)
 	).
 
 % Given Terms, unify NextAvailableIndex with a unique index not
 % occuring as index in  terms:
-lost_aidx_get_next_available_index(Terms, NextAvailableIndex) :-
-	annotation_get_largest_index(Terms,LargestIndex),
+lost_aidx_next_available_index(Terms, NextAvailableIndex) :-
+	lost_aidx_largest_index(Terms,LargestIndex),
 	NextAvailableIndex is LargestIndex + 1.
 
 % Unify second argument with largest index occuring in terms
-lost_aidx_get_largest_index([], 0).
-lost_aidx_get_largest_index([Term|Rest], LargestIndex) :-
-	Term =.. [ fileid, TermIndex | _ ],
-	annotation_get_next_available_index(Rest,MaxRestIndex),
-	max(TermIndex,MaxRestIndex,LargestIndex).
+lost_aidx_largest_index([], 0).
+lost_aidx_largest_index([Term|Rest], LargestIndex) :-
+	Term =.. [ fileid, TermIndexAtom | _ ],
+	atom2integer(TermIndexAtom,Index),
+	lost_aidx_largest_index(Rest,MaxRestIndex),
+	max(Index,MaxRestIndex,LargestIndex).
 
 % lost_aidx_get_filename_from_terms/5:
 % Go through a list terms and check find a Filename matching (Model,ParamsId,InputFiles)
 % Fail if no such term exist
+
 lost_aidx_get_filename_from_terms([Term|_],Model,ParamsId,InputFiles,Filename) :-
-	Term =.. [ fileid, _, Filename, Model, ParamsId, InputFiles ].
+	Term =.. [ fileid, _, Filename, Model, ParamsId, InputFiles ],
+	!.
 
 lost_aidx_get_filename_from_terms([_|Rest],Model,ParamsId,InputFiles,Filename) :-
 	lost_aidx_get_filename_from_terms(Rest,Model,ParamsId,InputFiles,Filename).
 
-	
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost model interface analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,3 +239,24 @@ terms_has_rule_with_head(Terms,Functor,Arity) :-
 	member(Rule, Terms),
 	Rule =.. [ (:-), Head, _ ],
 	functor(Head, Functor, Arity).
+
+atom_concat_list([Atom],Atom).
+
+atom_concat_list([Elem1,Elem2|Rest], CompositeAtom) :-
+	atom_concat(Elem1,Elem2,Elem3),
+	atom_concat_list([Elem3|Rest], CompositeAtom).
+
+max(A,B,A) :- A > B.
+max(A,B,B) :- A <= B.
+
+atom2integer(Atom,Integer) :-
+	atom_chars(Atom, Chars),
+	number_chars(Integer, Chars).
+
+check_or_fail(Check,_Error) :-
+	call(Check),
+	!.
+
+check_or_fail(_File,Error) :-
+	throw(Error).
+
