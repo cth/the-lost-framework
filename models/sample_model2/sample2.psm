@@ -1,0 +1,17 @@
+% Very stupid HMM like model
+
+values(trans(_), [foo,bar]).
+values(emit1(_), [a,b]).
+values(emit2(_), [s1,s2]).
+
+sample2(InputSeq1,InputSeq2,Annot) :-
+	hmm(begin,InputSeq1,InputSeq2,Annot).
+
+hmm(_, [], [], []).
+
+hmm(State,[Emit1|Emit1R],[Emit2|Emit2R],[NextState|StateR]) :-
+	msw(trans(State), NextState),
+	msw(emit1(NextState),Emit1),
+	msw(emit2(Emit1),Emit2),
+	hmm(NextState,Emit1R,Emit2R,StateR).
+	
