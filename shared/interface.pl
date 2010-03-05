@@ -70,7 +70,7 @@ launch_prism_process(PrismPrologFile, Goal) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Rudimentary management of sequence data 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+% MP: Want to modify this part
 % Asssuming that the file contains facts on the form:
 % elem(1,...), elem(2,...) etc.
 load_sequence_list_from_file(File,Sequence) :-
