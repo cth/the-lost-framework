@@ -15,6 +15,28 @@
 \begin{document}
 \maketitle
 
+\section{Setting up the lost framework}
+
+After obtaining the lost framework, for instance by checking it out
+from git, a little configuration is needed to get started.
+
+The file \texttt{lost.pl} in the top-most directory of the copy
+of the framework. In the beginning of the file there are two 
+important facts you may need to change,
+\begin{verbatim}
+lost_config(prism_command,'/opt/prism/bin/prism').
+lost_config(lost_base_directory, '/home/cth/code/lost/').
+\end{verbatim}
+\\
+\texttt{prism\_command} should point to a the main PRISM executable
+binary. \\
+\texttt{lost\_base\_directory} should be the full path of the
+directory (including trailing /) containing the \texttt{lost.pl}
+file. 
+
+To get started you can examine and run \texttt{example.pl} which 
+is also located in the top-most directory.
+
 \subsection{Lost model conventions}
 \label{sec:lost_model_conventions}
 
@@ -114,6 +136,13 @@ fileid(Id,Filename,Model,SwitchParameters,InputFiles).
 
 The annotation index is automatically maintained by
 \texttt{get\_annotation/4} and should normally not be edited by hand.
+
+If annotation for a particular run of a model is not present then
+\texttt{get\_annotation\_file/4} will start a new PRISM process 
+that invokes the \texttt{lost\_best\_annotation} predicate provided
+be the model \texttt{interface.pl} file. By the contract of model 
+conventions, the model will generate the annotation and save it 
+to the file indicated by the provided filename.
 
 \subsection{The sequence API}
 
