@@ -25,13 +25,14 @@ get_annotation_file(Model, ParametersId, Inputs, Filename) :-
 	check_or_fail(lost_interface_supports(Model,lost_best_annotation,3),
 		      interface_error(no_support(Model,lost_best_annotation/3))),
 	% Check if a result allready exists:
-	lost_annotation_file(Model,ParametersId,Inputs,Filename),
+	lost_annot_index_get_filename(Model,ParametersId,Inputs,Filename),
 	(file_exists(Filename) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
 	 term2atom(lost_best_annotation(ParamFile,Inputs,Filename),Goal),
 	 launch_prism_process(ModelFile,Goal),
-	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename)))
+	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
+	 lost_annot_index_update_file_timestamp(Filename)
 	).
 
 	
@@ -60,7 +61,7 @@ launch_prism_process(PrismPrologFile, Goal) :-
 	system(Cmd,ExitCode),
 	write('--> PRISM process exits with code '), write(ExitCode),nl,
 	% Unfortunately bprolog/prism does get the concept of exit codes. DOH!!!
-	(ExitCode == 0 ; throw(error(launch_prism_process(PrismPrologFile,Goal)))),
+	check_or_fail((ExitCode==0), error(launch_prism_process(PrismPrologFile,Goal))),
 	chdir(CurrentDir).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,10 +128,9 @@ lost_model_parameter_file(Model,ParameterId,ParameterFile) :-
 	atom_concat(Dir,ParameterId,ParameterFile1),
 	atom_concat(ParameterFile1,'.prb',ParameterFile).
 
-lost_annotation_file(Model,ParamsId,InputFiles,Filename) :-
+lost_annotation_index_file(IndexFile) :-
 	lost_sequence_directory(AnnotDir),
-	atom_concat(AnnotDir,'annotations.idx',IndexFile),
-	lost_aidx_get_filename(IndexFile,Model,ParamsId,InputFiles,Filename).
+	atom_concat(AnnotDir,'annotations.idx',IndexFile).
 
 lost_sequence_file(SequenceId, SequenceFile) :-
 	lost_sequence_directory(D),
@@ -139,7 +139,7 @@ lost_sequence_file(SequenceId, SequenceFile) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost annotation index.
-% rule prefix: lost_aidx_
+% rule prefix: lost_annot_index_
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The index file contains a list of facts on the form
 % fileid(FileId,Filename,Model,ParametersId,InputFiles).
@@ -148,46 +148,72 @@ lost_sequence_file(SequenceId, SequenceFile) :-
 % Retrieve the filename matching (Model,ParamsId,InputFiles) from the annotation index
 % If no such filename exists in the index, then a new unique filename is created
 % and unified to Filename 
-lost_aidx_get_filename(IndexFile,Model,ParamsId,InputFiles,Filename) :-
+lost_annot_index_get_filename(Model,ParamsId,InputFiles,Filename) :-
+	lost_annotation_index_file(IndexFile),
 	(file_exists(IndexFile) -> terms_from_file(IndexFile,Terms) ; Terms = []),
-	(lost_aidx_get_filename_from_terms(Terms,Model,ParamsId,InputFiles,Filename) ->
+	(lost_annot_index_get_filename_from_terms(Terms,Model,ParamsId,InputFiles,Filename) ->
 	 true
 	;
-	 write(lost_aidx_next_available_index(Terms, Index)),nl,
-	 lost_aidx_next_available_index(Terms, Index),
+	 % create and reserver new filename:
+	 write(lost_annot_index_next_available_index(Terms, Index)),nl,
+	 lost_annot_index_next_available_index(Terms, Index),
 	 lost_sequence_directory(AnnotDir),
 	 term2atom(Index,IndexAtom),
 	 atom_concat_list([AnnotDir, Model, '_annot_',IndexAtom,'.seq'], Filename),
-	 append(Terms, [fileid(IndexAtom,Filename,Model,ParamsId,InputFiles)],NewTerms),
+	 lost_annot_index_timestamp(Ts),
+	 term2atom(Ts,AtomTs),
+	 append(Terms, [fileid(IndexAtom,AtomTs,Filename,Model,ParamsId,InputFiles)],NewTerms),
 	 terms_to_file(IndexFile,NewTerms)
 	).
 
+
 % Given Terms, unify NextAvailableIndex with a unique index not
 % occuring as index in  terms:
-lost_aidx_next_available_index(Terms, NextAvailableIndex) :-
-	lost_aidx_largest_index(Terms,LargestIndex),
+lost_annot_index_next_available_index(Terms, NextAvailableIndex) :-
+	lost_annot_index_largest_index(Terms,LargestIndex),
 	NextAvailableIndex is LargestIndex + 1.
 
 % Unify second argument with largest index occuring in terms
-lost_aidx_largest_index([], 0).
-lost_aidx_largest_index([Term|Rest], LargestIndex) :-
+lost_annot_index_largest_index([], 0).
+lost_annot_index_largest_index([Term|Rest], LargestIndex) :-
 	Term =.. [ fileid, TermIndexAtom | _ ],
 	atom2integer(TermIndexAtom,Index),
-	lost_aidx_largest_index(Rest,MaxRestIndex),
+	lost_annot_index_largest_index(Rest,MaxRestIndex),
 	max(Index,MaxRestIndex,LargestIndex).
 
-% lost_aidx_get_filename_from_terms/5:
+% lost_annot_index_get_filename_from_terms/5:
 % Go through a list terms and check find a Filename matching (Model,ParamsId,InputFiles)
 % Fail if no such term exist
 
-lost_aidx_get_filename_from_terms([Term|_],Model,ParamsId,InputFiles,Filename) :-
-	Term =.. [ fileid, _, Filename, Model, ParamsId, InputFiles ],
+lost_annot_index_get_filename_from_terms([Term|_],Model,ParamsId,InputFiles,Filename) :-
+	Term =.. [ fileid, _, _, Filename, Model, ParamsId, InputFiles ],
 	!.
 
-lost_aidx_get_filename_from_terms([_|Rest],Model,ParamsId,InputFiles,Filename) :-
-	lost_aidx_get_filename_from_terms(Rest,Model,ParamsId,InputFiles,Filename).
+lost_annot_index_get_filename_from_terms([_|Rest],Model,ParamsId,InputFiles,Filename) :-
+	lost_annot_index_get_filename_from_terms(Rest,Model,ParamsId,InputFiles,Filename).
 
+% Get a timestamp corresponding to the current time
+lost_annot_index_timestamp(timestamp(Year,Mon,Day,Hour,Min,Sec)) :-
+	date(Year,Mon,Day),
+	time(Hour,Min,Sec).
 
+% Update the timestamp associated with Filename to a current timestamp
+% This should be used if the file is (re) generated
+lost_annot_index_update_file_timestamp(Filename) :-
+	>lost_annotation_index_file(IndexFile),
+	>lost_annot_index_timestamp(Ts),
+	>term2atom(Ts,TsAtom),
+	>terms_from_file(IndexFile,Terms),
+	OldTermMatcher =.. [ fileid,  Index, _, Filename, Model, ParamsId, InputFiles ],
+	>subtract(Terms,[OldTermMatcher],TermsMinusOld),
+	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, ParamsId, InputFiles ],
+	>append(TermsMinusOld,[NewTerm],UpdatedTerms),
+	nl,nl,writeq(UpdatedTerms),nl,nl,
+	>terms_to_file(IndexFile,UpdatedTerms).
+
+l(F) :-
+	lost_annot_index_update_file_timestamp(F).
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost model interface analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
