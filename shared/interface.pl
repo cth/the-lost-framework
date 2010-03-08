@@ -52,16 +52,12 @@ launch_prism_process(PrismPrologFile, Goal) :-
 	chdir(Dirname),
 	% Build PRISM command line:
 	lost_config(prism_command,PRISM),
-	atom_concat(PRISM, ' -g "cl(\'', Cmd0),
-	atom_concat(Cmd0, Filename, Cmd1),
-	atom_concat(Cmd1,'\'), ',Cmd2),
-	atom_concat(Cmd2, Goal, Cmd3),
-	atom_concat(Cmd3,'"',Cmd4),
+	atom_concat_list([PRISM,' -g "cl(\'',Filename,'\'), ',Goal,'"'],Cmd),
 	write('working directory: '), write(Dirname), nl,
-	write('cmd: '), write(Cmd4),nl,
+	write('cmd: '), write(Cmd),nl,
 	% FIXME: Setup some stdout redirection (this may be troublesome on windows)
 	% Run PRISM
-	system(Cmd4,ExitCode),
+	system(Cmd,ExitCode),
 	write('--> PRISM process exits with code '), write(ExitCode),nl,
 	% Unfortunately bprolog/prism does get the concept of exit codes. DOH!!!
 	(ExitCode == 0 ; throw(error(launch_prism_process(PrismPrologFile,Goal)))),

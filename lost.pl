@@ -1,10 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Configuration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% test
-
 lost_config(prism_command,'/usr/local/bin/prism ').
-lost_config(lost_base_directory, '/home/ctheilhave/code/lost/').
+lost_config(lost_base_directory, '/home/ctheilhave/tmp/lost/').
 
 % Basic rule to glue in other APIs
 lost_include_api(Name) :-
