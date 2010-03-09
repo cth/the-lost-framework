@@ -10,11 +10,13 @@
 test :-
 	% Unify InputSeqFile to the full filename of tinytest e.g. .../sequences/tinytest.seq
 	lost_sequence_file(tinytest,InputSeqFile),
+
+	% Parameter id "sample2" resolves to models/sample_model2/parameters/sample2.prb
+	lost_model_parameter_file(sample_model2, sample2, ParameterFile),
 	
 	get_annotation_file(sample_model2,  % Name of model (resolves to models/sample_model2/)
-			    sample2,        % Parameter Id (resolves to models/sample_model2/parameters/sample2.prb)
 			    [InputSeqFile], % A list of input files
-			    [],             % Extra options
+			    [option(parameter_file,ParameterFile)],             % Extra options
 			    AnnotFile),     % AnnotFile is unified to the name of the file that  annotation is written to
 
 	% Load the sequence (AnnotSeq) contained in the file AnnotFile 
