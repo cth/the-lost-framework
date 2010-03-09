@@ -7,7 +7,7 @@
 % like this from anywhere..
 :- lost_include_api(interface).
 
-test :-
+run_models_test :-
 	% Unify InputSeqFile to the full filename of tinytest e.g. .../sequences/tinytest.seq
 	lost_sequence_file(tinytest,InputSeqFile),
 
@@ -24,6 +24,16 @@ test :-
 	
 	write('Resulting annotation sequence:'),nl,
 	write(AnnotSeq),nl.
+
+train_model_test :-
+	lost_sequence_file(tinytest,InputSeqFile),
+	train_model(sample_model1,
+		    [InputSeqFile],
+		    [], % No options
+		    ModelParameterFile),
+	write('Resulting parameter file:'),nl,
+	write(ModelParameterFile),nl.
+	
 
 test_easygene_parser :-
         %lost_sequence_file('eg_U00096.dat'),
