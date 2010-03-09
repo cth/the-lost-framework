@@ -16,28 +16,43 @@
 % Model: The name of the model to be run
 % Params: Identifier for the parameter file.
 % Inputs: A list of filenames given as input to the model.
-get_annotation_file(Model, ParametersId, Inputs, ExtraOptions, Filename) :-
+get_annotation_file(Model, Inputs, Options, Filename) :-
 	lost_model_interface_file(Model, ModelFile),
-	lost_model_parameter_file(Model,ParametersId,ParamFile),
-	
 	check_or_fail(file_exists(ModelFile),interface_error(missing_model_file(ModelFile))),
-	check_or_fail(file_exists(ParamFile),interface_error(missing_param_file(ParamFile))),
-	check_or_fail(lost_interface_supports(Model,lost_best_annotation,4),
-		      interface_error(no_support(Model,lost_best_annotation/4))),
+	% Changing the way parameters integrates..
+	check_or_fail(lost_interface_supports(Model,lost_best_annotation,3),
+		      interface_error(no_support(Model,lost_best_annotation/3))),
 	% Check if a result allready exists:
-	lost_annot_index_get_filename(Model,ParametersId,Inputs,ExtraOptions,Filename),
+	lost_annot_index_get_filename(Model,Inputs,Options,Filename),
 	(file_exists(Filename) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
-	 term2atom(lost_best_annotation(ParamFile,Inputs,ExtraOptions,Filename),Goal),
+	 term2atom(lost_best_annotation(Inputs,Options,Filename),Goal),
 	 launch_prism_process(ModelFile,Goal),
 	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
 	 lost_annot_index_update_file_timestamp(Filename)
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Option parsing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+lost_option([option(Key,Value)|_], Key, Value) :- !.
+lost_option([option(_,_)|OptionList], Key, Value) :-
+	lost_option(OptionList,Key,Value).
+
+% Used to retrieve the value of required options
+% Will throw expection if the value of the option cannot be found
+lost_required_option(Options, Key, Value) :-
+	check_or_fail(lost_option(Options,Key,Value),error(missing_option(Key))).
+
+	 
+		    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Launching a PRISM process
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 % Launch a prism process that first consults
 % the file named by PrismPrologFile and then
@@ -186,10 +201,6 @@ sequence_terms_to_annotations_rec([Annot|Rest_Sequence_Data],range(Min,Max),Posi
       Position1 is Position+1,
       sequence_terms_to_annotations_rec(Rest_Sequence_Data,range(Min,Max),Position1,Data_Position,Data_Terms,Annotation).
 
-
-
-
-
         
 sequence_terms_to_data_elements([],[]).
 sequence_terms_to_data_elements([elem(_,Data)|R1],[Data|R2]) :-
@@ -258,10 +269,10 @@ lost_sequence_file(SequenceId, SequenceFile) :-
 % Retrieve the filename matching (Model,ParamsId,InputFiles) from the annotation index
 % If no such filename exists in the index, then a new unique filename is created
 % and unified to Filename 
-lost_annot_index_get_filename(Model,ParamsId,InputFiles,ExtraOptions,Filename) :-
+lost_annot_index_get_filename(Model,InputFiles,Options,Filename) :-
 	lost_annotation_index_file(IndexFile),
 	(file_exists(IndexFile) -> terms_from_file(IndexFile,Terms) ; Terms = []),
-	(lost_annot_index_get_filename_from_terms(Terms,Model,ParamsId,InputFiles,ExtraOptions,Filename) ->
+	(lost_annot_index_get_filename_from_terms(Terms,Model,InputFiles,Options,Filename) ->
 	 true
 	;
 	 % create and reserver new filename:
@@ -272,7 +283,7 @@ lost_annot_index_get_filename(Model,ParamsId,InputFiles,ExtraOptions,Filename) :
 	 atom_concat_list([AnnotDir, Model, '_annot_',IndexAtom,'.seq'], Filename),
 	 lost_annot_index_timestamp(Ts),
 	 term2atom(Ts,AtomTs),
-	 append(Terms, [fileid(IndexAtom,AtomTs,Filename,Model,ParamsId,InputFiles,ExtraOptions)],NewTerms),
+	 append(Terms, [fileid(IndexAtom,AtomTs,Filename,Model,InputFiles,Options)],NewTerms),
 	 terms_to_file(IndexFile,NewTerms)
 	).
 
@@ -293,13 +304,12 @@ lost_annot_index_largest_index([Term|Rest], LargestIndex) :-
 % lost_annot_index_get_filename_from_terms/5:
 % Go through a list terms and check find a Filename matching (Model,ParamsId,InputFiles)
 % Fail if no such term exist
-
-lost_annot_index_get_filename_from_terms([Term|_],Model,ParamsId,InputFiles,ExtraOptions,Filename) :-
-	Term =.. [ fileid, _, _, Filename, Model, ParamsId, InputFiles, ExtraOptions ],
+lost_annot_index_get_filename_from_terms([Term|_],Model,InputFiles,Options,Filename) :-
+	Term =.. [ fileid, _, _, Filename, Model, InputFiles, Options ],
 	!.
 
-lost_annot_index_get_filename_from_terms([_|Rest],Model,ParamsId,InputFiles,ExtraOptions,Filename) :-
-	lost_annot_index_get_filename_from_terms(Rest,Model,ParamsId,InputFiles,ExtraOptions,Filename).
+lost_annot_index_get_filename_from_terms([_|Rest],Model,InputFiles,Options,Filename) :-
+	lost_annot_index_get_filename_from_terms(Rest,Model,InputFiles,Options,Filename).
 
 % Get a timestamp corresponding to the current time
 lost_annot_index_timestamp(timestamp(Year,Mon,Day,Hour,Min,Sec)) :-
@@ -313,9 +323,9 @@ lost_annot_index_update_file_timestamp(Filename) :-
 	lost_annot_index_timestamp(Ts),
 	term2atom(Ts,TsAtom),
 	terms_from_file(IndexFile,Terms),
-	OldTermMatcher =.. [ fileid,  Index, _, Filename, Model, ParamsId, InputFiles, ExtraOptions ],
+	OldTermMatcher =.. [ fileid,  Index, _, Filename, Model, InputFiles, Options ],
 	subtract(Terms,[OldTermMatcher],TermsMinusOld),
-	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, ParamsId, InputFiles, ExtraOptions ],
+	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, InputFiles, Options ],
 	append(TermsMinusOld,[NewTerm],UpdatedTerms),
 	nl,nl,writeq(UpdatedTerms),nl,nl,
 	terms_to_file(IndexFile,UpdatedTerms).
