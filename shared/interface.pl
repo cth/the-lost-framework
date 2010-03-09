@@ -78,7 +78,7 @@ load_sequence_list_from_file(File,Sequence) :-
 
 
 % Type: sequence
-% Options available: Options = [data(Position),
+% Options available: Options = [data_position(Position),
 %                               range(Min,Max)]
 
 load_annotation_from_file(sequence,Options,File,Annotation) :-
@@ -91,7 +91,7 @@ load_annotation_from_file(sequence,Options,File,Annotation) :-
 
 
 % Type: db
-% Options available: Options = [data(Position),
+% Options available: Options = [data_position(Position),
 %                               range(Min,Max)]
 % Assumption on term: functor(Key,Start,End,...).
 load_annotation_from_file(sequence,Options,File,Annotation) :-
