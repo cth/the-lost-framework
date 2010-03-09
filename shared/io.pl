@@ -1,15 +1,38 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Rudimentary management of sequence data 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  NAME :
+%      io.pl
+%
+% VERSION :
+%     0
+%
+% AUTHORS: Lost Members
+%
+% FUNCTION :
+%      Manipulation of files
+% 
+% HISTORIC :
+%  09/03: creation of file         MP
+%
+% REMARKS : any problem, contact {cth,otl,petit}@(without advertissement)ruc.dk
+%
+% NOTE TO THE USER : 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%--------------------------------
+% Loading information from file %
+%--------------------------------
 
 % Asssuming that the file contains facts on the form:
 % elem(1,...), elem(2,...) etc.
+% Remarks: old predicate, same result than a load_annotation_from_file(sequence,[],....)
+
 load_sequence_list_from_file(File,Sequence) :-
 	terms_from_file(File,Terms),
 	% Technically not necessary since they will be sorted if this
         % interface is used
 	sort('=<',Terms,SortedTerms), 
 	sequence_terms_to_data_elements(SortedTerms,Sequence).
+
 
 % sequence_terms_to_data_elements(++ Data_Terms,--Sequence_Data)
 
@@ -18,27 +41,19 @@ sequence_terms_to_data_elements([elem(_,Data)|R1],[Data|R2]) :-
 	sequence_terms_to_data_elements(R1,R2).
 
 
-data_elements_to_sequence_terms(Data,Terms) :-
-	data_elements_to_sequence_terms(1,Data,Terms).
 
-data_elements_to_sequence_terms(_,[],[]).
-data_elements_to_sequence_terms(Pos,[Data|R1],[elem(Pos,Data)|R2]) :-
-	NextPos is Pos + 1,
-	data_elements_to_sequence_terms(NextPos,R1,R2).
-
-
-% save_sequence_list_to_file(++File,--Sequence)
-
-save_sequence_list_to_file(File,Sequence) :-
-	data_elements_to_sequence_terms(Sequence,Terms),
-	terms_to_file(File,Terms).
-
-
-
-% Type: sequence
+%%%%%%%%%%%%%%%%%%%%%%%
+% load_annotation_from_file(++Type_Info,++Options,++File,--Annotation)
+%
+% Description: given some Options, generate an Annotation from a set of terms contained into File
+%
+%%%%%%%%%%%%%%%%%%%%%%%%
+% Type_Info: sequence
+% Terms  in File are composed of List of data.
+% Annotation is a list
 % Options available: Options = [data_position(Position),
 %                               range(Min,Max)]
-
+%%%%%%%%%
 load_annotation_from_file(sequence,Options,File,Annotation) :-
         terms_from_file(File,Terms),
         % Technically not necessary since they will be sorted if this
@@ -164,14 +179,14 @@ db_terms_to_annotations(Options,[DB|List_Terms],Annotation) :-
         member(range(Min,Max),Options),
         !,
         init_db_terms(Options,Annot_Format,Range_Position),
-        get_next_range(Range_Position,DB,Range)
+        get_next_range(Range_Position,DB,Range),
         db_terms_to_annotations_rec(Options,1,range(Min,Max),Range,Annot_Format,Range_Position,List_Terms,Annotation).
 
 
 
 db_terms_to_annotations(Options,[DB|List_Terms],Annotation) :-
         init_db_terms(Options,Annot_Format,Range_Position),
-        get_next_range(Range_Position,DB,Range)
+        get_next_range(Range_Position,DB,Range),
         db_terms_to_annotations_rec(Options,Range,Annot_Format,Range_Position,List_Terms,Annotation).
 
 
@@ -208,4 +223,28 @@ get_next_range(Param_Start,Param_End,DB,(Min,Max)) :-
         DB =.. [_|List_Params],
         nth1(Param_Start,List_Params,Min),
         nth1(Param_End,List_Params,Max).
+
+
+
+%-------
+% Saving information from file
+%-------
+
+% save_sequence_list_to_file(++File,--Sequence)
+
+save_sequence_list_to_file(File,Sequence) :-
+	data_elements_to_sequence_terms(Sequence,Terms),
+	terms_to_file(File,Terms).
+
+
+
+data_elements_to_sequence_terms(Data,Terms) :-
+	data_elements_to_sequence_terms(1,Data,Terms).
+
+data_elements_to_sequence_terms(_,[],[]).
+data_elements_to_sequence_terms(Pos,[Data|R1],[elem(Pos,Data)|R2]) :-
+	NextPos is Pos + 1,
+	data_elements_to_sequence_terms(NextPos,R1,R2).
+
+
 
