@@ -74,7 +74,7 @@ load_sequence_list_from_file(File,Sequence) :-
 	terms_from_file(File,Terms),
 	% Technically not necessary since they will be sorted if this
         % interface is used
-	sort(Terms,SortedTerms), 
+	sort('=<',Terms,SortedTerms), 
 	sequence_terms_to_data_elements(SortedTerms,Sequence).
 
 
@@ -86,21 +86,21 @@ load_annotation_from_file(sequence,Options,File,Annotation) :-
         terms_from_file(File,Terms),
         % Technically not necessary since they will be sorted if this
 	% interface is used
-	sort(Terms,SortedTerms), 
+	sort('=<',Terms,SortedTerms), 
         sequence_terms_to_annotations(Options,SortedTerms,Annotation).
 
 
 
 % Type: db
-% Options available: Options = [data_position(Position),
-%                               range(Min,Max)]
-% Assumption on term: functor(Key,Start,End,...).
-load_annotation_from_file(sequence,Options,File,Annotation) :-
+% Options available: Options = [in_db(Letter),not_in_db(Letter),
+%                               data_position(Position),range(Min,Max)]
+
+load_annotation_from_file(db,Options,File,Annotation) :-
         terms_from_file(File,Terms),
         % Technically not necessary since they will be sorted if this
 	% interface is used
-	sort(Terms,SortedTerms), 
-        sequence_terms_to_annotations(Options,SortedTerms,Annotation).
+	sort('=<',Terms,SortedTerms), 
+        db_terms_to_annotations(Options,SortedTerms,Annotation).
 
 
 
@@ -152,8 +152,6 @@ sequence_terms_to_annotations(Options,[Data|Data_Terms],Annotation) :-
         nth1(Data_Position,Rest_Data,Sequence_Data),
         sequence_terms_to_annotations(Options,Data_Terms,Rest_Annotation),
         append(Sequence_Data,Rest_Annotation,Annotation).
-
-
 
 
 % Data_Terms empty = end of the annotation generation
