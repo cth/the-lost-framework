@@ -21,7 +21,7 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
   			write(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation))),nl,                      
 	
 	check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation))),                        
-                        error(viterbiAnnot_says_no_no_no)),                                 
+                        error(viterbiAnnot_says_no_no_no),                                 
   
         write('LoSt consorf genefinder produced output prediction: '),                                    
         write(OutputAnnotation),nl,                                                       
