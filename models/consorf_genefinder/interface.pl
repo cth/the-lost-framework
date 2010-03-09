@@ -1,6 +1,7 @@
 :- ['../../lost.pl'].                                                                   
 :- lost_include_api(interface).                                                         
-:- lost_include_api(autoAnnotations).                                                                                                                                          
+:- lost_include_api(autoAnnotations).
+:- lost_include_api(misc_utils).                                                                                                                                        
                                                                                         
 % This is what is used to get the best annotation                                       
 lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-                                 
