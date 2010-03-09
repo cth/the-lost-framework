@@ -8,7 +8,7 @@ lost_best_annotation([InputFile],Options,OutputFile) :-
 
 	% Check and retrieve option values:
 	lost_required_option(Options,parameter_file,ParamFile),
-n
+
 	% Get annotation for sample_model1 using parameters "test", the InputFile as
 	% input and unify SampleModel1AnnotFile with the name of a file containing
 	% the resulting annotation:
