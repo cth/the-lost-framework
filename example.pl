@@ -13,7 +13,8 @@ test :-
 	
 	get_annotation_file(sample_model2,  % Name of model (resolves to models/sample_model2/)
 			    sample2,        % Parameter Id (resolves to models/sample_model2/parameters/sample2.prb)
-			    [InputSeqFile], % A list of input files 
+			    [InputSeqFile], % A list of input files
+			    [],             % Extra options
 			    AnnotFile),     % AnnotFile is unified to the name of the file that  annotation is written to
 
 	% Load the sequence (AnnotSeq) contained in the file AnnotFile 
@@ -22,12 +23,10 @@ test :-
 	write('Resulting annotation sequence:'),nl,
 	write(AnnotSeq),nl.
 
-
-
 test_easygene_parser :-
         %lost_sequence_file('eg_U00096.dat'),
         get_annotation_file(parser_easygene,
                             _,
                             ['eg_U00096.dat'],
                             AnnotFile),
-        write(AnnotFile)
+        write(AnnotFile).
