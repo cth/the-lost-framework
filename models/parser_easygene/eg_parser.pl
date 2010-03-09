@@ -81,7 +81,7 @@ fact_building_eg([_SeqName,_Model,_Feature,Start,End,_Score,Dir,_Code,_StartC,_O
         ;
             Frm = Temp
         ),
-        Cds =.. [eg,Start,End,Dir,Frm,_Extra_Info], % more arguments can be be added as neccassary
+        Cds =.. [eg,Start,End,Dir,Frm], % more arguments can be be added as neccassary
 	write(Cds),
         write('.'),
         nl.

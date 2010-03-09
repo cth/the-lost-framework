@@ -23,3 +23,10 @@ test :-
 	write('Resulting annotation sequence:'),nl,
 	write(AnnotSeq),nl.
 
+test_easygene_parser :-
+        %lost_sequence_file('eg_U00096.dat'),
+        get_annotation_file(parser_easygene,
+                            _,
+                            ['eg_U00096.dat'],
+                            AnnotFile),
+        write(AnnotFile).
