@@ -171,7 +171,7 @@ sequence_terms_to_annotations_rec([Annot|Rest_Sequence_Data],range(Min,Max),Posi
 
 
 
-db_terms_to_annotations(Options,[],[]) :-
+db_terms_to_annotations(_Options,[],[]) :-
         !.
 
 
