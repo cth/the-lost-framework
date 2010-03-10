@@ -36,9 +36,6 @@ train_model_test :-
 	
 
 test_easygene_parser :-
-        %lost_sequence_file('eg_U00096.dat'),
-        get_annotation_file(parser_easygene,
-                            _,
-                            ['eg_U00096.dat'],
-                            AnnotFile),
-        write(AnnotFile).
+        lost_sequence_file(eg_U00096),
+        get_annotation_file(parser_easygene,Input_File,[],Report_Easygene),
+        write(Report_Easygene).
