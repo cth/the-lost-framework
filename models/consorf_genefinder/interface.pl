@@ -18,11 +18,17 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	write('parameters loaded'),nl,                           
 		     
 		    load_annotation_from_file(sequence,[data_position(1),range(1,48)],OrfFile,ID),
+	write('id '),writeln(ID), 
 		    load_annotation_from_file(sequence,[data_position(2),range(1,48)],OrfFile,Start),
+	write('start '),writeln(Start),
 		    load_annotation_from_file(sequence,[data_position(3),range(1,48)],OrfFile,Stop),
+	write('stop '),writeln(Stop),		    
 		    load_annotation_from_file(sequence,[data_position(4),range(1,48)],OrfFile,Dir),
+	write('dir '),writeln(Dir),
 		    load_annotation_from_file(sequence,[data_position(5),range(1,48)],OrfFile,Frm),  
+  write('frm '),writeln(Frm),
   			load_annotation_from_file(sequence,[data_position(6),range(1,48)],OrfFile,InputOrf),
+   			
    			load_annotation_from_file(sequence,[data_position(6),range(1,48)],ConsFile,InputCons),      
   
         % Derive an annotation somehow
