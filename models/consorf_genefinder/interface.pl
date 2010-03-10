@@ -38,7 +38,7 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	*/
 	
 	open(OutputFile,write,OutStream),
-	write('prediction('), write(OutputAnnotation), writeln(').'),
+	write(OutStream,'prediction('), write(OutStream,OutputAnnotation), writeln(OutStream,').'),
 	close(OutStream),
 	
 	
