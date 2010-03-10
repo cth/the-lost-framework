@@ -17,11 +17,12 @@ test_consorf :-
 	get_annotation_file(consorf_genefinder,  					% Name of model (resolves to models/sample_model2/)
 			    [InputOrfFile,InputConsFile], 						% A list of input files
 			    [option(parameter_file,ParameterFile)],   % Extra options
-			    _AnnotFile)     														% AnnotFile is unified to the name of the file that  annotation is written to
-
+			    AnnotFile),     														% AnnotFile is unified to the name of the file that  annotation is written to
+	writeln(AnnotFile)
 																										% Load the sequence (AnnotSeq) contained in the file AnnotFile 
 	
-	/*,
+	
+	/*
 	load_annotation_from_file(AnnotFile,AnnotSeq),
 	writeln('here i am'),
 	
