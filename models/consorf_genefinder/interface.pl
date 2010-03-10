@@ -23,7 +23,7 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
         close(OutStream),
 				write('LoSt consorf genefinder terminated successfully.'),nl.
 				
-Prediction_routine:-		  
+prediction_routine:-		  
 			  % writeq('read(orfin,OrfTerm)'),nl,
 			  read(orfin,OrfTerm),
 			  read(consin,ConsTerm),
