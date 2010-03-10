@@ -17,10 +17,11 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	restore_sw(ParamFile), % Restore switch values 
 	write('parameters loaded'),nl,                           
 			  writeln('foobar 1'),
+			  writeq(open(OrfFile, read, OrfIn,[alias(orfin)])),nl,
 			  open(OrfFile, read, OrfIn,[alias(orfin)]),
 			  open(ConsFile, read, ConsIn,[alias(consin)]),
 			  writeln('foobar 2'),
-			  writeq('read(orfin,OrfTerm)'),nl,
+			  % writeq('read(orfin,OrfTerm)'),nl,
 			  read(orfin,OrfTerm),nl(orfin),
 			  read(consin,ConsTerm),nl(consin),
 			  writeln('foobar 3'),
