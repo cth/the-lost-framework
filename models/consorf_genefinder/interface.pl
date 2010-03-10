@@ -33,10 +33,10 @@ Prediction_routine:-
 			  	ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,InputCons|_],
 			  		  
         	% Derive an annotation somehow
-        	check_or_fail(viterbiAnnot(consorf(InputOrf1,InputCons1,OutputAnnotation1),_),                        
+        	check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),                        
                         error(viterbiAnnot_says_no_no_no)),
         
-        	OutputEntry =.. [consorf_prediction,Id,Start1,Stop1,Dir,Frm,OutputAnnotation1],
+        	OutputEntry =.. [consorf_prediction,Id,Start,Stop,Dir,Frm,OutputAnnotation],
         
   			
 					writeq(OutStream,OutputEntry),writeln(OutStream,'.'),
