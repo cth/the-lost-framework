@@ -21,11 +21,12 @@ test_consorf :-
 			    AnnotFile),     													% AnnotFile is unified to the name of the file that  annotation is written to
 
 																										% Load the sequence (AnnotSeq) contained in the file AnnotFile 
-	
-	load_sequence_list_from_file(AnnotFile,AnnotSeq),
+	/*
+	load_annotation_from_file(AnnotFile,AnnotSeq),
 	writeln('here i am'),
 	
 	write('Resulting annotation sequence:'),nl,
-	write(AnnotSeq),nl.
+	write(AnnotSeq),nl
+	*/.
 
 

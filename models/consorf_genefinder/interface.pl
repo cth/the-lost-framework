@@ -6,13 +6,13 @@
                                                                                         
 % This is what is used to get the best annotation                                       
 lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-                                 
-				write('LoSt consorf genefinder: '),nl,                                                         
-				write(lost_best_annotation(ParamFile,[OrfFile,ConsFile],Options,OutputFile)),nl,             
+	write('LoSt consorf genefinder: '),nl,                                                         
+	write(lost_best_annotation(ParamFile,[OrfFile,ConsFile],Options,OutputFile)),nl,             
 	
-	lost_required_option(Options,parameter_file,ParamFile),                               
-	prismAnnot('consorf_genefinder'), % Load the actual PRISM model                                         
+				lost_required_option(Options,parameter_file,ParamFile),                               
+				prismAnnot('consorf_genefinder'), % Load the actual PRISM model                                         
 	
-				write(restore_sw(ParamFile)),nl, % Restore switch values                              
+	write(restore_sw(ParamFile)),nl, % Restore switch values                              
 	
 	restore_sw(ParamFile), % Restore switch values 
 	write('parameters loaded'),nl,                           
@@ -37,9 +37,9 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	save_sequence_list_to_file(OutputFile,OutputAnnotation), % Save result to filename given
 	*/
 	
-	open(OutputFile,write,OutStream),
-	write(OutStream,'prediction('), write(OutStream,OutputAnnotation), writeln(OutStream,').'),
-	close(OutStream),
+				open(OutputFile,write,OutStream),
+				write(OutStream,'prediction('), write(OutStream,OutputAnnotation), writeln(OutStream,').'),
+				close(OutStream),
 	
 	
 	write('LoSt consorf genefinder terminated successfully.'),nl.                                         
