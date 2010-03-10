@@ -172,7 +172,7 @@ manipulate \texttt{*.seq} files~:
 \begin{itemize}
 \item \texttt{load\_annotation\_from\_file(++Type\_Info,++Options,++File,--Annotation)}:
 Generate from \texttt{File} a sequence of \texttt{Annotation}. It is assumed that \texttt{File} is composed
-of terms. \texttt{Type\_Info} is used to specify what is the format of information in the file
+of terms. \texttt{Type\_Info} is used to specify what format of information into file
 \begin{itemize}
 \item \texttt{sequence} means that information is stored into a list. For example, 
 \begin{verbatim}
@@ -186,11 +186,11 @@ gb(Key_Index,1,10).
 For each \texttt{Type\_Info}, several options are available represented by the list \texttt{Options}. Options available
 for \texttt{sequence}:
 \begin{itemize}
-\item $[]$ (default): data list must be in position of the terms and all lists of data are append;
-\item data\_position(Num) permits to specify that the data lists the \texttt{Num}$^{th}$ argument of terms;
+\item $[]$ (default): data list is the $2^{th}$ argument of the terms and these lists of data are appended;
+\item data\_position(Num) specified that data list is \texttt{Num}$^{th}$ argument of term;
 \item \texttt{range(Min,Max)} extracts from the list of the complete annotation the sublist from position \texttt{Min} to
 position \texttt{Max};
-\item all\_lists: generate a list of each data list associated with a term. Warning: range(Min,Max) not support with this option.
+\item \texttt{all\_lists}: generate a list of each data list by term. Warning: \texttt{range(Min,Max)} is not support by this option.
 \end{itemize}
 File Example \texttt{toto.seq}:
 \begin{verbatim}
@@ -210,11 +210,12 @@ R = [[1,2,3,4,5],[6,7,8,9,10],[11,12,13,14,15]] ?
 
 Options available for \texttt{db}:
 \begin{itemize}
-\item $[]$ (default): we suppose that the first and the second element of the term defined the range. By default, a list of 0-1 
-values is generated, 0 when you are outside a range and 1 you are inside;
-\item \texttt{in\_db(Letter)} replaces the default value 1 by Letter into the generated list;
-\item \texttt{out\_db(Letter)} replaces the default value 0 by Letter into the generated list;
-\item \texttt{range\_position(Min,Max)} allows to specify the position into the terms of the minimal and maximal value;
+\item $[]$ (default): first and the second element of the term defined a range. A list of 0-1 
+values is generated, 0 when you are outside ranges and 1 you are inside at least one;
+\item \texttt{in\_db(Letter)} replaces the default value 1 by \texttt{Letter};
+\item \texttt{out\_db(Letter)} replaces the default value 0 by \texttt{Letter};
+\item \texttt{range\_position(Min,Max)} allows to specify the position argument number of a term of the minimal and maximal value
+of term;
 \item \texttt{range(Min,Max)} extracts from the list of the complete annotation the sublist from position \texttt{Min} to
 position \texttt{Max};
 \end{itemize}
