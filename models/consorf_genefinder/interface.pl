@@ -32,11 +32,14 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
         write('LoSt consorf genefinder produced output prediction: '),                                    
         write(OutputAnnotation),nl,                                                       
 				
-	/*			
+				
 	write(save_sequence_list_to_file(OutputFile,OutputAnnotation)),nl,                      
 	save_sequence_list_to_file(OutputFile,OutputAnnotation), % Save result to filename given
-	*/
+	
+	/*
 	open(OutputFile,write,OutStream),
 	write('prediction('), write(OutputAnnotation), writeln(').'),
 	close(OutStream),
+	*/
+	
 	write('LoSt consorf genefinder terminated successfully.'),nl.                                         
