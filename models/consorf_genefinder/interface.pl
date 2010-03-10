@@ -39,7 +39,7 @@ prediction_routine:-
         	OutputEntry =.. [consorf_prediction,Id,Start,Stop,Dir,Frm,OutputAnnotation],
         
   			
-					writeq(OutStream,OutputEntry),writeln(OutStream,'.'),
+					writeq(predout,OutputEntry),writeln(predout,'.'),
 					prediction_routine
 				;
 					true
