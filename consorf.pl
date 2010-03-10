@@ -23,7 +23,7 @@ test_consorf :-
 																										% Load the sequence (AnnotSeq) contained in the file AnnotFile 
 	
 	load_sequence_list_from_file(AnnotFile,AnnotSeq),
-	writeln('here i am'),
+	% writeln('here i am'),
 	
 	write('Resulting annotation sequence:'),nl,
 	write(AnnotSeq),nl.
