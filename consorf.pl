@@ -13,10 +13,6 @@ test_consorf :-
 	lost_sequence_file('u00096-20k_orf_+1',InputOrfFile), % ,ConsFile),
 	% Parameter id "sample2" resolves to models/consorf_genefinder/parameters/consorf_genefinder.prb
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
-	writeq(get_annotation_file(consorf_genefinder,  					
-			    [InputOrfFile,InputConsFile], 						
-			    [option(parameter_file,ParameterFile)],   
-			    AnnotFile)), nl,
 	
 	get_annotation_file(consorf_genefinder,  					
 			    [InputOrfFile,InputConsFile], 						
@@ -24,7 +20,7 @@ test_consorf :-
 			    AnnotFile),     													
 
 	open(AnnotFile,read,Annots,[alias(annots)]),
-	read_term(Annots,Term),
+	read(Annots,Term),
 	write('Resulting annotation sequence:'),nl,
 	writeln(Term),
 	close(Annots)
