@@ -22,7 +22,6 @@ test_consorf :-
 																										% Load the sequence (AnnotSeq) contained in the file AnnotFile 
 	
 	
-	load_annotation_from_file(AnnotFile,AnnotSeq),
 	open(AnnotFile,read,Annots,[alias(annots)]),
 	read_term(Annots,Term),
 	write('Resulting annotation sequence:'),nl,
