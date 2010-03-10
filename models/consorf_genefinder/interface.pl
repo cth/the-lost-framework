@@ -14,9 +14,12 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 				write(restore_sw(ParamFile)),nl, % Restore switch values                              
 	
 	restore_sw(ParamFile), % Restore switch values 
-	                           
+				write('parameters loaded'),nl,                           
+	
 	load_annotation_from_file(sequence,[data_position(6),range(1,48)],OrfFile,InputOrf), % Load the input sequence      
+  			write('OrfFile loaded'),nl,
   load_annotation_from_file(sequence,[data_position(6),range(1,48)],ConsFile,InputCons),      
+        write('ConsFile loaded'),nl,
         % Derive an annotation somehow
                                                           
   			write(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation))),nl,                      
