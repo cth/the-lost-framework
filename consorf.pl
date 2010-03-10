@@ -18,12 +18,17 @@ test_consorf :-
 	writeln('foobar 4'),
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
 	writeln('foobar 5'),
-	get_annotation_file(consorf_genefinder,  					% Name of model (resolves to models/sample_model2/)
-			    [InputOrfFile,InputConsFile], 						% A list of input files
-			    [option(parameter_file,ParameterFile)],   % Extra options
-			    AnnotFile),     														% AnnotFile is unified to the name of the file that  annotation is written to
+	writeq(get_annotation_file(consorf_genefinder,  					
+			    [InputOrfFile,InputConsFile], 						
+			    [option(parameter_file,ParameterFile)],   
+			    AnnotFile)),
+	
+	get_annotation_file(consorf_genefinder,  					
+			    [InputOrfFile,InputConsFile], 						
+			    [option(parameter_file,ParameterFile)],   
+			    AnnotFile),     													
 
-																										% Load the sequence (AnnotSeq) contained in the file AnnotFile 
+																										
 	
 	writeln('foobar 6'),
 	open(AnnotFile,read,Annots,[alias(annots)]),
