@@ -20,6 +20,7 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 			  open(OrfFile, read, OrfIn,[alias(orfin)]),
 			  open(ConsFile, read, ConsIn,[alias(consin)]),
 			  writeln('foobar 2'),
+			  writeq('read(orfin,OrfTerm)'),nl,
 			  read(orfin,OrfTerm),nl(orfin),
 			  read(consin,ConsTerm),nl(consin),
 			  writeln('foobar 3'),
