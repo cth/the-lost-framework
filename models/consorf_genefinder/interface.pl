@@ -16,7 +16,8 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	
 	restore_sw(ParamFile), % Restore switch values 
 	write('parameters loaded'),nl,                           
-		     
+	writeq(load_annotation_from_file(sequence,[data_position(1),range(1,48)],OrfFile,ID)),
+	
 		    load_annotation_from_file(sequence,[data_position(1),range(1,48)],OrfFile,ID),
 	write('id '),writeln(ID), 
 		    load_annotation_from_file(sequence,[data_position(2),range(1,48)],OrfFile,Start),
