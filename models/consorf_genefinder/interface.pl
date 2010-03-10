@@ -16,11 +16,17 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	
 	restore_sw(ParamFile), % Restore switch values 
 	write('parameters loaded'),nl,                           
-			  read(OrfFile,OrfTerm),nl(OrfFile),
-			  OrfTerm =.. [_,Id,Start1,Stop1,Dir,Frm,InputOrf1|_],
-			  read(ConsFile,ConsTerm),nl(ConsFile),
-			  OrfTerm =.. [_,Id,Start1,Stop1,Dir,Frm,InputCons1|_],
+			  open(OrfFile, read, OrfIn,[alias(orfin)]),
+			  open(ConsFile, read, ConsIn,[alias(consin)]),
 			  
+			  read(OrfIn,OrfTerm),nl(OrfIn),
+			  read(ConsIn,ConsTerm),nl(ConsIn),
+			  
+			  OrfTerm =.. [_,Id,Start1,Stop1,Dir,Frm,InputOrf1|_],
+			  ConsTerm =.. [_,Id,Start1,Stop1,Dir,Frm,InputCons1|_],
+			  
+			  close(OrfIn),
+			  close(ConsIn),
         % Derive an annotation somehow
                                                           
   	
