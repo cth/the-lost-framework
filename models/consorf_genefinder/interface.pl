@@ -16,19 +16,12 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	
 	restore_sw(ParamFile), % Restore switch values 
 	write('parameters loaded'),nl,                           
-	writeq(load_annotation_from_file(sequence,[data_position(1),range(1,48)],OrfFile,ID)),
-	
-		    load_annotation_from_file(sequence,[data_position(1),range(1,48)],OrfFile,ID),
-	write('id '),writeln(ID), 
-		    load_annotation_from_file(sequence,[data_position(2),range(1,48)],OrfFile,Start),
-	write('start '),writeln(Start),
-		    load_annotation_from_file(sequence,[data_position(3),range(1,48)],OrfFile,Stop),
-	write('stop '),writeln(Stop),		    
-		    load_annotation_from_file(sequence,[data_position(4),range(1,48)],OrfFile,Dir),
-	write('dir '),writeln(Dir),
-		    load_annotation_from_file(sequence,[data_position(5),range(1,48)],OrfFile,Frm),  
-  write('frm '),writeln(Frm),
-  			load_annotation_from_file(sequence,[data_position(6),range(1,48)],OrfFile,InputOrf),
+			  ID = 'u00096',
+				Start is 1,
+				Stop is 48,	
+		    Dir = '+',
+		    Frm is 1,
+		    load_annotation_from_file(sequence,[data_position(6),range(1,48)],OrfFile,InputOrf),
    			
    			load_annotation_from_file(sequence,[data_position(6),range(1,48)],ConsFile,InputCons),      
   
