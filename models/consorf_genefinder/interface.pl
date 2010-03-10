@@ -16,7 +16,7 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	
 	restore_sw(ParamFile), % Restore switch values 
 	write('parameters loaded'),nl,                           
-			  ID = 'u00096',
+			  Id = 'u00096',
 				Start is 1,
 				Stop is 48,	
 		    Dir = '+',
