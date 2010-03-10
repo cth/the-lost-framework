@@ -18,17 +18,16 @@ test_consorf :-
 			    [InputOrfFile,InputConsFile], 						% A list of input files
 			    [option(parameter_file,ParameterFile)],   % Extra options
 			    AnnotFile),     														% AnnotFile is unified to the name of the file that  annotation is written to
-	writeln(AnnotFile)
+
 																										% Load the sequence (AnnotSeq) contained in the file AnnotFile 
 	
 	
-	/*
 	load_annotation_from_file(AnnotFile,AnnotSeq),
-	writeln('here i am'),
-	
+	open(AnnotFile,read,Annots,[alias(annots)]),
+	read_term(Annots,Term),
 	write('Resulting annotation sequence:'),nl,
-	write(AnnotSeq),nl
-	*/
+	writeln(Term),
+	close(Annots)
 	.
 
 

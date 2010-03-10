@@ -16,21 +16,25 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	
 	restore_sw(ParamFile), % Restore switch values 
 	write('parameters loaded'),nl,                           
-	
-	write(load_annotation_from_file(sequence,[data_position(6),range(1,48)],OrfFile,InputOrf)),nl, % Load the input sequence      
+		     
+		    load_annotation_from_file(sequence,[data_position(1),range(1,48)],OrfFile,ID),
+		    load_annotation_from_file(sequence,[data_position(2),range(1,48)],OrfFile,Start),
+		    load_annotation_from_file(sequence,[data_position(3),range(1,48)],OrfFile,Stop),
+		    load_annotation_from_file(sequence,[data_position(4),range(1,48)],OrfFile,Dir),
+		    load_annotation_from_file(sequence,[data_position(5),range(1,48)],OrfFile,Frm),  
   			load_annotation_from_file(sequence,[data_position(6),range(1,48)],OrfFile,InputOrf),
-  write('OrfFile loaded'),nl,
-  			load_annotation_from_file(sequence,[data_position(6),range(1,48)],ConsFile,InputCons),      
-  write('ConsFile loaded'),nl,
+   			load_annotation_from_file(sequence,[data_position(6),range(1,48)],ConsFile,InputCons),      
+  
         % Derive an annotation somehow
                                                           
   write(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation1))),nl,                      
 	
 				check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),                        
-                        error(viterbiAnnot_says_no_no_no)),                                 
+                        error(viterbiAnnot_says_no_no_no)),
+        OutputEntry =.. [consorf_prediction,Id,Start,Stop,Dir,Frm,OutputAnnotation],                                 
   
   write('LoSt consorf genefinder produced output prediction: '),                                    
-  write(OutputAnnotation),nl,                                                       
+  write(OutputEntry),nl,                                                       
 				
 	/*			
 	write(save_sequence_list_to_file(OutputFile,OutputAnnotation)),nl,                      
@@ -38,7 +42,7 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	*/
 	
 				open(OutputFile,write,OutStream),
-				write(OutStream,'prediction('), write(OutStream,OutputAnnotation), writeln(OutStream,').'),
+				writeq(OutStream,OutputEntry),writeln(OutStream,'.'),
 				close(OutStream),
 	
 	
