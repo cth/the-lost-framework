@@ -16,25 +16,25 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	
 	restore_sw(ParamFile), % Restore switch values 
 	write('parameters loaded'),nl,                           
-			  Id = 'u00096',
-				Start is 1,
-				Stop is 48,	
-		    Dir = '+',
-		    Frm is 1,
-		    load_annotation_from_file(sequence,[data_position(6),range(1,48)],OrfFile,InputOrf),
-   			
-   			load_annotation_from_file(sequence,[data_position(6),range(1,48)],ConsFile,InputCons),      
-  
+			  read(OrfFile,OrfTerm),nl(OrfFile),
+			  OrfTerm =.. [_,Id,Start1,Stop1,Dir,Frm,InputOrf1|_],
+			  read(ConsFile,ConsTerm),nl(ConsFile),
+			  OrfTerm =.. [_,Id,Start1,Stop1,Dir,Frm,InputCons1|_],
+			  
         % Derive an annotation somehow
                                                           
-  write(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation1))),nl,                      
-	
-				check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),                        
+  	
+				check_or_fail(viterbiAnnot(consorf(InputOrf1,InputCons1,OutputAnnotation1),_),                        
                         error(viterbiAnnot_says_no_no_no)),
-        OutputEntry =.. [consorf_prediction,Id,Start,Stop,Dir,Frm,OutputAnnotation],                                 
+        /*
+        check_or_fail(viterbiAnnot(consorf(InputOrf2,InputCons2,OutputAnnotation2),_),                        
+                        error(viterbiAnnot_says_no_no_no)),
+ 				*/
+        OutputEntry1 =.. [consorf_prediction,Id,Start1,Stop1,Dir,Frm,OutputAnnotation1],
+        % OutputEntry2 =.. [consorf_prediction,Id,Start2,Stop2,Dir,Frm,OutputAnnotation2],                                 
   
   write('LoSt consorf genefinder produced output prediction: '),                                    
-  write(OutputEntry),nl,                                                       
+  
 				
 	/*			
 	write(save_sequence_list_to_file(OutputFile,OutputAnnotation)),nl,                      
@@ -42,7 +42,8 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 	*/
 	
 				open(OutputFile,write,OutStream),
-				writeq(OutStream,OutputEntry),writeln(OutStream,'.'),
+				writeq(OutStream,OutputEntry1),writeln(OutStream,'.'),
+				% writeq(OutStream,OutputEntry2),writeln(OutStream,'.'),
 				close(OutStream),
 	
 	
