@@ -19,14 +19,14 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
 			  open(OrfFile, read, OrfIn,[alias(orfin)]),
 			  open(ConsFile, read, ConsIn,[alias(consin)]),
 			  
-			  read(OrfIn,OrfTerm),nl(OrfIn),
-			  read(ConsIn,ConsTerm),nl(ConsIn),
+			  read(orfin,OrfTerm),nl(orfin),
+			  read(consin,ConsTerm),nl(consin),
 			  
 			  OrfTerm =.. [_,Id,Start1,Stop1,Dir,Frm,InputOrf1|_],
 			  ConsTerm =.. [_,Id,Start1,Stop1,Dir,Frm,InputCons1|_],
 			  
-			  close(OrfIn),
-			  close(ConsIn),
+			  close(orfin),
+			  close(consin),
         % Derive an annotation somehow
                                                           
   	
