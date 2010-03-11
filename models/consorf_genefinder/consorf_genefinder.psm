@@ -64,7 +64,9 @@ consorf_main(OrfInStream,ConsInStream,OutStream):-
 		OrfTerm \= eof, ConsTerm \= eof ->			  
 			writeln('ok3'),
 			OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,InputOrf|_],
+			writeln(OrfTerm),
 			ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,InputCons|_],
+			writeln(ConsTerm),
 			writeln('ok4'),  		  
         		% Derive an annotation somehow
         		check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),                        
