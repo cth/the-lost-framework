@@ -15,7 +15,7 @@ consorf(InputOrfFile,InputConsFile) :-
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
 	
 	get_annotation_file(consorf_genefinder,  					
-			    [InputOrfFile,InputConsFile], 						
+			    [LostInputOrfFile,LostInputConsFile], 						
 			    [option(parameter_file,ParameterFile)],   
 			    AnnotFile),     													
 
