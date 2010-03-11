@@ -47,6 +47,3 @@ consorf :-
 
 	write('Resulting consorf prediction file'),nl,
 	writeln(AnnotFile).
-
-
->>>>>>> cbd0f4a2ab3732dbdc431ab2a9e9a9d919ea556f
