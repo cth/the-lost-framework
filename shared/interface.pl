@@ -106,6 +106,10 @@ launch_prism_process(PrismPrologFile, Goal) :-
 % Directory and file management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+lost_tmp_directory(TmpDir) :-
+        lost_config(lost_base_directory,BaseDir),!,
+        atom_concat(BaseDir,'/tmp/', TmpDir).
+
 lost_models_directory(ModelsDir) :-
 	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir, '/models/', ModelsDir).
@@ -255,13 +259,15 @@ file_modification_time(File,Timestamp) :-
 	
 % Stupid hack to work around bug that makes bprolog/prism segfault
 file_modification_time(File,time(Year,Mon,Day,Hour,Min,Sec)) :-
+        lost_tmp_directory(TmpDir),
+        atom_concat(TmpDir,'filestat.tmp',TmpFile),
 	atom_concat_list(['stat ', File,
                           '|grep Modify ',
 			  '|cut -d. -f1 ',
 			  '|cut -d" " -f2,3 ',
-			  '> /tmp/filestat.lost'],Cmd),
+			  '> ', TmpFile],Cmd),
 	system(Cmd),
-	readFile('/tmp/filestat.lost',Contents),
+	readFile(TmpFile,Contents),
 	Contents = [
                 Y1,Y2,Y3,Y4,45,Mon1,Mon2,45,Day1,Day2,
                 32,
