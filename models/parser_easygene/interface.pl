@@ -4,5 +4,7 @@
 
 % Generate a file of predicate based on Easygene report.
 
-lost_best_annotation(_ParamFile,[Easygene_Report],OutputFile) :-
+lost_best_annotation([Easygene_Report],Options,OutputFile) :-
+        lost_restricted_option(Options,output_name,OutputName),
+        lost_sequence_from_file(OutputName,OutputFile),
 	eg_parser(Easygene_Report,OutputFile).

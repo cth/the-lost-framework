@@ -7,13 +7,15 @@
 %
 % AUTHORS: Lost Members
 %
-% FUNCTION :
+% FUNCTION:
 %      Manipulation of files: loading information from file, saving file from information
 % 
-% HISTORIC :
+% HISTORIC:
 %  09/03: creation of file         MP
 %
-% REMARKS : any problem, contact {cth,otl,petit}@(without advertissement)ruc.dk
+% REMARKS: any problem, contact {cth,otl,petit}@(without advertissement)ruc.dk
+%
+% MODULS USED: misc_utils.pl
 %
 % NOTE TO THE USER : 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,7 +54,8 @@ sequence_terms_to_data_elements([elem(_,Data)|R1],[Data|R2]) :-
 % Terms in File are composed of List of data.
 % Annotation is a list
 % Options available: Options = [data_position(Position),
-%                               range(Min,Max)]
+%                               all_lists,range(Min,Max)]
+% all_lists does not support a range option
 %%%%%%%%%
 load_annotation_from_file(sequence,Options,File,Annotation) :-
         terms_from_file(File,Terms),
@@ -72,6 +75,8 @@ load_annotation_from_file(sequence,Options,File,Annotation) :-
 % By defaut, annotation of the specific region is 1 and 0 when the region is not specific.
 %
 %%%%%%%%%%%%%%%%%%%%%
+
+
 load_annotation_from_file(db,Options,File,Annotation) :-
         terms_from_file(File,Terms),
         % Technically not necessary since they will be sorted if this
@@ -102,11 +107,31 @@ sequence_terms_to_annotations([],[Data|Rest_Data],Annotation) :-
 % Options Range and Data Position
 sequence_terms_to_annotations(_Options,[],[]) :-
         !.
-     
+
+% Options all_lists (Note: note Range option not support)
+% Options Data Position
+sequence_terms_to_annotations(Options,[Data|Data_Terms],[Sequence_Data|Annotation]) :-
+        member(all_lists,Options),
+        member(data_position(Data_Position),Options),
+        !,
+        Data =.. [_Functor|Rest_Data],
+        nth1(Data_Position,Rest_Data,Sequence_Data),
+        sequence_terms_to_annotations(Options,Data_Terms,Annotation).
+
+% Options all_lists (Note: note Range option not support)
+% Options Data Position
+sequence_terms_to_annotations(Options,[Data|Data_Terms],[Sequence_Data|Annotation]) :-
+        member(all_lists,Options),
+        !,
+        Data =.. [_Functor,_,Sequence_Data|_Rest_Data],
+        sequence_terms_to_annotations(Options,Data_Terms,Annotation).
+
+
+
 % Options Range and Data Position
 sequence_terms_to_annotations(Options,[Data|Data_Terms],Annotation) :-
         member(range(Min,Max),Options),
-        member(range_position(Data_Position),Options),
+        member(data_position(Data_Position),Options),
         !,
         Data =.. [_Functor|Rest_Data],
         nth1(Data_Position,Rest_Data,Sequence_Data),
@@ -123,10 +148,10 @@ sequence_terms_to_annotations(Options,[Data|Data_Terms],Annotation) :-
 
 % Options Data Position only
 sequence_terms_to_annotations(Options,[Data|Data_Terms],Annotation) :-
-        member(range_position(Data_Position),Options),
+        member(data_position(Data_Position),Options),
         !,
         Data =.. [_Functor|Rest_Data],
-        nth1(Data_Position,Rest_Data,Sequence_Data),
+        nth1(Data_Position,Rest_Data,Sequence_Data),   
         sequence_terms_to_annotations(Options,Data_Terms,Rest_Annotation),
         append(Sequence_Data,Rest_Annotation,Annotation).
 
@@ -196,43 +221,39 @@ db_terms_to_annotations(Options,[DB|List_Terms],Annotation) :-
 db_terms_to_annotations(Options,[DB|List_Terms],Annotation) :-
         init_db_terms(Options,Annot_Format,Range_Position),
         get_next_range(Range_Position,DB,Range),
-        db_terms_to_annotations_rec(1,_,Range,Annot_Format,Range_Position,List_Terms,Annotation).
+        db_terms_to_annotations_rec(1,not_range,Range,Annot_Format,Range_Position,List_Terms,Annotation).
 
 
 % Recursive call
 % Options: No range(Min,Max) 
 
 % When no range is specificied, annotation stops when the last Position = Max for the last Range of the db
-db_terms_to_annotations_rec(Position,Var,(_,Max),_Annot_Format,_Range_Position,[],[]) :-
-        var(Var),
+db_terms_to_annotations_rec(Position,not_range,(_,Max),_Annot_Format,_Range_Position,[],[]) :-
         Position > Max,
         !.
 
 % End of a Range, 
-db_terms_to_annotations_rec(Position,Var,(_,Max),Annot_Format,Range_Position,[DB|List_Terms],Annotations) :-
-        var(Var),
+db_terms_to_annotations_rec(Position,not_range,(_Min,Max),Annot_Format,Range_Position,[DB|List_Terms],Annotations) :-
         Position > Max,
         !,
         get_next_range(Range_Position,DB,New_Range),
-        db_terms_to_annotations_rec(Position,Var,New_Range,Annot_Format,Range_Position,List_Terms,Annotations).
+        db_terms_to_annotations_rec(Position,not_range,New_Range,Annot_Format,Range_Position,List_Terms,Annotations).
 
 % Outside a specific Region 
-db_terms_to_annotations_rec(Position,Var,(Min,_Max),(Letter_Out,_Letter_In),Range_Position,List_Terms,[Letter_Out|Annotations]) :-
-        var(Var),
+db_terms_to_annotations_rec(Position,not_range,(Min,Max),(Letter_Out,Letter_In),Range_Position,List_Terms,[Letter_Out|Annotations]) :-
         Position < Min,
         !,
         Next_Position is Position+1,
-        db_terms_to_annotations_rec(Next_Position,Var,(Min,_Max),(Letter_Out,_Letter_In),Range_Position,List_Terms,Annotations).
+        db_terms_to_annotations_rec(Next_Position,not_range,(Min,Max),(Letter_Out,Letter_In),Range_Position,List_Terms,Annotations).
 
 
 % Inside a specific Region 
-db_terms_to_annotations_rec(Position,Var,(Min,Max),(_Letter_Out,Letter_In),Range_Position,List_Terms,[Letter_In|Annotations]) :-
-        var(Var),
+db_terms_to_annotations_rec(Position,not_range,(Min,Max),(Letter_Out,Letter_In),Range_Position,List_Terms,[Letter_In|Annotations]) :-
         Position >= Min,
-        Position >= Max,
+        Position =< Max,
         !,
         Next_Position is Position+1,
-        db_terms_to_annotations_rec(Next_Position,Var,(Min,_Max),(_Letter_Out,_Letter_In),Range_Position,List_Terms,Annotations).
+        db_terms_to_annotations_rec(Next_Position,not_range,(Min,Max),(Letter_Out,Letter_In),Range_Position,List_Terms,Annotations).
 
 
 
@@ -246,6 +267,15 @@ db_terms_to_annotations_rec(Position,range(_Range_Min,Range_Max),_Range,_Annot_F
         !.
 
 
+% End of the list of terms, but outside the specified range
+db_terms_to_annotations_rec(Position,range(Range_Min,Range_Max),(_Min,Max),(Letter_Out,Letter_In),_Range_Position,[],Annotations) :-
+        Position > Max,
+        Position < Range_Min,
+        !,
+        New_Position = Range_Min,
+        db_terms_to_annotations_rec(New_Position,range(Range_Min,Range_Max),(_Min,Max),(Letter_Out,Letter_In),_Range_Position,[],Annotations).
+
+
 % End of the list of terms, but inside the specified range
 db_terms_to_annotations_rec(Position,range(Range_Min,Range_Max),(_Min,Max),(Letter_Out,_Letter_In),_Range_Position,[],[Letter_Out|Annotations]) :-
         Position > Max,
@@ -254,6 +284,7 @@ db_terms_to_annotations_rec(Position,range(Range_Min,Range_Max),(_Min,Max),(Lett
         !,
         New_Position is Position+1,
         db_terms_to_annotations_rec(New_Position,range(Range_Min,Range_Max),(_Min,Max),(Letter_Out,_Letter_In),_Range_Position,[],Annotations).
+
 
 
 % End of a DB range update by a new one
@@ -283,14 +314,14 @@ db_terms_to_annotations_rec(Position,range(Range_Min,Range_Max),(Min,_Max),(Lett
 
 
 % Inside the specified range but inside a specific region
-db_terms_to_annotations_rec(Position,range(Range_Min,Range_Max),(Min,Max),(_Letter_Out,Letter_In),_Range_Position,_List_Terms,[Letter_In|Annotations]) :-
+db_terms_to_annotations_rec(Position,range(Range_Min,Range_Max),(Min,Max),(Letter_Out,Letter_In),Range_Position,List_Terms,[Letter_In|Annotations]) :-
         Position >= Range_Min,
         Position =< Range_Max,
         Position >= Min,
         Position =< Max,
         !,
         New_Position is Position+1,
-        db_terms_to_annotations_rec(New_Position,range(Range_Min,Range_Max),(Min,_Max),(_Letter_Out,Letter_In),_Range_Position,_List_Terms,Annotations).
+        db_terms_to_annotations_rec(New_Position,range(Range_Min,Range_Max),(Min,Max),(Letter_Out,Letter_In),Range_Position,List_Terms,Annotations).
 
 
 %%%
@@ -307,7 +338,11 @@ init_db_terms(Options,Annot_Format,Range_Position) :-
                 Annot_Format = (0,Letter_In)
             )
         ;
-            Annot_Format = (0,1)
+            (member(out_db(Letter_Out),Options) ->
+                Annot_Format = (Letter_Out,1)
+            ;
+                Annot_Format = (0,1)
+            )
         ),
         (member(range_position(Param_Start,Param_End),Options) ->
             Range_Position = (Param_Start,Param_End)
@@ -318,7 +353,7 @@ init_db_terms(Options,Annot_Format,Range_Position) :-
 
 
 % get_next_range(++Range_Position,++DB,--Range)
-get_next_range(Param_Start,Param_End,DB,(Min,Max)) :-
+get_next_range((Param_Start,Param_End),DB,(Min,Max)) :-
         DB =.. [_|List_Params],
         nth1(Param_Start,List_Params,Min),
         nth1(Param_End,List_Params,Max).
