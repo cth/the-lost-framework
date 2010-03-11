@@ -57,7 +57,9 @@ consorf_recursive(end,[],[],--[]).
 consorf_main(OrfInStream,ConsInStream,OutStream):-		  
 		% writeq('read(orfin,OrfTerm)'),nl,
 		read(OrfInStream,OrfTerm),
+		writeln('ok1'),
 		read(ConsInStream,ConsTerm),
+		writeln('ok2'),
 		(
 		OrfTerm \= eof, ConsTerm \= eof ->			  
 			OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,InputOrf|_],
