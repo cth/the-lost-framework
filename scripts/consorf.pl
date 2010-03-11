@@ -1,7 +1,7 @@
 % This example illustrate how we use get_annotation to 
 % have models run a files generated automatically
 
-:- [lost].
+:- ['../lost.pl'].
 
 % Prolog files in the shared directory can be consulted
 % like this from anywhere..
