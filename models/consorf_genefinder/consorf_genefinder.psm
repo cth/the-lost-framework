@@ -62,6 +62,7 @@ consorf_main(OrfInStream,ConsInStream,OutStream):-
 		writeln('ok2'),
 		(
 		OrfTerm \= eof, ConsTerm \= eof ->			  
+			writeln('ok3'),
 			OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,InputOrf|_],
 			ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,InputCons|_],
 			  		  
@@ -72,6 +73,7 @@ consorf_main(OrfInStream,ConsInStream,OutStream):-
         		writeq(OutStream,OutputEntry),writeln(predout,'.'),
 			consorf_main(OrfInStream,ConsInStream,OutStream)
 		;
+			writeln('ok4'),
 			true
 		).
 
