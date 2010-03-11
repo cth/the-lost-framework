@@ -57,19 +57,28 @@ consorf_recursive(end,[],[],--[]).
 consorf_main(OrfInStream,ConsInStream,OutStream):-		  
 		% writeq('read(orfin,OrfTerm)'),nl,
 		read(OrfInStream,OrfTerm),
+		writeln('ok1'),
 		read(ConsInStream,ConsTerm),
+		writeln('ok2'),
 		(
 		OrfTerm \= eof, ConsTerm \= eof ->			  
+			writeln('ok3'),
+			writeln(OrfTerm),
 			OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,InputOrf|_],
+			writeln(ConsTerm),
 			ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,InputCons|_],
-			  		  
+			writeln('ok4'),  		  
         		% Derive an annotation somehow
         		check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),                        
                      	error(errorpair(InputOrf,InputCons))),
+      writeln('ok4'),
          		OutputEntry =.. [consorf_prediction,Id,Start,Stop,Dir,Frm,OutputAnnotation],
+      writeln('ok5'),
         		writeq(OutStream,OutputEntry),writeln(predout,'.'),
+			writeln('ok6'),
 			consorf_main(OrfInStream,ConsInStream,OutStream)
 		;
+			writeln('ok_end'),
 			true
 		).
 
