@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 % This example illustrate how we use get_annotation to 
 % have models run a files generated automatically
 
