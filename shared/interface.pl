@@ -256,6 +256,12 @@ file_modification_time(File,Timestamp) :-
 	lost_annotation_index_file(IndexFile),
 	lost_file_index_filename_member(IndexFile,File),	
 	lost_file_index_get_file_timestamp(IndexFile,File,Timestamp).
+
+% To be tested...
+file_modification_time(File,T) :-
+        lost_option(platform,windows),
+        file_property(modification_time(File),T).
+        
 	
 % Stupid hack to work around bug that makes bprolog/prism segfault
 file_modification_time(File,time(Year,Mon,Day,Hour,Min,Sec)) :-
