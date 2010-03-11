@@ -7,7 +7,7 @@
 % like this from anywhere..
 :- lost_include_api(interface).
 
-consorf(InputOrfFile,InputConsFile) :-
+consorf(InputOrfFile,InputConsFile):-
 	% Unify InputSeqFile to the full filename of tinytest e.g. .../sequences/tinytest.seq
 	lost_sequence_file(InputOrfFile,LostInputOrfFile), % ,ConsFile),
 	lost_sequence_file(InputConsFile,LostInputConsFile),
@@ -21,6 +21,5 @@ consorf(InputOrfFile,InputConsFile) :-
 
 	write('Resulting consorf prediction file'),nl,
 	writeln(AnnotFile).
-
 
 
