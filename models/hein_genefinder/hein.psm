@@ -1,0 +1,174 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  NAME :
+%      hein_supervised.pl
+%
+% VERSION :
+%     1.0
+%
+% AUTHOR : Matthieu Petit
+%
+% FUNCTION :
+%      Hmm of [1]
+% 
+% HISTORIC :
+%  January 09: creation                           MP
+%  March 09: Integration into the Lost toolbox    MP
+%
+% REMARKS : any problem, contact petit@(without advertissement)ruc.dk
+%
+% NOTE TO THE USER: n/a
+%
+% REFERENCE: [1] Using hidden Markov models and observed evolution to annotate
+% viral genomes, S. McCauley  and J. Hein, Bioinformatics, Vol 22, no11, 2006
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% prism -t 10000000000
+
+%:- set_prism_flag(scaling,log_exp).
+%:- set_prism_flag(learn_mode,both).
+:- set_prism_flag(log_viterbi,on).
+        
+
+%-----
+% HMM architecture
+%-----
+
+% HS to HS
+
+% Initialization
+values(begin,['nc']).
+
+% Transitions from Non coding states
+values(trans('nc',no_start),[nc,end]).
+values(trans('nc',start),[nc,s1,end]).
+
+% Transitions from Coding and first codon
+values(trans('s1',no_start),[s2]).
+values(trans('s1',start),[s2,d12]).
+ 
+% Transitions from Coding and second codon
+values(trans('s2',no_start),[s3]).
+values(trans('s2',start),[s3,d31]).
+
+% Transitions from Coding and third codon
+values(trans('s3',no_stop),[s1]).
+values(trans('s3',stop),[nc,s1]).
+ 
+% Transitions from Overlap, first and second codon
+values(trans('d12',no_start),[d23]).
+values(trans('d12',start),[t123,d23]).
+
+% Transitions from Overlap, third and first codon
+values(trans('d31',no_stop),[d12]).
+values(trans('d31',stop),[s2,d12]).
+
+% Transitions from Overlap, second and third codon
+values(trans('d23',no_stop),[d31]). 
+values(trans('d23',stop),[s3,d31]).
+
+% Transitions from Overlap, first second and third codon
+values(trans('t123',no_stop),[t123]).
+values(trans('t123',stop),[t123,d23]).
+
+% HS to emission
+
+values(emit('nc',[]),[a,c,t,g]).
+values(emit('s1',[]),[a,c,t,g]).
+values(emit('s2',[_]),[a,c,t,g]).
+values(emit('s3',[_,_]),[a,c,t,g]).
+values(emit('d12',[_]),[a,c,t,g]).
+values(emit('d23',[_,_]),[a,c,t,g]).
+values(emit('d31',[_,_]),[a,c,t,g]).
+values(emit('t123',[_,_]),[a,c,t,g]).
+
+
+
+%---
+% Process definition
+%---
+
+% Classic implementation
+
+hein(Obs,--States) :-
+        msw(begin,State),
+        hein_rec(State,[],Obs,--States).
+
+
+% rec call
+hein_rec('end',_Past,[],--['end']) :-
+        !.
+
+
+hein_rec(State,Past,[Nuc|Rest_Nuc],--[State|Rest_States]) :-
+        State \= 'end',
+        build_past(State,Past,Past_State),
+        msw(emit(State,Past_State),Nuc),
+        (Past = [_N1,N2,N3] ->
+            Past2 = [N2,N3,Nuc]
+        ;
+            append(Past,[Nuc],Past2)
+        ),
+        start_or_stop(State,Past2,Codon),
+        msw(trans(State,Codon),New_State),
+        hein_rec(New_State,Past2,Rest_Nuc,--Rest_States).
+        
+
+
+
+
+%----
+% Utils
+%----
+start_codon([[a,t,g]]).
+
+stop_codon([[t,a,a],[t,g,a],[t,a,g]]).
+
+
+% start_or_stop
+% Test if Past is a start codon or not
+start_or_stop(State,Past,Codon) :-
+        member(State,['nc','s1','s2','d12']),
+        !,
+        start_codon(List),
+        (member(Past,List) ->
+            Codon = 'start'
+        ;
+            Codon = 'no_start'
+        ).
+        
+
+        
+% Test if Past is a stop codon or not
+start_or_stop(State,Past,Codon) :-
+        member(State,['s3','d31','d23','t123']),
+        !,
+        stop_codon(List),
+        (member(Past,List) ->
+            Codon = 'stop'
+        ;
+            Codon = 'no_stop'
+        ).
+       
+        
+% build_past(++State,++List_Nuc,--List_Nuc_Update)
+% Description: generate a List_Nuc_Update necessary with State for the emission of a nucleotid
+build_past('nc',_Past,[]) :-
+        !.
+
+build_past('s1',_Past,[]) :-
+        !.
+
+build_past('s2',[_N1,_N2,N3],[N3]) :-
+        !.
+
+build_past('d12',[_N1,_N2,N3],[N3]) :-
+        !.
+
+build_past(_,[_N1,N2,N3],[N2,N3]) :-
+        !.
+
+% Debugging
+smsw(In,Out) :-
+        values(In,[Out|_Rest]).
+
+

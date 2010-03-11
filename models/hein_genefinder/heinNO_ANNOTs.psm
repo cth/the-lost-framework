@@ -1,0 +1,104 @@
+:- set_prism_flag(log_viterbi,on).
+
+values(begin, [nc]).
+
+values(trans(nc,no_start), [nc,end]).
+
+values(trans(nc,start), [nc,s1,end]).
+
+values(trans(s1,no_start), [s2]).
+
+values(trans(s1,start), [s2,d12]).
+
+values(trans(s2,no_start), [s3]).
+
+values(trans(s2,start), [s3,d31]).
+
+values(trans(s3,no_stop), [s1]).
+
+values(trans(s3,stop), [nc,s1]).
+
+values(trans(d12,no_start), [d23]).
+
+values(trans(d12,start), [t123,d23]).
+
+values(trans(d31,no_stop), [d12]).
+
+values(trans(d31,stop), [s2,d12]).
+
+values(trans(d23,no_stop), [d31]).
+
+values(trans(d23,stop), [s3,d31]).
+
+values(trans(t123,no_stop), [t123]).
+
+values(trans(t123,stop), [t123,d23]).
+
+values(emit(nc,[]), [a,c,t,g]).
+
+values(emit(s1,[]), [a,c,t,g]).
+
+values(emit(s2,[_]), [a,c,t,g]).
+
+values(emit(s3,[_,_]), [a,c,t,g]).
+
+values(emit(d12,[_]), [a,c,t,g]).
+
+values(emit(d23,[_,_]), [a,c,t,g]).
+
+values(emit(d31,[_,_]), [a,c,t,g]).
+
+values(emit(t123,[_,_]), [a,c,t,g]).
+
+hein(A) :-
+        msw(begin, B),
+        hein_rec(B, [], A).
+
+hein_rec(end, _, []) :- !.
+
+hein_rec(A, B, [C|D]) :-
+        A\=end,
+        build_past(A, B, E),
+        msw(emit(A,E), C),
+        (   B=[_,F,G] ->
+            H=[F,G,C]
+        ;   append(B, [C], H)
+        ),
+        start_or_stop(A, H, I),
+        msw(trans(A,I), J),
+        hein_rec(J, H, D).
+
+start_codon([[a,t,g]]).
+
+stop_codon([[t,a,a],[t,g,a],[t,a,g]]).
+
+start_or_stop(A, B, C) :-
+        member(A, [nc,s1,s2,d12]), !,
+        start_codon(D),
+        (   member(B, D) ->
+            C=start
+        ;   C=no_start
+        ).
+
+start_or_stop(A, B, C) :-
+        member(A, [s3,d31,d23,t123]), !,
+        stop_codon(D),
+        (   member(B, D) ->
+            C=stop
+        ;   C=no_stop
+        ).
+
+build_past(nc, _, []) :- !.
+
+build_past(s1, _, []) :- !.
+
+build_past(s2, [_,_,A], [A]) :- !.
+
+build_past(d12, [_,_,A], [A]) :- !.
+
+build_past(_, [_,A,B], [A,B]) :- !.
+
+smsw(A, B) :-
+        values(A, [B|_]).
+
+
