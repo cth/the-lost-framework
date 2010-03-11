@@ -7,10 +7,10 @@
 % like this from anywhere..
 :- lost_include_api(interface).
 
-test_consorf :-
+consorf(InputOrfFile,InputConsFile) :-
 	% Unify InputSeqFile to the full filename of tinytest e.g. .../sequences/tinytest.seq
-	lost_sequence_file('u00096-20k_cnk_+1_tx0_cns',InputConsFile),
-	lost_sequence_file('u00096-20k_orf_+1',InputOrfFile), % ,ConsFile),
+	lost_sequence_file(InputOrfFile,LostInputOrfFile), % ,ConsFile),
+	lost_sequence_file(InputConsFile,LostInputConsFile),
 	% Parameter id "sample2" resolves to models/consorf_genefinder/parameters/consorf_genefinder.prb
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
 	
@@ -19,11 +19,7 @@ test_consorf :-
 			    [option(parameter_file,ParameterFile)],   
 			    AnnotFile),     													
 
-	open(AnnotFile,read,Annots,[alias(annots)]),
-	read(Annots,Term),
-	write('Resulting annotation sequence:'),nl,
-	writeln(Term),
-	close(Annots)
-	.
+	write('Resulting consorf prediction file'),nl,
+	writeln(AnnotFile).
 
 
