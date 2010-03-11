@@ -7,25 +7,32 @@
 % like this from anywhere..
 :- lost_include_api(interface).
 
-run_models_test :-
-	% Unify InputSeqFile to the full filename of tinytest e.g. .../sequences/tinytest.seq
-	lost_sequence_file(tinytest,InputSeqFile),
+run_model1(ResultFile) :-
+	lost_sequence_file(tinytest,TinySequence),
+	lost_model_parameter_file(sample_model1, test, Model1ParamFile),
+	get_annotation_file(sample_model1,
+			    [TinySequence],
+			    [option(parameter_file,Model1ParamFile)],
+			    ResultFile).
 
-	% Parameter id "sample2" resolves to models/sample_model2/parameters/sample2.prb
+run_model2(ResultFile) :-
+	run_model1(AnnotModel1),
+	lost_sequence_file(tinytest,TinySequence),
 	lost_model_parameter_file(sample_model2, sample2, ParameterFile),
-	
-	get_annotation_file(sample_model2,  % Name of model (resolves to models/sample_model2/)
-			    [InputSeqFile], % A list of input files
-			    [option(parameter_file,ParameterFile)],             % Extra options
-			    AnnotFile),     % AnnotFile is unified to the name of the file that  annotation is written to
+	get_annotation_file(sample_model2,
+			    [TinySequence,AnnotModel1], 
+			    [option(parameter_file,ParameterFile)],
+			    ResultFile).
 
-	% Load the sequence (AnnotSeq) contained in the file AnnotFile 
-	load_sequence_list_from_file(AnnotFile,AnnotSeq),
-	
+test_run :-
+	run_model2(AnnotFile),
+	write('Resulting annotation sequence file:'),nl,
+	write(AnnotFile),nl,
+	load_annotation_from_file(sequence,[data_position(4)],AnnotFile,AnnotSeq),
 	write('Resulting annotation sequence:'),nl,
 	write(AnnotSeq),nl.
 
-train_model_test :-
+test_train :-
 	lost_sequence_file(tinytest,InputSeqFile),
 	train_model(sample_model1,
 		    [InputSeqFile],
@@ -33,5 +40,3 @@ train_model_test :-
 		    ModelParameterFile),
 	write('Resulting parameter file:'),nl,
 	write(ModelParameterFile),nl.
-	
-
