@@ -162,8 +162,8 @@ readline(Stream,CodeList):-
               CodeList=[]
           ;
               read_rest_of_line(Stream,List),
-              CodeList = [Code|List]
-          ).
+             CodeList = [Code|List]
+         ).
 
 % Recursiv call
 
