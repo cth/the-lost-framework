@@ -1,5 +1,18 @@
 %========================================================
-% gene-annotator based on two state paired HMM
+% Name: 				consorf_genefinder.psm
+% Purpose: 			genefinding model for the LoSt framework
+%	Author:				Ole Torp Lassen					
+% Version:			1
+% Last revised:	11.03 2001		
+%========================================================
+% Main predicate: consorf_main/3
+%			Arg1(input) is OrfAnnotations
+%			Arg2(input) is conservation annotations
+%			Arg3(output)is prediction annotations 
+%========================================================
+% Basic 2-state paired HMM taking into regard conservation and orf-annotations
+% responsible for sequence modelling
+%  		driving predictate consorf/3
 %========================================================
 % states : 
 %			begin
@@ -7,9 +20,8 @@
 %			noncoding (n) annotated 0
 %			end
 % emission sequences:
-%			orf- annotations, alphabet={0,1}
+%			orf-annotations, 	alphabet={.,<,-,>}
 %			conservation, 		alphabet={0,1,2,3,4,5,6,7,8}
-%			HMM taking into regard conservation and orf-annotations
 %=========================================================
 :- set_prism_flag(learn_mode,both).
 :- set_prism_flag(log_viterbi,on).
@@ -24,21 +36,47 @@ values(emit(_),[
 									('>',0),		('>',1),		('>',2),		('>',3),		('>',4),		('>',5),		('>',6),		('>',7),		('>',8)
 								]).
 								
-consorf(O,C,--A):-
-	msw(begin,First),
-	consorf_recursive(First,O,C,--A).
+consorf(OrfAnnots,ConsAnnots,--Predictions):-
+	msw(begin,FirstState),
+	consorf_recursive(FirstState,OrfAnnots,ConsAnnots,--Predictions).
 	
-consorf_recursive(c,[O|O2],[C|C2],--[1|A2]):-
-	msw(emit(c),(O,C)),
-	msw(trans(c),Next),
-	consorf_recursive(Next, O2, C2, --A2).
+consorf_recursive(c,[OrfAnnot|OrfAnnots],[ConsAnnot|ConsAnnots],--[1|Predictions]):-
+	msw(emit(c),(OrfAnnot,ConsAnnots)),
+	msw(trans(c),NextState),
+	consorf_recursive(NextState, OrfAnnots, ConsAnnots, --Predictions).
 	
-consorf_recursive(n,[O|O2],[C|C2],--[0|A2]):-
-	msw(emit(n),(O,C)),
-	msw(trans(n),Next),
-	consorf_recursive(Next, O2, C2, --A2).
+consorf_recursive(n,[OrfAnnot|OrfAnnots],[ConsAnnot|ConsAnnots],--[0|Predictions]):-
+	msw(emit(n),(OrfAnnot,ConsAnnot)),
+	msw(trans(n),NextState),
+	consorf_recursive(NextState, OrfAnnots, ConsAnnots, --Predictions).
 	
 consorf_recursive(end,[],[],--[]).
+/**************************************************************************************/
+% Called from interface.pl
+%
+consorf_main(OrfInStream,ConsInStream,OutStream):-		  
+			  % writeq('read(orfin,OrfTerm)'),nl,
+			  read(OrfInStream,OrfTerm),
+			  read(ConsInStream,ConsTerm),
+			  (
+			  OrfTerm \= eof, ConsTerm \= eof ->			  
+			  	OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,InputOrf|_],
+			  	ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,InputCons|_],
+			  		  
+        	% Derive an annotation somehow
+        	check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),                        
+                        error(viterbiAnnot_says_no_no_no)),
+         	OutputEntry =.. [consorf_prediction,Id,Start,Stop,Dir,Frm,OutputAnnotation],
+        	writeq(OutStream,OutputEntry),writeln(predout,'.'),
+					prediction_routine
+				;
+					true
+				).
+
+
+
+
+
 
 
 /* 						can be learned as follows : 
