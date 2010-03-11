@@ -10,7 +10,7 @@ lost_include_api(Name) :-
 	atom_concat(Basedir,'shared/',SharedDir),
 	atom_concat(SharedDir,Name,DirAndName),
 	atom_concat(DirAndName,'.pl',FullName),
-	cl(FullName).
+	consult(FullName).
 
 
 % Basic rule to glue in other APIs
@@ -19,4 +19,4 @@ lost_include_script(Name) :-
 	atom_concat(Basedir,'scripts/',ScriptDir),
 	atom_concat(ScriptDir,Name,DirAndName),
 	atom_concat(DirAndName,'.pl',FullName),
-	cl(FullName).
+	consult(FullName).
