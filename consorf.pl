@@ -20,6 +20,6 @@ consorf :-
 			    AnnotFile),     													
 
 	write('Resulting consorf prediction file'),nl,
-	writeln(Annotfile).
+	writeln(AnnotFile).
 
 
