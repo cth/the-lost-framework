@@ -151,7 +151,7 @@ sequence_terms_to_annotations(Options,[Data|Data_Terms],Annotation) :-
         member(data_position(Data_Position),Options),
         !,
         Data =.. [_Functor|Rest_Data],
-        nth1(Data_Position,Rest_Data,Sequence_Data),
+        nth1(Data_Position,Rest_Data,Sequence_Data),   
         sequence_terms_to_annotations(Options,Data_Terms,Rest_Annotation),
         append(Sequence_Data,Rest_Annotation,Annotation).
 
