@@ -1,7 +1,6 @@
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
-
 % Simple Prolog debugging trick
 :- op(800, fx,'>').
 '>'(X) :- writeq(X), write('\n'), call(X).
@@ -23,7 +22,8 @@ get_annotation_file(Model, Inputs, Options, Filename) :-
 	% Check if a result allready exists:
 	lost_annotation_index_file(AnnotIndex),
 	lost_file_index_get_filename(AnnotIndex,Model,Inputs,Options,Filename),
-	(file_exists(Filename) ->
+	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
+	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
 	 term2atom(lost_best_annotation(Inputs,Options,Filename),Goal),
@@ -167,7 +167,6 @@ lost_file_index_get_filename(IndexFile,Model,InputFiles,Options,Filename) :-
 	 true
 	;
 	 % create and reserver new filename:
-	 write(lost_file_index_next_available_index(Terms, Index)),nl,
 	 lost_file_index_next_available_index(Terms, Index),
 	 dirname(IndexFile,IndexDir),
 	 term2atom(Index,IndexAtom),
@@ -203,10 +202,16 @@ lost_file_index_get_filename_from_terms([_|Rest],Model,InputFiles,Options,Filena
 	lost_file_index_get_filename_from_terms(Rest,Model,InputFiles,Options,Filename).
 
 % Get a timestamp corresponding to the current time
-lost_file_index_timestamp(timestamp(Year,Mon,Day,Hour,Min,Sec)) :-
+lost_file_index_timestamp(time(Year,Mon,Day,Hour,Min,Sec)) :-
 	date(Year,Mon,Day),
 	time(Hour,Min,Sec).
 
+lost_file_index_get_file_timestamp(IndexFile,Filename,Timestamp) :-
+	terms_from_file(IndexFile,Terms),
+	TermMatcher =.. [ fileid,  _Index, TimeStampAtom, Filename, _Model, _InputFiles, _Options ],
+	member(TermMatcher,Terms),
+	parse_atom(TimeStampAtom,Timestamp).
+				   
 % Update the timestamp associated with Filename to a current timestamp
 % This should be used if the file is (re) generated
 lost_file_index_update_file_timestamp(IndexFile,Filename) :-
@@ -217,8 +222,18 @@ lost_file_index_update_file_timestamp(IndexFile,Filename) :-
 	subtract(Terms,[OldTermMatcher],TermsMinusOld),
 	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, InputFiles, Options ],
 	append(TermsMinusOld,[NewTerm],UpdatedTerms),
-	nl,nl,writeq(UpdatedTerms),nl,nl,
 	terms_to_file(IndexFile,UpdatedTerms).
+
+lost_file_index_filename_member(IndexFile, Filename) :-
+	terms_from_file(IndexFile,Terms),
+	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Model, _InputFiles, _Options ],
+	member(TermMatcher,Terms).
+
+lost_file_index_inputfiles(IndexFile,Filename,InputFiles) :-
+	terms_from_file(IndexFile,Terms),
+	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Model, InputFiles, _Options ],
+	member(TermMatcher,Terms).
+	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost model interface analysis
@@ -228,4 +243,68 @@ lost_interface_supports(Model,Functor,Arity) :-
 	lost_model_interface_file(Model,ModelFile),
 	terms_from_file(ModelFile, Terms),
 	terms_has_rule_with_head(Terms,Functor,Arity).
-			
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Time stamp checking
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+file_modification_time(File,Timestamp) :-
+	lost_annotation_index_file(IndexFile),
+	lost_file_index_filename_member(IndexFile,File),	
+	lost_file_index_get_file_timestamp(IndexFile,File,Timestamp).
+	
+% Stupid hack to work around bug that makes bprolog/prism segfault
+file_modification_time(File,time(Year,Mon,Day,Hour,Min,Sec)) :-
+	atom_concat_list(['stat ', File,
+                          '|grep Modify ',
+			  '|cut -d. -f1 ',
+			  '|cut -d" " -f2,3 ',
+			  '> /tmp/filestat.lost'],Cmd),
+	system(Cmd),
+	readFile('/tmp/filestat.lost',Contents),
+	Contents = [
+                Y1,Y2,Y3,Y4,45,Mon1,Mon2,45,Day1,Day2,
+                32,
+                H1,H2,58,M1,M2,58,S1,S2|_],
+	atom_codes(YearA,[Y1,Y2,Y3,Y4]),
+        parse_atom(YearA,Year),
+	atom_codes(MonA,[Mon1,Mon2]),  parse_atom(MonA,Mon),
+	atom_codes(DayA,[Day1,Day2]),  parse_atom(DayA,Day),
+	atom_codes(HourA,[H1,H2]), parse_atom(HourA,Hour),
+	atom_codes(MinA,[M1,M2]),  parse_atom(MinA,Min),
+        atom_codes(SecA,[S1,S2]),  parse_atom(SecA,Sec).
+
+% True if all Files and dependency files of those file are no
+% older than the time given as second argument.
+% E.g. if the file is a generated annotation file, then we must check whether
+% this file has depends on other files which may be outdated
+rec_files_older_than_timestamp([],_).
+
+rec_files_older_than_timestamp([File|FilesRest],TS1) :-
+	timestamp_to_list(TS1,TS1List),
+	lost_annotation_index_file(IndexFile),
+	lost_file_index_filename_member(IndexFile,File),
+	file_modification_time(File,TS2),
+	timestamp_to_list(TS2,TS2List),
+	timestamp_list_after(TS1List,TS2List),
+	lost_file_index_inputfiles(IndexFile,File,DependencyFiles),
+	rec_files_older_than_timestamp(FilesRest,TS1),
+	rec_files_older_than_timestamp(DependencyFiles,TS1).
+
+rec_files_older_than_timestamp([File|FilesRest],TS1) :-
+	timestamp_to_list(TS1,TS1List),
+	file_modification_time(File,TS2),
+	timestamp_to_list(TS2,TS2List),
+	timestamp_list_after(TS1List,TS2List),	
+	rec_files_older_than_timestamp(FilesRest,TS1).
+
+% True if timestamp list in first argument is after (or same)
+% as timestamp list in second argument
+timestamp_list_after([],[]).
+timestamp_list_after([Elem1|_],[Elem2|_]) :-
+	Elem1 > Elem2.
+timestamp_list_after([Elem1|Rest1],[Elem2|Rest2]) :-
+	Elem1 == Elem2,	
+	timestamp_list_after(Rest1,Rest2).
+
+timestamp_to_list(time(Year,Mon,Day,Hour,Min,Sec), [Year,Mon,Day,Hour,Min,Sec]).
