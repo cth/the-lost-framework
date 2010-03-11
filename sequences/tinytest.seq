@@ -1,5 +1,5 @@
 % A tiny test sequence.
-elem(1,a).
-elem(2,b).
-elem(3,b).
-elem(4,a).
+data(tinyseq,1,4,[a,b,b,a]).
+data(tineseq,5,6,[a,a]).
+data(tinyseq,7,10,[b,b,b,b]).
+

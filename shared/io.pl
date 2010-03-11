@@ -20,29 +20,6 @@
 % NOTE TO THE USER : 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%--------------------------------
-% Loading information from file %
-%--------------------------------
-
-% Asssuming that the file contains facts on the form:
-% elem(1,...), elem(2,...) etc.
-% Remarks: old predicate, same result than a load_annotation_from_file(sequence,[],....)
-
-load_sequence_list_from_file(File,Sequence) :-
-	terms_from_file(File,Terms),
-	% Technically not necessary since they will be sorted if this
-        % interface is used
-	sort('=<',Terms,SortedTerms), 
-	sequence_terms_to_data_elements(SortedTerms,Sequence).
-
-
-% sequence_terms_to_data_elements(++ Data_Terms,--Sequence_Data)
-
-sequence_terms_to_data_elements([],[]).
-sequence_terms_to_data_elements([elem(_,Data)|R1],[Data|R2]) :-
-	sequence_terms_to_data_elements(R1,R2).
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % load_annotation_from_file(++Type_Info,++Options,++File,--Annotation)
@@ -256,8 +233,6 @@ db_terms_to_annotations_rec(Position,not_range,(Min,Max),(Letter_Out,Letter_In),
         db_terms_to_annotations_rec(Next_Position,not_range,(Min,Max),(Letter_Out,Letter_In),Range_Position,List_Terms,Annotations).
 
 
-
-
 % Recursive call
 % Options: range(Range_Min,Range_Max) 
 
@@ -372,18 +347,46 @@ update_position_jump(_Range_Min,(_Min,Max),New_Position) :-
 
 
 
-
 %--------------------------------
 % Saving information from file  %
 %--------------------------------
 
 % save_sequence_list_to_file(++File,--Sequence)
 
+save_annotation_to_sequence_file(KeyIndex,ChunkSize,Annotation,File) :-
+	split_list_in_chunks(ChunkSize,Annotation,DataChunks),
+	create_sequence_terms(KeyIndex,1,DataChunks,Terms),
+	terms_to_file(File,Terms).
+
+create_sequence_terms(_,_,[],[]).
+
+create_sequence_terms(KeyIndex,StartPos,[Chunk|ChunksRest],[Term|TermsRest]) :-
+	length(Chunk,ChunkLen),
+	EndPos is StartPos + ChunkLen - 1,
+	NextStartPos is EndPos + 1,
+	Term =.. [ data, KeyIndex, StartPos, EndPos, Chunk ],
+	create_sequence_terms(KeyIndex,NextStartPos,ChunksRest,TermsRest).
+
+split_list_in_chunks(_,[],[]).
+
+split_list_in_chunks(ChunkSize, List, [Chunk|ChunksRest]) :-
+	nfirst_list(ChunkSize,List,Chunk,RestList),
+	!,
+	split_list_in_chunks(ChunkSize,RestList,ChunksRest).
+
+split_list_in_chunks(ChunkSize, List, [List]) :-
+	length(List,ListLength),
+	ListLength < ChunkSize.
+
+nfirst_list(0,L,[],L).
+
+nfirst_list(N,[E|List],[E|NFirstList],RestList) :-
+	N1 is N - 1,
+	nfirst_list(N1,List,NFirstList,RestList).
+
 save_sequence_list_to_file(File,Sequence) :-
 	data_elements_to_sequence_terms(Sequence,Terms),
 	terms_to_file(File,Terms).
-
-
 
 data_elements_to_sequence_terms(Data,Terms) :-
 	data_elements_to_sequence_terms(1,Data,Terms).
@@ -394,4 +397,34 @@ data_elements_to_sequence_terms(Pos,[Data|R1],[elem(Pos,Data)|R2]) :-
 	data_elements_to_sequence_terms(NextPos,R1,R2).
 
 
+% Read all Terms from File
+terms_from_file(File, Terms) :-
+	open(File, read, Stream),
+	ground(Stream),
+	collect_stream_terms(Stream,Terms),
+	close(Stream).
+
+% Write a list of Terms to a File
+terms_to_file(File,Terms) :-
+	open(File,write,Stream),
+	ground(Stream),
+	write_terms_to_stream(Stream,Terms),
+	close(Stream).
+
+write_terms_to_stream(_,[]).
+write_terms_to_stream(Stream,[Term|Rest]) :-
+	writeq(Stream,Term),
+	write(Stream,'.\n'),
+	write_terms_to_stream(Stream,Rest).
+
+
+% Create list of Rules found in Stream
+collect_stream_terms(Stream, Rules) :-
+	read(Stream, T),
+	((T == end_of_file) ->
+		Rules = []
+	;
+		collect_stream_terms(Stream,Rest),
+		append([T],Rest,Rules)
+	).
 
