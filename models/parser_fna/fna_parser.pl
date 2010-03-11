@@ -33,7 +33,7 @@ parser_fna(Options,FNA_File,GBK_File,Output_File) :-
         close(GBK_Stream),
         open(FNA_File,read,FNA_Stream),
         open(Output_File,write,Output_Stream),
-        read_line(FNA_Stream,First_Line),
+        readline(FNA_Stream,First_Line),
         atom_codes(Comment,[37|First_Line]),
         write(Output_Stream,Comment),
         nl(Output_Stream),
@@ -45,7 +45,7 @@ parser_fna(Options,FNA_File,GBK_File,Output_File) :-
 parser_fna(Options,FNA_File,Genbank_Key,N_BP,Output_File) :-
         open(FNA_File,read,FNA_Stream),
         open(Output_File,write,Output_Stream),
-        read_line(FNA_Stream,First_Line),
+        readline(FNA_Stream,First_Line),
         atom_codes(Comment,[37|First_Line]),
         write(Output_Stream,Comment),
         nl(Output_Stream),
