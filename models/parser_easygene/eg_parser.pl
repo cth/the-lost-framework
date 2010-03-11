@@ -25,15 +25,15 @@
 %          
 % NOTE : n/a
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%:-use_module(library(lists)).
 
 %%%%%%%%
 % eg_parser(++EG_Input_File,--EG_Output_File)
 % Description: see description of the file header
 %%%%%%%%
 eg_parser(EG_Input_File,EG_Output_File):-
-	open(EG_Input_File, read, Input_Stream,[alias(eg_in)]),
-	open(EG_Output_File, write, Output_Stream,[alias(eg_out)]),
+	open(EG_Input_File, read, Input_Stream),
+	open(EG_Output_File, write, Output_Stream),
         set_output(Output_Stream),
         readline(Input_Stream,First_Line),
 	parser_eg(Input_Stream,First_Line),
@@ -73,8 +73,12 @@ parser_eg(Input_Stream,Entry_Codes):-
 
 
 
+
 % List of Tokens to prolog fact
-fact_building_eg([_SeqName,_Model,_Feature,Start,End,_Score,Dir,_Code,_StartC,_Odds]):-
+fact_building_eg(List):-
+        nth1(4,List,Start),
+        nth1(5,List,End),
+        nth1(7,List,Dir),
         Temp is Start mod 3,
         (Temp = 0 ->
             Frm = 3
