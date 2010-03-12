@@ -5,7 +5,7 @@
 % This is a tool to calculate the accuracy of gene finder predictions
 % against a reference annotation.
 % It expects to find facts representing the predictions and the
-% reference annation. These facts are expected to be on the form:
+% reference annation. These facts are expected to be on the form
 % functor(From, To, Strand, ReadingFrame, Name).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -347,11 +347,11 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 % Temporary hack to deal with database format
 annotation(Type, From, To, Strand, ReadingFrame, Name) :-
 	Goal =.. [ Type, From, To, Strand, ReadingFrame, Name ],
-	call(Goal).
+	catch(call(Goal),_,fail).
 
 annotation(Type, From, To, Strand, ReadingFrame, Name) :-
 	Goal =.. [ Type, From, To, Strand, ReadingFrame, Name, _ ],
-	call(Goal).
+	catch(call(Goal),_,fail).
 
 annotations_in_range(Type, From, To, Strand, ReadingFrame, Name, RangeMin, RangeMax) :-
 	annotation(Type,From,To,Strand,ReadingFrame,Name),
@@ -401,3 +401,87 @@ reading_frame(3).
 
 strand_reading_frame_combinations(Combinations) :-
 	findall([S,R], (strand(S),reading_frame(R)), Combinations).
+
+% map applies to rule F(-,+) to each element of list
+map(_,[],[]).
+map(F, [L|Lists], [Out|OutRest]) :-
+	Goal =.. [ F, L, Out], 
+	call(Goal),
+	map(F,Lists,OutRest).
+
+
+% Advanced map utility
+multi_map(_,[],[]).
+multi_map(F, [L|Lists], [Out|OutRest]) :-
+	F =.. FList1,
+	replace(input,L,FList1,FList2),
+	replace(output,Out,FList2,FList3),
+	NewF =.. FList3,
+	call(NewF),
+	multi_map(F,Lists,OutRest).
+
+
+replace(_,_,[],[]).
+replace(Symbol, Replacement, [Symbol|InListRest], [Replacement|OutListRest]) :-
+	replace(Symbol,Replacement, InListRest,OutListRest).
+replace(Symbol, Replacement, [Elem|InListRest], [Elem|OutListRest]) :-
+	Symbol \= Elem,
+	replace(Symbol,Replacement,InListRest,OutListRest).
+
+
+rm_seq_elems([],[]).
+rm_seq_elems([[AnnotType,From,To,_]|Rest1],[[AnnotType,From,To]|Rest2]) :-
+	rm_seq_elems(Rest1,Rest2).
+
+inlists_nth0([], _, []).
+inlists_nth0([List|RestLists], N, [Elem|RestElems]) :-
+	nth0(N,List,Elem),
+	inlists_nth0(RestLists,RestElems).
+		
+% Sums the number of positions in a list of ranges
+sum_range_list([],0).
+sum_range_list([[From,To]|Rest],Sum) :-
+	LocalSum is To - From + 1,
+	sum_range_list(Rest, RestSum),
+	Sum is LocalSum + RestSum.
+
+% Find minimum element
+min(A,A,A).
+min(A,B,A) :- A < B.
+min(A,B,B) :- B < A.
+
+% Find maximum of two elements
+max(A,A,A).
+max(A,B,A) :- B < A.
+max(A,B,B) :- A < B.
+
+% Find maximum of list
+list_max([E],E).
+list_max([E|R],Max) :-
+	list_max(R,MR),
+	((E > MR) -> Max = E ; Max = MR).
+
+% Append variant which permit atom elements as first/second argument
+flexible_append(A,B,[A,B]) :-
+	atom(A),atom(B).
+flexible_append(A,B,[A|B]) :-
+	atom(A).
+flexible_append(A,B,C) :-
+	atom(B),
+	append(A,[B],C).
+
+% Merge list of lists into one long list, e.g.
+% flatten_once([[a,b],[c,d],[e,f]],E) => E = [a, b, c, d, e, f].
+flatten_once([],[]).
+flatten_once([E1|Rest],Out) :-
+	is_list(E1),
+	append(E1,FlatRest,Out),	
+	flatten_once(Rest,FlatRest).
+
+% Determine if two ranges overlap
+overlaps(Start1,End1, Start2,_) :-
+        Start1 =< Start2,
+        End1 >= Start2.
+overlaps(Start1,_, Start2,End2) :-
+        Start2 =< Start1,
+        End2 >= Start1.

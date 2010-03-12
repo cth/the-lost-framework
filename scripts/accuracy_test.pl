@@ -1,11 +1,17 @@
 :- ['../lost.pl'].
 :- lost_include_api(interface).
 
-test :-
-	lost_sequence_file(gb_fragment,ReferenceFile),	
-	lost_sequence_file(eg_fragment,PredictionFile),
+genbank_database_file(PTTName,DatabaseFile) :-
+	lost_sequence_file(PTTName,PTTFile),
+	get_annotation_file(parser_ptt,[PTTFile],[],DatabaseFile).
 
-	write('here'),
+easygene_database_file(EgName,DatabaseFile) :-
+	lost_sequence_file(EgName,InputFile),
+        get_annotation_file(parser_easygene,[InputFile],[],DatabaseFile).
+
+test :-
+	genbank_database_file('U00096_ptt',ReferenceFile),
+	easygene_database_file('U00096_ptt',PredictionFile),
 
 	get_annotation_file(accuracy_report,
 			    [ReferenceFile,PredictionFile],
@@ -13,7 +19,7 @@ test :-
 			     option(reference_functor,gb),
 			     option(prediction_functor,eg),
 			     option(start,1),
-			     option(end,20000)
+			     option(end,100000)
 			    ],
 			    OutputFile),
 

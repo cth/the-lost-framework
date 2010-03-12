@@ -264,6 +264,7 @@ file_modification_time(File,T) :-
 
 % Stupid hack to work around bug that makes bprolog/prism segfault
 file_modification_time(File,time(Year,Mon,Day,Hour,Min,Sec)) :-
+	lost_config(platform,unix),
         lost_tmp_directory(TmpDir),
         atom_concat(TmpDir,'filestat.tmp',TmpFile),
 	atom_concat_list(['stat ', File,
