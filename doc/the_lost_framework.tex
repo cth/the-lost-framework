@@ -30,6 +30,17 @@
 
 \chapter{Setting up the lost framework}
 
+\section{Obtaining a copy of the lost framework}
+
+The lost framework can be obtained using \emph{git} if you have an account on the
+\emph{mox} server. Assuming that you have \emph{git} installed on your
+local machine, to get a copy you need to clone the central repository:
+\begin{verbatim}
+$ git clone ssh://your-username@mox.ruc.dk/var/git/lost.git
+\end{verbatim}
+
+\section{Configuring your copy of the lost framework}
+
 After obtaining the lost framework, for instance by checking it out
 from git, a little configuration is needed to get started.
 
@@ -37,80 +48,134 @@ The file \texttt{lost.pl} in the top-most directory of the copy
 of the framework. In the beginning of the file there are two 
 important facts you may need to change,
 \begin{verbatim}
-lost_config(prism_command,'/opt/prism/bin/prism').
-lost_config(lost_base_directory, '/home/cth/code/lost/').
+lost_config(prism_command,'prism').
+lost_config(lost_base_directory, '/change/to/local/lost/dir/').
+lost_config(platform, windows_or_unix).
 \end{verbatim}
 
 The option \texttt{prism\_command} should point to a the main PRISM executable
-binary. \\
+binary. If it is in your  \emph{\$PATH} then you can usually leave it unchanged.\\
 \texttt{lost\_base\_directory} should be the full path of the
 directory (including trailing /) containing the \texttt{lost.pl}
-file. 
+file.  Note, that even on windows platforms you should use forward
+slash rather than backslash in the path specification. The value of
+\texttt{platform} should be either \texttt{windows} or \texttt{unix}. 
 
 To get started you can examine and run \texttt{example.pl} which 
-is also located in the top-most directory.
+is located in the in the \texttt{\$LOST/scripts/} directory.
+
+\chapter{Creating lost models}
 
 \section{Lost model conventions}\label{sec:lost_model_conventions}
 
 Each model is located in its own subdirectory of the of the
-\texttt{\{lost\}/models/} directory. So for instance, the sample model
-called \texttt{sample\_model1} is located in
-\texttt{\{lost\}/models/sample\_model1/}.
+\texttt{\{lost\}/models/} directory, henceforth called \texttt{\$MODELS}. 
+So for instance, the sample model called \texttt{sample\_model1} is located in
+\texttt{\{lost\}/models/sample\_model1/}. We will refer to directory 
+as \texttt{\$MODEL}.
 
 To integrate into the framework each model must provide a file called
 \texttt{interface.pl}, which must be located in the same directory as
 the model. \texttt{interface.pl} can then implement various predefined
-predicates which serves as an entry poinit of using the
-model. Currently, the only supported predicate is
-\texttt{lost\_best\_annotation/3}.
+predicates which serves as an entry point of using the
+model. 
 
-In addition models are expected to store switch probabilities the
-subdirectory \texttt{parameters/} of the model directory. Switch
-parameter files should be given the extension \texttt{.prb}.
+The supported interface predicates which a model may provide are:
+\begin{itemize}
+\item \texttt{lost\_best\_annotation/3}.
+\item \texttt{lost\_learn/3}
+\end{itemize}
 
+By convention models are expected to store switch probabilities the
+directory\texttt{\$MODEL/parameters/}. Switch parameter files should
+be given the extension \texttt{.prb}.
 
+Models are allowed to consult files with paths relative to the
+\texttt{\$MODEL} directory, but should under normal circumstances
+only directly consult file which are located in the 
+\texttt{\$MODEL} directory or a subdirectory of it.
+The exception to this is the file \texttt{\$LOST/lost.pl}. Consulting
+this file gives access to all the shared APIs. 
 
-\subsection{Model interface predicates}
+\subsection{Model interface predicatnes}
 
 This section describes predicates, that when implemented by 
 the \texttt{interface.pl} provided by a model, allows the 
 model provide functionalities to the  general framework.
 
 \noindent
-\paragraph{lost\_best\_annotation(+ParameterFile,+InputFiles,+OutputFilename)}
+\paragraph{lost\_best\_annotation(+InputFileNames,+Options,+OutputFilename)}
 
 The framework calls this predicate to obtain a ``best annotation''
 from the model. The model is free to provide this annotation in
 any way it sees fit. It is the models responsibility to save the
-annotation to \texttt{OutputFilename}.
+annotation to \texttt{OutputFilename}, before the completion of 
+\texttt{lost\_best\_annotation}. 
+
+\texttt{InputFileNames}: Is a list of filenames (with absolute paths),
+each containing an input to the model. There is no restriction on the 
+format of the files and the model is expected to be able to parse
+then. Predicates to parse a wide range of fileformats are supplied 
+in the \emph{io} API (see section \ref{sec:io}). 
+
+\texttt{Options}: Is a list of facts on the form,
+\texttt{option(Key,Value)}. This list is use to paramterize the model
+in various ways. For convinience, option values can be checked an
+extracted using the the predicates \texttt{lost\_option} and
+\texttt{lost\_required\_option}, (see section \ref{sec:interface}).
+Some options may be quite common and it is suggested to use the
+same \texttt{Key}s for such option. An incomplete list of these common
+option keys are,
+\begin{itemize}
+\item \texttt{parameter\_file}: Indicates that the model should use
+ the switch probability associated with the \texttt{Value}. 
+\end{itemize}
 
 \texttt{OutputFilename}: Full filename which the resulting ``best
-  annotation'' should be saved to.
+annotation'' should be saved to. The model is expected to save
+the resulting annotation to this file before the completion of 
+\texttt{lost\_best\_annot}. The \emph{io} API contains some
+common predicates for saving annotations (see section \ref{sec:io}).
 
-\texttt{ParameterFile}: Is the full name of a file containing the
-parameters the model should use. The model may disregard this argument
-if the it does not deal with parameters. 
+\noindent
+\paragraph{lost\_learn(+InputFileNames,+Options,+OutputFilename)}
 
-\texttt{InputFiles}: Is a list filename, each containing inputs to the
-model.
+This predicates is used for training models. The model is expected to 
+save the result of the training session (e.g. a switch parameter file
+or similar) to \texttt{OutputFilename}. 
 
-\paragraph{Note: I think it might be a good idea to add an ``extra
-  options'' parameter to the lost\_best\_annotation, to enable a model
-  to be parameterized.}
+\texttt{InputFileNames}: Is a list of filenames (with absolute paths),
+each containing an input to the model. These are used for providing 
+the traning data. There is no restriction on the format of the files 
+and the model is expected to be able to parse then. Predicates to
+parse a wide range of fileformats are supplied in
+ the \emph{io} API (see section \ref{sec:io}). 
+
+\texttt{Options}: Is a list of facts on the form,
+\texttt{option(Key,Value)}. This list is use to paramterize the model
+in various ways. For convinience, option values can be checked an
+extracted using the the predicates \texttt{lost\_option} and
+\texttt{lost\_required\_option}, (see section \ref{sec:interface}).
+
+\texttt{OutputFilename}: Full filename which the resulting switch
+parameters or similar should be saved to. The model is expected to save
+the result to this file before the completion of 
+\texttt{lost\_learn}. The \emph{io} API contains some
+common predicates for saving annotations (see section \ref{sec:io}).
 
 \chapter{Lost shared APIs}
 
-To use the lost APIs, the file \texttt{lost.pl} located in the
+To use the lost APIs, the file \texttt{\$LOST/lost.pl} located in the
 top-most \texttt{\{lost\}} directory must be consulted. Then,
-APIs, which are located in the \texttt{\{lost\}/shared} directory
+APIs, which are located in the \texttt{\$LOST/shared} directory
 can be consulted using the goal, 
 \begin{verbatim}
-lost_include_api(APIName).
+lost_include_api(+APIName)
 \end{verbatim}
 
 \noindent
 where \texttt{APIName} is the name of a Prolog file located
-in the \texttt{\{lost\}/shared/} directory except the \texttt{.pl}
+in the \texttt{\$LOST/shared/} directory except the \texttt{.pl}
 extension.
 
 \section{interface.pl}
@@ -118,7 +183,7 @@ extension.
 The API provides the interface to lost models following the
 conventions described in section \ref{sec:lost_model_conventions}.
 
-\subsection{get\_annotation\_file/4}
+\paragraph{get\_annotation\_file(Model, Inputs, Options, Filename)
 
 This API provides \texttt{get\_annotation\_file/4} which is used to
 retrieve the best annotation generated by a specified model with
@@ -126,7 +191,6 @@ specified parameters and input sequences. If no such file currently
 exists, then the model will be run (e.g. the
 \texttt{lost\_best\_annotation/3} provided by the model will be
 called).
-
 
 The generated annotation files are named according to a convention. 
 All annotation files will be placed in the \texttt{\{lost\}/sequences/}
@@ -157,6 +221,7 @@ conventions, the model will generate the annotation and save it
 to the file indicated by the provided filename.
 
 \section{Input-Output API}
+\label{sec:io}
 
 In this module (\texttt{io.pl}), severals predicates are defined to
 manipulate \texttt{*.seq} files~:
