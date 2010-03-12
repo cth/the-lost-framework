@@ -259,7 +259,7 @@ file_modification_time(File,Timestamp) :-
 
 % To be tested...
 file_modification_time(File,T) :-
-        lost_configuration(platform,windows),
+        lost_config(platform,windows),
         file_property(File,modification_time(T)).
 
 % Stupid hack to work around bug that makes bprolog/prism segfault
