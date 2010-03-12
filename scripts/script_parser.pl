@@ -15,6 +15,18 @@ parser_fna(Name_FNA_File,Name_GBK_File,Options) :-
         write(OutputFile).
 
 
+parser_fna(Name_FNA_File,Name_GBK_File,Options,OutputFile) :-
+        lost_sequence_file(Name_FNA_File,FNA_File),
+        lost_sequence_file(Name_GBK_File,GBK_File),
+        get_annotation_file(parser_fna, % Name of model
+                            [FNA_File,GBK_File], % A list of Input Files
+                            Options,          % Options
+                            OutputFile), % Output File
+        
+        write('Parsing succeeds!! see.: '),
+        write(OutputFile).
+
+
 % Parser of *.ptt from Genbank
 
 parser_ptt(Name_PTT_File) :-
