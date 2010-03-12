@@ -4,52 +4,57 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This is a tool to calculate the accuracy of gene finder predictions
 % against a reference annotation.
+% It expects to find facts representing the predictions and the
+% reference annation. These facts are expected to be on the form
+% functor(From, To, Strand, ReadingFrame, Name).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Overall report the accuracy statistics for a particular predictor.
-accuracy_stats(RefFunctor,PredFunctor,Start,End) :-
-	write('--------------- Gene level stats -----------------'), nl,
+accuracy_stats(RefFunctor,PredFunctor,Start,End,Outputfile) :-
 	count_genes(PredFunctor,Start,End,NumberPredictedGenes),
-	write('Number of predicted genes: '), write(NumberPredictedGenes),nl,
 	count_genes(RefFunctor,Start,End,NumberActualGenes),
-	write('Actual number of genes: '), write(NumberActualGenes), nl,
 	number_of_correct_genes(RefFunctor, PredFunctor,Start,End,NumberCorrect),
-	write('Number of correctly predicted genes: '), write(NumberCorrect), nl,
 	number_of_wrong_genes(RefFunctor, PredFunctor, Start, End, NumberWrong),
-	write('Number of wrongly predicted genes: '), write(NumberWrong), nl,
-	write('Sensitivity: '),
 	gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,GSN),
-	write(GSN),nl,
-	write('Specificity: '),
 	gene_level_specificity(RefFunctor,PredFunctor,Start,End,GSP),
-	write(GSP),nl,
-	write('Wrong genes: '),
 	wrong_genes(RefFunctor,PredFunctor,Start,End,Wrong),
-	write(Wrong),nl,
-	write('Missing genes: '),
 	missing_genes(RefFunctor,PredFunctor,Start,End,Missing),
-	write(Missing),nl,
-	write('--------------- Nucleotide level stats -----------------'), nl,
 	annotations_as_lists(PredFunctor,Start,End,PredAnnot),
 	annotations_as_lists(RefFunctor,Start,End,RefAnnot),
 	nucleotide_level_accuracy_counts(Start,End, RefAnnot, PredAnnot, TP,FP,TN,FN),
 	sensitivity(TP,FN,SN),
+	specificity(TP,FP,SP),
+	specificity_traditional(TN,FP,SP2),
+	correlation_coefficient(TP,FP,TN,FN,CC),
+	simple_matching_coefficient(TP,FP,TN,FN,SMC),
+	average_conditional_probability(TP,FP,TN,FN,ACP),
+	aproximate_correlation(TP,FP,TN,FN,AC),
+	tell(Outputfile),
+	write('--------------- Gene level stats -----------------'), nl,
+	write('Number of predicted genes: '), write(NumberPredictedGenes),nl,
+	write('Actual number of genes: '), write(NumberActualGenes), nl,
+	write('Number of correctly predicted genes: '), write(NumberCorrect), nl,
+	write('Number of wrongly predicted genes: '), write(NumberWrong), nl,
+	write('Sensitivity: '),
+	write(GSN),nl,
+	write('Specificity: '),
+	write(GSP),nl,
+	write('Wrong genes: '),
+	write(Wrong),nl,
+	write('Missing genes: '),
+	write(Missing),nl,
+	write('--------------- Nucleotide level stats -----------------'), nl,
 	write('Sensitivity: '), 
 	write(SN),nl,
-	specificity(TP,FP,SP),
 	write('Specificity: '),
 	write(SP),nl,
-	specificity_traditional(TN,FP,SP2),
 	write('Specificity traditional: '),
 	write(SP2),nl,
-	correlation_coefficient(TP,FP,TN,FN,CC),
 	write('Correlation coefficient: '), write(CC), nl,
-	simple_matching_coefficient(TP,FP,TN,FN,SMC),
 	write('Simple matching coefficient: '), write(SMC), nl,
-	average_conditional_probability(TP,FP,TN,FN,ACP),
 	write('Average conditional probability: '), write(ACP), nl,
-	aproximate_correlation(TP,FP,TN,FN,AC),
-	write('Approximate correlation: '), write(AC), nl.
+	write('Approximate correlation: '), write(AC), nl,
+	told.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Accuracy measures
@@ -71,7 +76,8 @@ correlation_coefficient(TP,FP,TN,FN,CC) :-
 	C is TP+FP, C > 0,
 	D is TN+FN, D > 0,
 	DenominatorSquared is A*B*C*D,
-	sqrt(DenominatorSquared,Denominator),
+	Denominator is sqrt(DenominatorSquared),
+%	sqrt(DenominatorSquared,Denominator),
 	CC is Numerator / Denominator.
 
 simple_matching_coefficient(TP,FP,TN,FN,SMC) :-
@@ -337,11 +343,15 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 % Convert annotation Prolog db format to a plain list consisting 
 % of entries with coordinates for coding regions.
 
-
+% FIXME: if goal has more arguments then we have a problem!
 % Temporary hack to deal with database format
 annotation(Type, From, To, Strand, ReadingFrame, Name) :-
 	Goal =.. [ Type, From, To, Strand, ReadingFrame, Name ],
-	Goal.
+	catch(call(Goal),_,fail).
+
+annotation(Type, From, To, Strand, ReadingFrame, Name) :-
+	Goal =.. [ Type, From, To, Strand, ReadingFrame, Name, _ ],
+	catch(call(Goal),_,fail).
 
 annotations_in_range(Type, From, To, Strand, ReadingFrame, Name, RangeMin, RangeMax) :-
 	annotation(Type,From,To,Strand,ReadingFrame,Name),
@@ -350,13 +360,15 @@ annotations_in_range(Type, From, To, Strand, ReadingFrame, Name, RangeMin, Range
 
 frame_annotation_to_list(AnnotType, From, To, Strand, ReadingFrame, ResultList) :-
 	findall([coding,IncludeFrom, IncludeTo],
-					annotations_in_range(AnnotType,IncludeFrom,IncludeTo,Strand,ReadingFrame,_,From,To),ResultListTmp),
+		annotations_in_range(AnnotType,IncludeFrom,IncludeTo,Strand,ReadingFrame,_,From,To),
+		ResultListTmp),
 	clist_to_ext_range_list(ResultListTmp,ResultList).
 
 
 annotations_as_detailed_list(AnnotType, From, To, ResultList) :-
 	findall([coding,IncludeFrom, IncludeTo,Strand,ReadingFrame],
-			annotations_in_range(AnnotType,IncludeFrom,IncludeTo,Strand,ReadingFrame,_,From,To),ResultList).
+		annotations_in_range(AnnotType,IncludeFrom,IncludeTo,Strand,ReadingFrame,_,From,To),
+		ResultList).
 
 
 annotations_as_lists(AnnotType,Start,End,List) :-
@@ -380,6 +392,25 @@ db_annotation_max(AnnotType, Strand,ReadingFrame,Max) :-
 % Various minor utility rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Possible strand and reading frame combinations
+strand(+).
+strand(-).
+reading_frame(1).
+reading_frame(2).
+reading_frame(3).
+
+strand_reading_frame_combinations(Combinations) :-
+	findall([S,R], (strand(S),reading_frame(R)), Combinations).
+
+% map applies to rule F(-,+) to each element of list
+map(_,[],[]).
+map(F, [L|Lists], [Out|OutRest]) :-
+	Goal =.. [ F, L, Out], 
+	call(Goal),
+	map(F,Lists,OutRest).
+
+
+% Advanced map utility
 multi_map(_,[],[]).
 multi_map(F, [L|Lists], [Out|OutRest]) :-
 	F =.. FList1,
@@ -389,12 +420,6 @@ multi_map(F, [L|Lists], [Out|OutRest]) :-
 	call(NewF),
 	multi_map(F,Lists,OutRest).
 
-% This simple map applies to rule F(-,+) to each element of list
-map(_,[],[]).
-map(F, [L|Lists], [Out|OutRest]) :-
-	Goal =.. [ F, L, Out], 
-	call(Goal),
-	map(F,Lists,OutRest).
 
 replace(_,_,[],[]).
 replace(Symbol, Replacement, [Symbol|InListRest], [Replacement|OutListRest]) :-
@@ -460,13 +485,3 @@ overlaps(Start1,End1, Start2,_) :-
 overlaps(Start1,_, Start2,End2) :-
         Start2 =< Start1,
         End2 >= Start1.
-
-% Possible strand and reading frame combinations
-strand(+).
-strand(-).
-reading_frame(1).
-reading_frame(2).
-reading_frame(3).
-
-strand_reading_frame_combinations(Combinations) :-
-	findall([S,R], (strand(S),reading_frame(R)), Combinations).

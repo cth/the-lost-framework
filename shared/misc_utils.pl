@@ -72,3 +72,6 @@ dirname(Filename,DirPartAtom) :-
 	append(_,[47],DirPart), % DirPart should end with a '/'
 	not(member(47,FilePart)), 
 	atom_codes(DirPartAtom,DirPart).
+
+
+
