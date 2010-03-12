@@ -39,6 +39,16 @@ parser_ptt(Name_PTT_File) :-
         write(OutputFile).
 
 
+parser_ptt(Name_PTT_File,OutputFile) :-
+        lost_sequence_file(Name_PTT_File,PTT_File),
+        get_annotation_file(parser_ptt, % Name of model
+                            [PTT_File], % A list of Input Files
+                            [],          % Options
+                            OutputFile), % Output File
+        write('Parsing succeeds!! see.: '),
+        write(OutputFile).
+
+
 
 % Parser of a Easygene report 
 parser_easygene(Report_Name) :-
@@ -52,8 +62,34 @@ parser_easygene(Report_Name) :-
         write(OutputFile).
 
 
+
+
+% Parser of a Easygene report 
+parser_easygene(Report_Name,OutputFile) :-
+        lost_sequence_file(Report_Name,InputFile),
+        get_annotation_file(parser_easygene, % Name of model
+                            [InputFile],     % A list of Input Files
+                            [],          % Options
+                            OutputFile), % Output File
+        
+        write('Parsing succeeds!! see.: '),
+        write(OutputFile).
+
+
 % Parser of a Easygene report 
 parser_genemark(Report_Name) :-
+        lost_sequence_file(Report_Name,InputFile),
+        get_annotation_file(parser_genemark, % Name of model
+                            [InputFile],     % A list of Input Files
+                            [],          % Options
+                            OutputFile), % Output File
+        
+        write('Parsing succeeds!! see.: '),
+        write(OutputFile).
+
+
+% Parser of a Easygene report 
+parser_genemark(Report_Name,OutputFile) :-
         lost_sequence_file(Report_Name,InputFile),
         get_annotation_file(parser_genemark, % Name of model
                             [InputFile],     % A list of Input Files
