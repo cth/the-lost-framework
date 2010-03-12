@@ -261,8 +261,7 @@ file_modification_time(File,Timestamp) :-
 file_modification_time(File,T) :-
         lost_configuration(platform,windows),
         file_property(File,modification_time(T)).
-        
-	
+
 % Stupid hack to work around bug that makes bprolog/prism segfault
 file_modification_time(File,time(Year,Mon,Day,Hour,Min,Sec)) :-
         lost_tmp_directory(TmpDir),
