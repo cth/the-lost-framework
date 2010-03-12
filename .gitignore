@@ -1,3 +1,5 @@
 lost.pl
 shared/*.out
 models/**/*.out
+models/**/*NO_ANNOT*
+models/**/*TREE2ANN*
