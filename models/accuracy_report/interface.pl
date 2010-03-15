@@ -10,7 +10,9 @@ lost_best_annotation([ReferenceFile,PredictionFile],Options,OutputFile) :-
 	lost_required_option(Options,end,End),
 	check_or_fail(consult(ReferenceFile),error(cannot_consult(ReferenceFile))),
 	check_or_fail(consult(PredictionFile),error(cannot_consult(PredictionFile))),
-	check_or_fail(
-		      accuracy_stats(ReferenceFunctor,PredictionFunctor,Start,End,OutputFile),
-		      error(problem_generating_accuracy_stats)).
+%	check_or_fail(
+%		      accuracy_stats(ReferenceFunctor,PredictionFunctor,Start,End,OutputFile),
+%		      error(problem_generating_accuracy_stats)).
+        write(accuracy_stats(ReferenceFunctor,PredictionFunctor,Start,End,OutputFile)),
+        accuracy_stats(ReferenceFunctor,PredictionFunctor,Start,End,OutputFile).
 		 

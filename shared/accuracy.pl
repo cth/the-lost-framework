@@ -345,6 +345,11 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 
 % FIXME: if goal has more arguments then we have a problem!
 % Temporary hack to deal with database format
+
+annotation(Type, From, To, Strand, ReadingFrame, _Name) :-
+	Goal =.. [ Type, From, To, Strand, ReadingFrame ],
+	catch(call(Goal),_,fail).
+
 annotation(Type, From, To, Strand, ReadingFrame, Name) :-
 	Goal =.. [ Type, From, To, Strand, ReadingFrame, Name ],
 	catch(call(Goal),_,fail).
