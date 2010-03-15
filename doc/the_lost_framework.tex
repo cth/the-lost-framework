@@ -305,9 +305,31 @@ R =  [c,c,c,nc,nc,nc,nc,nc]?
 
 \end{itemize}
 
-\section{The accuracy API}
+\subsection{Saving information to files}
 
-Not implemented/included yet.
+The io API also contains some predicates for saving sequences to a
+file. 
+
+\index{save\_annotation\_to\_sequence\_file$\slash$ 4}
+\begin{itemize}
+\item
+  \texttt{save\_annotation\_to\_sequence\_file(+KeyIndex,+ChunkSize,+Annotation,+File)}: 
+Saves the data in the list given by \texttt{Annotation} to the file
+\texttt{File} in \emph{sequence} format which is number of Prolog facts, on
+the form:
+\begin{verbatim}
+data(KeyIndex,1,5, [a,t,c,c,g]).
+\end{verbatim}
+The first argument \texttt{KeyIndex} is used as an identifier. \texttt{ChunkSize} is the
+number of elements from \texttt{Annotation} to store with each
+fact. The second and third argument of a stored fact, corresponds to
+the start and end position in \texttt{Annotation}. The fourth
+argument of the fact is a list containing the relevant elements of the
+\texttt{Annotation} list. Note that if the the length of
+\texttt{Annotation} is not a multiple of \texttt{ChunkSize}, then the
+last fact stored will have a shorter range.
+\end{itemize}
+
 
 
 \chapter{Models}
@@ -318,6 +340,7 @@ Pre-defined models are introduced.  These models are used to build more complex 
 
 To extract information from different Biological database, several parsers have been designed 
 to parse report of analyses available on different web-servers (Easygene, Genemark) and 
+
 database (Genbank). These parsers generated a series of Prolog terms that can be used after that
 input of different probabilistic models. \texttt{script\_parser.pl} collects different scripts to generate
 different data files.
@@ -329,6 +352,72 @@ different data files.
 \subsection{Parser\_Easygene}
 
 \subsection{Parser\_Genemark}
+
+\section{Models for measurement and statistical reports}
+
+\subsection{accuracy\_report}
+
+The model \texttt{accuracy\_report} can be used the produce a report of
+various measures of the accuracy of particular gene predictions
+compared with a golden standard such a genebank. 
+
+To use the the model, you need to call
+\texttt{get\_annotation\_file/4} with the following arguments,
+\begin{verbatim}
+get_annotation_file(accuracy_report,
+		    [ReferenceFile,PredictionFile],
+		    [
+		     option(reference_functor,RefFunctor),
+		     option(prediction_functor,PredFunctor),
+		     option(start,StartPos),
+		     option(end,EndPos)
+		    ],
+		    OutputFile),
+\end{verbatim}
+
+\texttt{ReferenceFile} must be the full path to a file with facts
+representing the ``correct predictions''.  
+\texttt{PredictionFile} must be the full path to a file with facts
+representing the predictions. Both files must be a a \texttt{db} type 
+format, with facts on the following form,
+\begin{verbatim}
+functor(To, From, Strand, ReadingFrame, Name).
+\end{verbatim}
+
+Each such fact represent a prediction in the \texttt{PredictionFile} or
+correct gene in the in \texttt{ReferenceFile}. 
+The \texttt{functor} is a any given functor, but the
+\texttt{ReferenceFile} and the \texttt{PredictionFile} should use
+different functors. The \emph{To} argument represents the position in
+the genome where the prediction begins (inclusive) and the
+\texttt{From} argument represents the end position of the prediction
+\texttt{ReadingFrame} is a integer in the range $\{1,2,3\}$
+\texttt{Strand} is either \texttt{+} for the forward strand or
+    \texttt{-} for the reverse strand. 
+
+\texttt{get\_annotation\_file} for the \texttt{accuracy\_report} model
+must be called with four mandatory options:
+\begin{itemize}
+\item \texttt{reference\_functor}: The functor used in the \texttt{ReferenceFile}
+\item \texttt{prediction\_functor}: The functor used in the
+  \texttt{PredictionFile}
+\item \texttt{start}: An integer corresponding to the beginning of the range on which accuracy
+  should be measured.
+\item \texttt{end}: An integer corresponding to the end of the range
+  (inclusive) on which accuracy should be measured.
+\end{itemize}
+
+
+\chapter{Notes and stuff}
+
+\section{Feature wishlist}
+
+\begin{itemize}
+\item A \texttt{data} directory instead of a \texttt{sequences}
+  directory.
+\item Division of models into models (probabilstic models) and nodes
+  (which are just data processing).
+\end{itemize}
 
 
 
