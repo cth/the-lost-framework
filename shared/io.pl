@@ -397,34 +397,3 @@ data_elements_to_sequence_terms(Pos,[Data|R1],[elem(Pos,Data)|R2]) :-
 	data_elements_to_sequence_terms(NextPos,R1,R2).
 
 
-% Read all Terms from File
-terms_from_file(File, Terms) :-
-	open(File, read, Stream),
-	ground(Stream),
-	collect_stream_terms(Stream,Terms),
-	close(Stream).
-
-% Write a list of Terms to a File
-terms_to_file(File,Terms) :-
-	open(File,write,Stream),
-	ground(Stream),
-	write_terms_to_stream(Stream,Terms),
-	close(Stream).
-
-write_terms_to_stream(_,[]).
-write_terms_to_stream(Stream,[Term|Rest]) :-
-	writeq(Stream,Term),
-	write(Stream,'.\n'),
-	write_terms_to_stream(Stream,Rest).
-
-
-% Create list of Rules found in Stream
-collect_stream_terms(Stream, Rules) :-
-	read(Stream, T),
-	((T == end_of_file) ->
-		Rules = []
-	;
-		collect_stream_terms(Stream,Rest),
-		append([T],Rest,Rules)
-	).
-
