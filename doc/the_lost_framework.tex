@@ -330,6 +330,20 @@ argument of the fact is a list containing the relevant elements of the
 last fact stored will have a shorter range.
 \end{itemize}
 
+\section{Stats API}
+
+In this module (\texttt{stats.pl}), several predicates are defined to automatically compute
+frequencies, probabilities of occurrences of nucleotides, codons ... This computation
+is based on a simple counting method given a simple input data. 
+
+
+\begin{itemize}
+\item stats(++Data\_Type,++Options,++Data,++Input\_Counting,--Result)\index{stats$\slash 5$}
+\item stats(++Data\_Type,++Options,++Data,++Input\_Counting,--Past,--Result)\index{stats$\slash 6$}
+\item normalize(++Data\_Type,++List\_Counting,--Probabilities)\index{normalize$\slash 3$}
+\end{itemize} 
+
+
 
 
 \chapter{Models}
@@ -339,13 +353,46 @@ Pre-defined models are introduced.  These models are used to build more complex 
 \section{Parsers of Biological Data}
 
 To extract information from different Biological database, several parsers have been designed 
-to parse report of analyses available on different web-servers (Easygene, Genemark) and 
-
-database (Genbank). These parsers generated a series of Prolog terms that can be used after that
+to parse report of analyses available on different web-servers (Easygene, Genemark) and database (Genbank). 
+These parsers generated a series of Prolog terms that can be used after that
 input of different probabilistic models. \texttt{script\_parser.pl} collects different scripts to generate
 different data files.
 
 \subsection{Parser\_fna}
+
+*.fna file of Genbank is composed of a complete genome in the FASTA format.
+Parser\_fna permits to parse this *fna.file from Genbank and generate
+list of terms. These terms store the genome into a Prolog list
+composed of $\{a,c,g,t\}$. Two scripts are implemented:\\ 
+\texttt{parser\_fna(++Name\_FNA\_File,++Name\_GBK\_File,++Options)}\index{parser\_fna$\slash$3} and \\
+\texttt{parser\_fna(++Name\_FNA\_File,++Name\_GBK\_File,++Options,--OutputFile)}\index{parser\_fna$\slash$4}
+Note that *.gbk file is necessary as well. This file is used to automatically extract
+genome information (Genbank key and size of genome).
+
+Output format of the generated terms are:\\
+\texttt{data(Genebank\_Key,Start,End,List\_of\_Data)}.
+Option \texttt{list(Number)} can be used to divide the complete
+genome into several lists with a length defined by the parameter
+\texttt{Number}.
+Example with the E.Coli K12 genome:
+\begin{verbatim}
+>gi|48994873|gb|U00096.2| Escherichia coli .....
+AGCTTTTCATTCTGACTGCAACGGGCAATATGTCTCTGTGTGG.....
+.....
+\end{verbatim}
+Result by default:
+\begin{verbatim}
+%>gi|48994873|gb|U00096.2| Escherichia coli ....
+data('U00096',1,4639675,[a,g,c,t,t,t, ...]). 
+\end{verbatim}
+Result when \texttt{list(280)} option is used
+\begin{verbatim}
+%>gi|48994873|gb|U00096.2| Escherichia .....
+data('U00096',1,280,[a,g,c,t,...]).
+data('U00096',281,560,[c,c,c,...]).
+....
+\end{verbatim}
+
 
 \subsection{Parser\_ptt}
 
