@@ -336,13 +336,100 @@ In this module (\texttt{stats.pl}), several predicates are defined to automatica
 frequencies, probabilities of occurrences of nucleotides, codons ... This computation
 is based on a simple counting method given a simple input data. 
 
-
+Variable \texttt{Data\_Type} is used to specify the type of the input data:
+Data type available are:
 \begin{itemize}
-\item stats(++Data\_Type,++Options,++Data,++Input\_Counting,--Result)\index{stats$\slash 5$}
-\item stats(++Data\_Type,++Options,++Data,++Input\_Counting,--Past,--Result)\index{stats$\slash 6$}
-\item normalize(++Data\_Type,++List\_Counting,--Probabilities)\index{normalize$\slash 3$}
+\item \texttt{nucleotid} where input data are composed of letter from $\{a,c,g,t\}$;
+\item \texttt{codon} where a codon is represented by a list of three letters from $\{a,c,g,t\}$;
+\item \texttt{animo\_acid} where input data are composed of letter from $\{a,c,d,e,f,g,h,$\\
+$i,k,l,m,n,p,q,r,s,t,v,w,y\}$;
+\item \texttt{length}. This type is used to compute frequencies and statistics about length of specific region of a genome. 
 \end{itemize} 
 
+Here is the description of main predicates of \texttt{stats.pl}
+\begin{itemize}
+\item stats(++Data\_Type,++Options,++Data,++Input\_Counting,--Result)\index{stats$\slash 5$} \\
+\texttt{Data\_Type} setting define on which counting procedure is initialized. User must take care then
+to give the right \texttt{Data}. For \{\texttt{nucleotid,codon,animo\_acid}\} data type, 
+\texttt{Data} must be a Prolog list with the right element, For \texttt{length} data type,
+\texttt{Data} must be a list of ranges represented by a list of two integer values ([Min,Max]).
+Two options are available:
+\begin{itemize}
+\item \texttt{order(Num)} defines the size of the past stored to perform the counting
+\item \texttt{past(List)} allows to give as input of the computation a previous past. This option is
+useful to make connexion between two counting computations.
+\end{itemize}
+\texttt{Input\_Counting} is used as well to perform a counting computation on an input data divided
+into a set of lists. By default, counting computation is initialized when is a variable \texttt{Input\_Counting}.
+However, the counting can restart from \texttt{Input\_Counting} if this variable is unified to
+the result of a previous result. Finally, \texttt{Result} has the following format:
+\begin{verbatim}
+[(Past1,[(Elt1,Count11),(Elt2,Count12),...]), 
+ (Past2,[(Elt1,Count21),(Elt2,Count22),...]),
+ ...]
+\end{verbatim}
+For example let consider this following data:
+\begin{verbatim}
+data('U00096',1,5,[a,g,c,t,t]).
+data('U00096',6,10,[c,c,c,c,c]).
+\end{verbatim}
+Here is the result of this following request
+\begin{verbatim}
+| ?- stats(nucleotid,[],[a,g,c,t,t],_,R).
+R = [([],[(a,1),(c,1),(g,1),(t,2)])] ?
+| ?- stats(nucleotid,[order(1)],[a,g,c,t,t],_,R).
+R = [([a],[(a,0),(c,0),(g,1),(t,0)]),
+     ([c],[(a,0),(c,0),(g,0),(t,1)]),
+     ([g],[(a,0),(c,1),(g,0),(t,0)]),
+     ([t],[(a,0),(c,0),(g,0),(t,1)])]?
+| ?- stats(nucleotid,[order(2)],[a,g,c,t,t],_,R1),
+     stats(nucleotid,[order(2),past([t,t])],[c,c,c,c,c],R1,R).
+R = [([a,a],[(a,0),(c,0),(g,0),(t,0)]),
+     ([a,c],[(a,0),(c,0),(g,0),(t,1)]),
+     ([a,g],[(a,0),(c,1),(g,0),(t,0)]),
+     ([a,t],[(a,0),(c,0),(g,0),(t,0)]),
+     ([c,a],[(a,0),(c,0),(g,0),(t,0)]),
+     ([c,c],[(a,0),(c,3),(g,0),(t,1)]),
+     ([c,g],[(a,0),(c,1),(g,0),(t,0)]),
+     ([c,t],[(a,0),(c,0),(g,0),(t,1)]),
+     ([g,a],[(a,0),(c,0),(g,0),(t,0)]),
+     ([g,c],[(a,0),(c,0),(g,0),(t,1)]),
+     ([g,g],[(a,0),(c,1),(g,0),(t,0)]),
+     ([g,t],[(a,0),(c,0),(g,0),(t,1)]),
+     ([t,a],[(a,0),(c,0),(g,0),(t,0)]),
+     ([t,c],[(a,0),(c,0),(g,0),(t,1)]),
+     ([t,g],[(a,0),(c,0),(g,0),(t,0)]),
+     ([t,t],[(a,0),(c,1),(g,0),(t,0)]),
+     ]?
+\end{verbatim}
+\item stats(++Data\_Type,++Options,++Data,++Input\_Counting,--Past,--Result)\index{stats$\slash 6$}
+\texttt{stats$\slash 6$} computes exactly the same counting. This predicate allows only to record
+into \texttt{Past} the last past of the computing. This predicate is usefull to compute 
+statistics on a series of data input. For example, this following request
+\begin{verbatim}
+| ? - stats(nucleotid,[order(2)],[a,g,c,t,t],_,Past,R1),
+      stats(nucleotid,[order(2),past(Past)],[c,c,c,c,c],R1,Past2,R).
+Past = [t,t],
+Past2 = [c,c],
+R = ... ?
+\end{verbatim}     
+can be used to obtain counting information on the previous data.
+\item normalize(++Data\_Type,++List\_Counting,--Probabilities)\index{normalize$\slash 3$}
+From the result of a counting procedure, \texttt{normalize$\slash 3$} modified \texttt{List\_Counting}
+to compute domains and probabilities distributions. 
+\end{itemize} 
+For example, here is the result of several requests:
+\begin{verbatim}
+| ?- stats(nucleotid,[],[a,g,c,t,t],_,R),
+     normalize(nucleotid,R,S).
+S = [([],([a,c,g,t],[0.2,0.2,0.2,0.4]))]
+| ?- stats(nucleotid,[order(1)],[a,g,c,t,t],_,R),
+     normalize(nucleotid,R,S).
+S = [([a],([a,c,g,t],[0,0,1,0])),
+     ([c],([a,c,g,t],[0,0,0,1])),
+     ([g],([a,c,g,t],[0,1,0,0])),
+     ([t],([a,c,g,t],[0,0,0,1]))] ?
+\end{verbatim}
 
 
 
