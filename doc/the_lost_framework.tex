@@ -483,6 +483,15 @@ data('U00096',281,560,[c,c,c,...]).
 
 \subsection{Parser\_ptt}
 
+*.ptt file of Genbank is composed of information about known or predicted
+genes in a genome. Parser\_ptt parses this *.pt file from Genbank and generate
+list of terms. Two scripts are implemented:\\ 
+\texttt{parser\_ptt(++Name\_PTT\_File)}\index{parser\_ptt$\slash$1} and \\
+\texttt{parser\_fna(++Name\_PTT\_File,,--OutputFile)}\index{parser\_fna$\slash$2}
+
+Output format of the generated terms are:\\
+\texttt{gb(Genebank\_Key,Start,End)}.
+
 \subsection{Parser\_Easygene}
 
 \subsection{Parser\_Genemark}
