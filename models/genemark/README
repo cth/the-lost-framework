@@ -1,0 +1,9 @@
+This is a model for integrating the genemark genefinder.
+
+This module is current only runable on mox.
+
+Before using it you should do two things:
+
+1) run user_setup.sh to set up the license key
+2) Edit config.pl and make sure the the paths are correct
+   (on mox, they should be).
