@@ -64,6 +64,8 @@ parser_line(Entry_Codes,Ignored_Chars,Entry_Token) :-
 
 
 % End of the line
+parser_line_rec([],[]-[],_Ignored_Chars,[]) :- !.
+
 parser_line_rec([],Token-[],_Ignored_Chars,[Token_Res]) :-
         !,
         (is_number(Token) ->
