@@ -1,0 +1,155 @@
+%----------
+% Genemark HMM: Frame by Frame approach
+%----------
+
+%:- set_prism_flag(scaling,log_exp).
+%:- set_prism_flag(learn_mode,both).
+:- set_prism_flag(log_viterbi,on).
+
+
+
+% Parameter set to n=20 codons in the coding region, m=12 non coding 
+%:- consult(autoAnnotations).
+
+get_coding_param(20).
+get_noncoding_param(12).
+
+
+%-------
+% Transition HS to HS
+%-------
+
+
+values(begin,List_Init) :-
+        get_init_states(List_Init).
+
+values(init_past,List_Codons) :-
+        get_list_codons(List_Codons).
+
+% Coding Region
+values(trans('start_codon'),[coding(1)]).
+
+values(trans(coding(N)),[coding(N1)]) :-
+       get_coding_param(Nmax),
+       N < Nmax,
+       !,
+       N1 is N+1.
+      
+values(trans(coding(N)),['coding']) :-
+        get_coding_param(N).
+
+values(trans(coding),['coding','stop_codon']).
+
+% Non-Coding Region
+
+values(trans('stop_codon'),['non_coding'|List_Noncoding]) :-
+        get_noncoding_param(N),
+        N1 is 0-N,
+        get_noncoding_list(N1,List_Noncoding).
+
+
+values(trans('non_coding'),['non_coding',non_coding(Nmax)]) :-
+        get_noncoding_param(N),
+        Nmax is 0-N.
+
+values(trans(non_coding(N)),[non_coding(N1)]) :-
+        %get_noncoding_param(Nmax),
+        N < -1,
+        N1 is N+1.
+
+
+values(trans(non_coding(-1)),['start_codon','end']).
+
+
+%------
+% Observations
+%------
+% Genetic Code: table 11
+values(emit('start_codon',_),[[t,t,g],[c,t,g],[a,t,t],[a,t,a],[a,t,g],[g,t,g]]).
+values(emit('stop_codon',_),[[t,a,a],[t,a,g],[t,g,g]]).
+values(emit(HS,Codon),List_Codons) :-
+        HS \= 'start_codon',
+        HS \= 'stop_codon',
+        !,
+        get_list_codons(List_Codons).
+
+% Hack to avoid divided by 3 condition of the model
+values(end,[0,1,2]).
+values(end(0),[[]]).
+values(end(1),[[a],[c],[t],[g]]).
+values(end(2),[[a,a],[a,c],[a,t],[a,g],
+               [c,a],[c,c],[c,t],[c,g],
+               [t,a],[t,c],[t,t],[t,g],
+               [g,a],[g,c],[g,t],[g,g]
+              ]).
+
+%-----
+% Set_switches
+%-----
+
+set_params.
+
+
+%------
+% Gene Finder Program
+%------
+
+
+genemark(Seq,--Annot) :-
+        msw(begin,HS),
+        msw(init_past,Past),
+        genemark_rec(HS,Past,Seq,--Annot).
+
+
+genemark_rec('end',_Past,End,--[end(Num)]) :-
+        msw(end,Num),
+        msw(end(Num),End).
+
+genemark_rec(HS,Past,[N1,N2,N3|Rest_Seq],--[HS|Rest]) :-
+        HS \== 'end',
+        msw(emit(HS,Past),[N1,N2,N3]),
+        msw(trans(HS),HS2),
+        genemark_rec(HS2,[N1,N2,N3],Rest_Seq,--Rest).
+        
+        
+
+
+
+%-----
+% Utils
+%-----
+
+
+get_list_codons(L) :-
+        L = [ [a,a,a],[a,a,t],[a,a,c],[a,a,g],
+              [a,t,a],[a,t,t],[a,t,c],[a,t,g],
+              [a,c,a],[a,c,t],[a,c,c],[a,c,g],
+              [a,g,a],[a,g,t],[a,g,c],[a,g,g],
+              [t,a,a],[t,a,t],[t,a,c],[t,a,g],
+              [t,t,a],[t,t,t],[t,t,c],[t,t,g],
+              [t,c,a],[t,c,t],[t,c,c],[t,c,g],
+              [t,g,a],[t,g,t],[t,g,c],[t,g,g],
+              [c,a,a],[c,a,t],[c,a,c],[c,a,g],
+              [c,t,a],[c,t,t],[c,t,c],[c,t,g],
+              [c,c,a],[c,c,t],[c,c,c],[c,c,g],
+              [c,g,a],[c,g,t],[c,g,c],[c,g,g],
+              [g,a,a],[g,a,t],[g,a,c],[g,a,g],
+              [g,t,a],[g,t,t],[g,t,c],[g,t,g],
+              [g,c,a],[g,c,t],[g,c,c],[g,c,g],
+              [g,g,a],[g,g,t],[g,g,c],[g,g,g]
+             ].
+
+% List of init states
+
+get_init_states(['start_codon','non_coding']).
+
+
+% List non coding HS 
+
+get_noncoding_list(0,['start_codon','end']) :-
+        !.
+
+get_noncoding_list(N,[non_coding(N)|Rest]) :-
+        N1 is N+1,
+        get_noncoding_list(N1,Rest).
+
