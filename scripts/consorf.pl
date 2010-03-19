@@ -1,5 +1,8 @@
-% This example illustrate how we use get_annotation to 
-% have models run a files generated automatically
+% This script is for the toplogy of a the consorf genefinder relying on annotations from
+% open reading frame annotator and conservation annotator.
+% The consorf genefinder is based on a paired hidden markov model that should be properly parameterized.
+% While the genefinder itself does not at this point care about what chunks it predicts, the inout files must
+% reflect the same chunking of data. As usual, we take care of that by including the toplogy of prediction models in this script.
 
 :- ['../lost.pl'].
 
@@ -8,37 +11,83 @@
 :- lost_include_api(interface).
 
 
-/*
-consorf:-
-	% Unify InputSeqFile to the full filename of tinytest e.g. .../sequences/tinytest.seq
-	lost_sequence_file('u00096-20k_orf_+1',LostInputOrfFile), % 
-	lost_sequence_file('u00096-20k_cns0_+1',LostInputConsFile),
-	
-	% Parameter id "sample2" resolves to models/consorf_genefinder/parameters/consorf_genefinder.prb
-	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
-	
-	get_annotation_file(consorf_genefinder,  					
-			    [LostInputOrfFile,LostInputConsFile], 						
-			    [option(parameter_file,ParameterFile)],   
-			    AnnotFile),     													
+% topology 
 
-	write('Resulting consorf prediction file'),nl,
-	writeln(AnnotFile).
-*/
+%--------------------------------------------------------------------------------------------------
+% First the chunking. 
+%--------------------------------------------------------------------------------------------------
+% 	Here required options are:
+%			frame(reading-frame) and 
+%			direction(direction)?
+%		
+% 	OrfChunk_File consist of facts:
+%			chunk(Id, Start, Stop, ChunkSequence, Dir Frame, List_of_potenital_start_codons, List_of_potential_stop_codons).
+%--------------------------------------------------------------------------------------------------
+run_orf_chopper(Sequence_File,Options,OrfChunk_File) :-
+	lost_sequence_file(Sequence_File,Sequence),
+	get_annotation_file('orf_chopper',
+			    [Sequence],
+			    Options,
+			    OrfChunk_File).
+			    
+%--------------------------------------------------------------------------------------------------
+% Translation to amino-acids. 
+%--------------------------------------------------------------------------------------------------
+% 	Required options ase:
+%			mode(translation_mode)
+%		
+%		where translation_mode = 0 means entire chunk is translated, 
+%		and translation_mode = 1 means only longest orf is translated
+%
+%   Translated_Chunk_File consist of translated chunks in fastaformat:
+%			....explanation
+%		
+%--------------------------------------------------------------------------------------------------
+run_chunk_translator(Sequence_File,Options,Translated_Chunk_File) :-
+	run_orf_chopper(Sequence_File,Options,Orf_Chunk_File),
+	get_annotation_file(chunk_translator,
+			    [Orf_Chunk_File],
+			    Options,
+			    Translated_Chunk_File).			    
+			    
+%--------------------------------------------------------------------------------------------------
+% Computing conservation annotation
+%--------------------------------------------------------------------------------------------------
+% 	Possible options include scoring mode for non-gap mismatches : 
+%			0, nongap-mismatches score nothing, 
+%			1, nongap-mismathces score fully%		
+%--------------------------------------------------------------------------------------------------
+run_chunk_conservation(Sequence_File,Options,Conservation_File) :-
+	run_chunk_translator(Sequence_File,Options,Translated_Chunk_File),
+	get_annotation_file(chunk_conservation,
+			    [Translated_Chunk_File],
+			    [],
+			    Conservation_File).
 
-
+%--------------------------------------------------------------------------------------------------
+% driving run-predicate for testing and debugging
+%--------------------------------------------------------------------------------------------------
 consorf(InputOrfFile,InputConsFile):-
-	% Unify InputSeqFile to the full filename of tinytest e.g. .../sequences/tinytest.seq
 	lost_sequence_file(InputOrfFile,LostInputOrfFile), % ,ConsFile),
 	lost_sequence_file(InputConsFile,LostInputConsFile),
-	% Parameter id "sample2" resolves to models/consorf_genefinder/parameters/consorf_genefinder.prb
-	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
-	
+	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),	
 	get_annotation_file(consorf_genefinder,  					
 			    [LostInputOrfFile,LostInputConsFile], 						
 			    [option(parameter_file,ParameterFile)],   
-			    AnnotFile),     													
-
+			    AnnotFile),
 	write('Resulting consorf prediction file'),nl,
 	writeln(AnnotFile).
 
+%--------------------------------------------------------------------------------------------------
+% driving run-predicate once required models have been ported to LoSt framework
+%--------------------------------------------------------------------------------------------------
+run_consorf(Sequence_File,Options,Prediction_File):-
+	run_orf_chopper(Sequence_File,Options,Input_Orf_File),
+	run_chunk_conservation(Sequence_File,Options,Input_Cons_File),
+	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
+	get_annotation_file(consorf_genefinder,  					
+			    [Input_Orf_File,Input_Cons_File], 						
+			    [option(parameter_file,ParameterFile)],   
+			    Prediction_File),     													
+	write('Resulting consorf prediction file'),nl,
+	writeln(Prediction_File).
