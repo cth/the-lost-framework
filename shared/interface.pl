@@ -65,8 +65,10 @@ train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Get the Value of option with Key
-lost_option([option(Key,Value)|_], Key, Value) :- !.
-lost_option([option(_,_)|OptionList], Key, Value) :-
+lost_option([Opt|_], Key, Value) :- 
+        Opt =.. [ Key, Value ],
+        !.
+lost_option([_|OptionList], Key, Value) :-
 	lost_option(OptionList,Key,Value).
 
 % Used to retrieve the value of required options

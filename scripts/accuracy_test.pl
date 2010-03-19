@@ -18,10 +18,10 @@ test :-
 	get_annotation_file(accuracy_report,
 			    [ReferenceFile,PredictionFile],
 			    [
-			     option(reference_functor,gb),
-			     option(prediction_functor,eg),
-			     option(start,1),
-			     option(end,1700000)
+			     reference_functor(gb),
+			     prediction_functor(eg),
+			     start(1),
+			     end(1700000)
 			    ],
 			    OutputFile),
 
@@ -38,10 +38,10 @@ testole :-
 	get_annotation_file(accuracy_report,
 			    [ReferenceFile,PredictionFile],
 			    [
-			     option(reference_functor,gb),
-			     option(prediction_functor,consorf_prediction),
-			     option(start,1),
-			     option(end,20000)
+			     reference_functor(gb),
+			     prediction_functor(consorf_prediction),
+			     start(1),
+			     end(20000)
 			    ],
 			    OutputFile),
 
