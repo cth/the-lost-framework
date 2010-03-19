@@ -22,7 +22,26 @@ lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
         close(OutStream),
 				write('LoSt consorf genefinder terminated successfully.'),nl.
 				
-				
+/**************************************************************************************/
+% Recusive call of the prediction routine
+%
+consorf_main(OrfInStream,ConsInStream,OutStream):-		  
+		% writeq('read(orfin,OrfTerm)'),nl,
+		read(OrfInStream,OrfTerm),
+		read(ConsInStream,ConsTerm),
+		(
+		OrfTerm \= eof, ConsTerm \= eof ->			  
+			OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,InputOrf|_],
+			ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,InputCons|_],
+        		% Derive an annotation somehow
+        		check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),                        
+                     	error(errorpair(InputOrf,InputCons))),
+         		OutputEntry =.. [consorf_prediction,Id,Start,Stop,Dir,Frm,OutputAnnotation],
+        		writeq(OutStream,OutputEntry),writeln(predout,'.'),
+			consorf_main(OrfInStream,ConsInStream,OutStream)
+		;
+			true
+		).				
 	
 	
 	

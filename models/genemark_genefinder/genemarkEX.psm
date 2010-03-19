@@ -1,0 +1,83 @@
+get_coding_param(20).
+
+get_noncoding_param(12).
+
+values(begin, A) :-
+        get_init_states(A).
+
+values(init_past, A) :-
+        get_list_codons(A).
+
+values(trans(start_codon), [coding(1)]).
+
+values(trans(coding(A)), [coding(B)]) :-
+        get_coding_param(C),
+        A<C, !,
+        B is A+1.
+
+values(trans(coding(A)), [coding]) :-
+        get_coding_param(A).
+
+values(trans(coding), [coding,stop_codon]).
+
+values(trans(stop_codon), [non_coding|A]) :-
+        get_noncoding_param(B),
+        C is 0-B,
+        get_noncoding_list(C, A).
+
+values(trans(non_coding), [non_coding,non_coding(A)]) :-
+        get_noncoding_param(B),
+        A is 0-B.
+
+values(trans(non_coding(A)), [non_coding(B)]) :-
+        A< -1,
+        B is A+1.
+
+values(trans(non_coding(-1)), [start_codon,end]).
+
+values(emit(start_codon,_), [[t,t,g],[c,t,g],[a,t,t],[a,t,a],[a,t,g],[g,t,g]]).
+
+values(emit(stop_codon,_), [[t,a,a],[t,a,g],[t,g,g]]).
+
+values(emit(A,_), B) :-
+        A\=start_codon,
+        A\=stop_codon, !,
+        get_list_codons(B).
+
+values(end, [0,1,2]).
+
+values(end(0), [[]]).
+
+values(end(1), [[a],[c],[t],[g]]).
+
+values(end(2), [[a,a],[a,c],[a,t],[a,g],[c,a],[c,c],[c,t],[c,g],[t,a],[t,c],[t,t],[t,g],[g,a],[g,c],[g,t],[g,g]]).
+
+set_params.
+
+genemark(A, B) :-
+        msw(begin, C),
+        msw(init_past, D),
+        genemark_rec(C, D, A, B).
+
+genemark_rec(end, _, A, [end(B)]) :-
+        msw(end, B),
+        msw(end(B), A).
+
+genemark_rec(A, B, [C,D,E|F], [A|G]) :-
+        A\==end,
+        msw(emit(A,B), [C,D,E]),
+        msw(trans(A), H),
+        genemark_rec(H, [C,D,E], F, G).
+
+get_list_codons(A) :-
+        A=[[a,a,a],[a,a,t],[a,a,c],[a,a,g],[a,t,a],[a,t,t],[a,t,c],[a,t,g],[a,c,a],[a,c,t],[a,c,c],[a,c,g],[a,g,a],[a,g,t],[a,g,c],[a,g,g],[t,a,a],[t,a,t],[t,a,c],[t,a,g],[t,t,a],[t,t,t],[t,t,c],[t,t,g],[t,c,a],[t,c,t],[t,c,c],[t,c,g],[t,g,a],[t,g,t],[t,g,c],[t,g,g],[c,a,a],[c,a,t],[c,a,c],[c,a,g],[c,t,a],[c,t,t],[c,t,c],[c,t,g],[c,c,a],[c,c,t],[c,c,c],[c,c,g],[c,g,a],[c,g,t],[c,g,c],[c,g,g],[g,a,a],[g,a,t],[g,a,c],[g,a,g],[g,t,a],[g,t,t],[g,t,c],[g,t,g],[g,c,a],[g,c,t],[g,c,c],[g,c,g],[g,g,a],[g,g,t],[g,g,c],[g,g,g]].
+
+get_init_states([start_codon,non_coding]).
+
+get_noncoding_list(0, [start_codon,end]) :- !.
+
+get_noncoding_list(A, [non_coding(A)|B]) :-
+        C is A+1,
+        get_noncoding_list(C, B).
+
+
