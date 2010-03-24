@@ -9,6 +9,8 @@
 % functor(From, To, Strand, ReadingFrame, Name).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+:- lost_include_api(misc_utils).
+
 % Overall report the accuracy statistics for a particular predictor.
 accuracy_stats(RefFunctor,PredFunctor,Start,End,Outputfile) :-
 	count_genes(PredFunctor,Start,End,NumberPredictedGenes),
@@ -107,10 +109,6 @@ count_genes(Functor,Start,End,Count) :-
 correct_genes(RefFunctor, PredFunctor, Start, End, Correct) :-
 	annotations_as_detailed_list(RefFunctor,Start,End,RefAnnot),
 	annotations_as_detailed_list(PredFunctor,Start,End,PredAnnot),
-	tell('debug'),
-	write(refAnnot(RefAnnot)),nl,
-	write(predAnnot(PredAnnot)),nl,
-	told,
 	intersection(RefAnnot,PredAnnot,Correct).
 	
 number_of_correct_genes(RefFunctor, PredFunctor, Start, End, NoCorrect) :-
@@ -150,7 +148,53 @@ wrong_genes(RefFunctor,PredFunctor,Start,End,WG) :-
 	number_of_wrong_genes(RefFunctor,PredFunctor,Start,End,Wrong),
 	count_genes(PredFunctor,Start,End,Predicted),
 	WG is Wrong / Predicted.
-	
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Hard to find genes list
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+gene_finding_difficulty_report(RefFunctor,PredictionFunctors,RangeMin,RangeMax,GenePredictionDifficultyList) :-
+	annotations_as_detailed_list(RefFunctor,RangeMin,RangeMax,ReferenceGenes),
+	map(annotations_as_detailed_list(input,RangeMin,RangeMax,output),PredictionFunctors,PredictionGenes),
+	gene_score_list_all(ReferenceGenes,PredictionGenes,GeneScoreLists),
+	rotate_list_vector(GeneScoreLists,OneListPerGeneScores),
+	combine_gene_scores(RefFunctor,ReferenceGenes,OneListPerGeneScores,GenePredictionDifficultyList).
+
+combine_gene_scores(_,[],[],[]).
+combine_gene_scores(RefFunctor,
+		    [[coding,From,To,Strand,Frame]|RefGenesRest],
+		    [GeneScoreList|GeneScoresRest],
+		    [gene(From,To,Strand,Frame,Name,GeneScoreList,CombinedScore)|CombinedRest]) :-
+	annotation(RefFunctor,From,To,Strand,Frame,Name),
+	length(GeneScoreList,NumGeneFinders),
+	sumlist(GeneScoreList,NumFoundGene),
+	gene_difficulty_score(NumGeneFinders,NumFoundGene,CombinedScore),
+	combine_gene_scores(RefFunctor,RefGenesRest,GeneScoresRest,CombinedRest).
+
+gene_difficulty_score(NumGeneFinders, NumFoundGene, DifficultyScore) :-
+	NumFoundGene =< NumGeneFinders,
+	ScorePerGeneFinder is 1 / NumGeneFinders,
+	DifficultyScore is ScorePerGeneFinder * NumFoundGene.
+
+gene_score_list_all(_, [], []).
+
+gene_score_list_all(RefGenes, [PredSet|PredSetRest], [GeneScoreList1|GeneScoreListRest]) :-
+	gene_score_list(RefGenes,PredSet,GeneScoreList1),
+	gene_score_list_all(RefGenes,PredSetRest,GeneScoreListRest).
+
+% Given a list of all genes and a list of correctly predicted genes
+% produce a list which has a one if the gene is corrrectly predicted
+% zero otherwise
+gene_score_list([],_,[]).
+
+gene_score_list([Gene|GenesRest], PredictedGenes, [1|RestScores]) :-
+	member(Gene,PredictedGenes),
+	!,
+	gene_score_list(GenesRest,PredictedGenes,RestScores).
+
+gene_score_list([_|GenesRest], PredictedGenes, [0|RestScores]) :-
+	gene_score_list(GenesRest,PredictedGenes,RestScores).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calculate nucleotide level accuracy counts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,8 +209,8 @@ report_nstats(ReferenceAnnotFunctor,PredictionAnnotFunctor,Start,End) :-
 	write('Nucleotide Level FN: '), write(FN), nl.
 
 nucleotide_level_accuracy_counts(Begin,End, RefAnnot, PredAnnot, TP,FP,TN,FN) :-
-	multi_map(fill_range_gaps(input,output,Begin,End,partial), RefAnnot, RefAnnotFilled), !,
-	multi_map(fill_range_gaps(input,output,Begin,End,partial), PredAnnot,PredAnnotFilled), !,
+	map(fill_range_gaps(input,output,Begin,End,partial), RefAnnot, RefAnnotFilled), !,
+	map(fill_range_gaps(input,output,Begin,End,partial), PredAnnot,PredAnnotFilled), !,
 	map(rm_seq_elems,PredAnnotFilled,PredAnnotSimple),
 	map(rm_seq_elems,RefAnnotFilled,RefAnnotSimple),
 	distinct_intervals(RefAnnotSimple, RefAnnotDistinct),
@@ -206,7 +250,6 @@ nucleotide_level_intervals([[[noncoding,coding],To,From]|Rest],TP, [[To,From]|FP
 	nucleotide_level_intervals(Rest,TP,FP,TN,FN).	
 nucleotide_level_intervals([[[noncoding,coding],To,From]|Rest],TP, [[To,From]|FP],TN,FN) :-
 	nucleotide_level_intervals(Rest,TP,FP,TN,FN).
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Create  distinct intervals
@@ -369,19 +412,16 @@ frame_annotation_to_list(AnnotType, From, To, Strand, ReadingFrame, ResultList) 
 		ResultListTmp),
 	clist_to_ext_range_list(ResultListTmp,ResultList).
 
-
 annotations_as_detailed_list(AnnotType, From, To, ResultList) :-
 	findall([coding,IncludeFrom, IncludeTo,Strand,ReadingFrame],
 		annotations_in_range(AnnotType,IncludeFrom,IncludeTo,Strand,ReadingFrame,_,From,To),
 		ResultList).
-
 
 annotations_as_lists(AnnotType,Start,End,List) :-
 	strand_reading_frame_combinations(Combinations),
 	annotations_as_lists(AnnotType,Start,End,Combinations,List).
 
 annotations_as_lists(_,_,_,[],[]).
-
 
 annotations_as_lists(AnnotType,Start,End,[[Strand,ReadingFrame]|Rest],[L|LR]) :-
 	frame_annotation_to_list(AnnotType,Start,End,Strand,ReadingFrame,L),
@@ -398,95 +438,12 @@ db_annotation_max(AnnotType, Strand,ReadingFrame,Max) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Possible strand and reading frame combinations
-strand(+).
-strand(-).
-reading_frame(1).
-reading_frame(2).
-reading_frame(3).
+strand(+). strand(-).
+reading_frame(1). reading_frame(2). reading_frame(3).
 
 strand_reading_frame_combinations(Combinations) :-
 	findall([S,R], (strand(S),reading_frame(R)), Combinations).
 
-% map applies to rule F(-,+) to each element of list
-map(_,[],[]).
-map(F, [L|Lists], [Out|OutRest]) :-
-	Goal =.. [ F, L, Out], 
-	call(Goal),
-	map(F,Lists,OutRest).
-
-
-% Advanced map utility
-multi_map(_,[],[]).
-multi_map(F, [L|Lists], [Out|OutRest]) :-
-	F =.. FList1,
-	replace(input,L,FList1,FList2),
-	replace(output,Out,FList2,FList3),
-	NewF =.. FList3,
-	call(NewF),
-	multi_map(F,Lists,OutRest).
-
-
-replace(_,_,[],[]).
-replace(Symbol, Replacement, [Symbol|InListRest], [Replacement|OutListRest]) :-
-	replace(Symbol,Replacement, InListRest,OutListRest).
-replace(Symbol, Replacement, [Elem|InListRest], [Elem|OutListRest]) :-
-	Symbol \= Elem,
-	replace(Symbol,Replacement,InListRest,OutListRest).
-
-
 rm_seq_elems([],[]).
 rm_seq_elems([[AnnotType,From,To,_]|Rest1],[[AnnotType,From,To]|Rest2]) :-
 	rm_seq_elems(Rest1,Rest2).
-
-inlists_nth0([], _, []).
-inlists_nth0([List|RestLists], N, [Elem|RestElems]) :-
-	nth0(N,List,Elem),
-	inlists_nth0(RestLists,RestElems).
-		
-% Sums the number of positions in a list of ranges
-sum_range_list([],0).
-sum_range_list([[From,To]|Rest],Sum) :-
-	LocalSum is To - From + 1,
-	sum_range_list(Rest, RestSum),
-	Sum is LocalSum + RestSum.
-
-% Find minimum element
-min(A,A,A).
-min(A,B,A) :- A < B.
-min(A,B,B) :- B < A.
-
-% Find maximum of two elements
-max(A,A,A).
-max(A,B,A) :- B < A.
-max(A,B,B) :- A < B.
-
-% Find maximum of list
-list_max([E],E).
-list_max([E|R],Max) :-
-	list_max(R,MR),
-	((E > MR) -> Max = E ; Max = MR).
-
-% Append variant which permit atom elements as first/second argument
-flexible_append(A,B,[A,B]) :-
-	atom(A),atom(B).
-flexible_append(A,B,[A|B]) :-
-	atom(A).
-flexible_append(A,B,C) :-
-	atom(B),
-	append(A,[B],C).
-
-% Merge list of lists into one long list, e.g.
-% flatten_once([[a,b],[c,d],[e,f]],E) => E = [a, b, c, d, e, f].
-flatten_once([],[]).
-flatten_once([E1|Rest],Out) :-
-	is_list(E1),
-	append(E1,FlatRest,Out),	
-	flatten_once(Rest,FlatRest).
-
-% Determine if two ranges overlap
-overlaps(Start1,End1, Start2,_) :-
-        Start1 =< Start2,
-        End1 >= Start2.
-overlaps(Start1,_, Start2,End2) :-
-        Start2 =< Start1,
-        End2 >= Start1.

@@ -1,0 +1,4 @@
+Given a set of "reference" genes for a particular sequence
+and predictions of N gene finders for the same sequence,
+this model will score each of the reference genes according to
+how many of the of gene finders find them.
