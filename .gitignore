@@ -3,3 +3,5 @@ shared/*.out
 models/**/*.out
 models/**/*NO_ANNOT*
 models/**/*TREE2ANN*
+shared/._*
+models/**/._*
