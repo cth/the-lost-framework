@@ -65,9 +65,15 @@ train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Get the Value of option with Key
-lost_option([Opt|_], Key, Value) :- 
+lost_option([option(Key,Value)|_], Key, Value) :- !.
+
+% This 'shortcut' works for options where the functor is used as key:
+lost_option([Opt|_], Key, Value) :-
         Opt =.. [ Key, Value ],
+	Key \= Option,
         !.
+
+% Recursively check the rest.
 lost_option([_|OptionList], Key, Value) :-
 	lost_option(OptionList,Key,Value).
 
