@@ -61,9 +61,6 @@ load_annotation_from_file(db,Options,File,Annotation) :-
 	sort('=<',Terms,SortedTerms), 
         db_terms_to_annotations(Options,SortedTerms,Annotation).
 
-
-
-
 % Utils for load_annotation_from_file(sequence,....)
 
 %%%
@@ -348,7 +345,7 @@ update_position_jump(_Range_Min,(_Min,Max),New_Position) :-
 
 
 %--------------------------------
-% Saving information from file  %
+% Saving information to file  %
 %--------------------------------
 
 % save_sequence_list_to_file(++File,--Sequence)
@@ -396,4 +393,41 @@ data_elements_to_sequence_terms(Pos,[Data|R1],[elem(Pos,Data)|R2]) :-
 	NextPos is Pos + 1,
 	data_elements_to_sequence_terms(NextPos,R1,R2).
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Basic reading/writing of terms to/from file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% terms_from_file(++File,--Terms)
+% Reads all Terms from named file File
+terms_from_file(File, Terms) :-
+	open(File, read, Stream),
+	ground(Stream),
+	collect_stream_terms(Stream,Terms),
+	close(Stream).
+
+% terms_to_file(++File,++Terms)
+% Writes all Terms to named file File
+terms_to_file(File,Terms) :-
+	open(File,write,Stream),
+	ground(Stream),
+	write_terms_to_stream(Stream,Terms),
+	close(Stream).
+
+% Writes terms to a Stream
+write_terms_to_stream(_,[]).
+write_terms_to_stream(Stream,[Term|Rest]) :-
+	writeq(Stream,Term),
+	write(Stream,'.\n'),
+	write_terms_to_stream(Stream,Rest).
+
+% Create list of Rules found in Stream
+collect_stream_terms(Stream, Rules) :-
+	read(Stream, T),
+	((T == end_of_file) ->
+		Rules = []
+	;
+		collect_stream_terms(Stream,Rest),
+		append([T],Rest,Rules)
+	).
 
