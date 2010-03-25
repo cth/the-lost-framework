@@ -1,3 +1,6 @@
+:- ['../lost.pl'].
+:- lost_include_api(interface).
+
 % Series of script for several parsers of data
 
 
