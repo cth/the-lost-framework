@@ -99,6 +99,15 @@ terms_has_rule_with_head(Terms,Functor,Arity) :-
 % Arithmetics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Absolute value
+abs(A,A) :-
+	A >= 0.
+abs(A,B) :-
+	A < 0,
+	B is A * -1.
+
+
+
 % Find minimum element
 min(A,A,A).
 min(A,B,A) :- A < B.
