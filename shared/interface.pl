@@ -70,7 +70,7 @@ lost_option([option(Key,Value)|_], Key, Value) :- !.
 % This 'shortcut' works for options where the functor is used as key:
 lost_option([Opt|_], Key, Value) :-
         Opt =.. [ Key, Value ],
-	Key \= Option,
+	Key \= option,
         !.
 
 % Recursively check the rest.
@@ -81,6 +81,12 @@ lost_option([_|OptionList], Key, Value) :-
 % Will throw expection if the value of the option cannot be found
 lost_required_option(Options, Key, Value) :-
 	check_or_fail(lost_option(Options,Key,Value),error(missing_option(Key))).
+
+% Lost option with given default value
+lost_option(Options,Key,Value,DefaultValue) :-
+        lost_option(Options,Key,Value)
+        ;
+        Value = DefaultValue.
 		    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Launching a PRISM process
