@@ -7,6 +7,7 @@
 :- [ldata_parser].
 
 :- lost_include_api(interface).
+:- lost_include_api(misc_utils).
 
 % Load configuration options
 % Load configuration options
@@ -19,9 +20,10 @@ lost_best_annotation([InputFile], Options, OutputFile) :-
       genemark_run(GMInputFile,ParamsFile),
       atom_concat(GMInputFile,'.ldata',LDATAFILE),
       write('Parsing Genemark report...'),nl,
+%      atom_concat(LDATAFILE,'.parsed.pl',ParsedLDataFile),
       ldata_parser_main(LDATAFILE,OutputFile),
+%      genemark_include_best_predictions(ParsedLDataFile,OutputFile),
       genemark_cleanup(GMInputFile).
-
 
 genemark_parameter_file(ParamsId,ParamsFile) :-
         genemark_config(genemark_parameters_dir,GMDir),
@@ -43,12 +45,15 @@ genemark_cleanup(GMInputFile) :-
         atom_concat(GMInputFile,'.lst',GeneMarkOutput1),
         atom_concat(GMInputFile,'.ldata',GeneMarkOutput2),
         atom_concat(GMInputFile,'.gdata',GeneMarkOutput3),
+       !.
+       /*
 	(file_exists(GeneMarkOutput1) ->
 	 delete_file(GeneMarkOutput1) ; true),
 	(file_exists(GeneMarkOutput2) ->
 	 delete_file(GeneMarkOutput2) ; true),
 	(file_exists(GeneMarkOutput3) ->
 	 delete_file(GeneMarkOutput3) ; true).
+         */
 
 %testme :-
 %        lost_best_annotation(['/tmp/U00096_fna.seq'], 

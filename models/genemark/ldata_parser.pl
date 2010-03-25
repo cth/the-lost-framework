@@ -46,18 +46,18 @@ ldata_line(T) --> gene_prediction_line(T).
 ldata_line(T) --> region_prediction_line(T).
 ldata_line(T) --> frame_shift_prediction_line(T).
 
-gene_prediction_line(gm_gene_prediction(Start,End,Strand,Frame,AvgProb,StartProb)) -->
+gene_prediction_line(genemark_gene_prediction(Start,End,Strand,Frame,[average_probability(AvgProb),start_codon_probability(StartProb)])) -->
         [Start,End],
         reading_frame6(Strand,Frame),
         [AvgProb,StartProb],
 	{ integer(Start),integer(End), float(AvgProb),float(StartProb) }.
 
-region_prediction_line(gm_region_prediction(Start,End,Strand,Frame)) -->
+region_prediction_line(genemark_region_prediction(Start,End,Strand,Frame)) -->
         [Start,End],
         reading_frame6(Strand,Frame),
 	{ integer(Start),integer(End) }.
 
-frame_shift_prediction_line(gm_frame_shift_prediction(FromFrame,ToFrame,Position,Strand)) -->
+frame_shift_prediction_line(genemark_frame_shift_prediction(FromFrame,ToFrame,Position,Strand)) -->
         [FromFrame,ToFrame,Position],
         strand_word(Strand),
 	{ integer(ToFrame),integer(FromFrame) }.

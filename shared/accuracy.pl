@@ -164,8 +164,9 @@ combine_gene_scores(_,[],[],[]).
 combine_gene_scores(RefFunctor,
 		    [[coding,From,To,Strand,Frame]|RefGenesRest],
 		    [GeneScoreList|GeneScoresRest],
-		    [gene(From,To,Strand,Frame,Name,GeneScoreList,CombinedScore)|CombinedRest]) :-
-	annotation(RefFunctor,From,To,Strand,Frame,Name),
+		    [gene(From,To,Strand,Frame,ExtraList)|CombinedRest]) :-
+	annotation(RefFunctor,From,To,Strand,Frame,ExtraOrig),
+	append(ExtraOrig,[found_by_genefinders(GeneScoreList),gene_finding_difficulty_score(CombinedScore)],ExtraList),
 	length(GeneScoreList,NumGeneFinders),
 	sumlist(GeneScoreList,NumFoundGene),
 	gene_difficulty_score(NumGeneFinders,NumFoundGene,CombinedScore),
@@ -292,7 +293,6 @@ binary_distinct_intervals([[Rtype,START,Rend]|Rrest], [[Ptype,START,Pend]|Prest]
 	RstartNew is Iend + 1,
 	flexible_append(Rtype,Ptype,CombinedType),	
 	binary_distinct_intervals([[Rtype,RstartNew,Rend]|Rrest], Prest,Irest).
-	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Unfold overlapping range
@@ -389,16 +389,12 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 % FIXME: if goal has more arguments then we have a problem!
 % Temporary hack to deal with database format
 
-annotation(Type, From, To, Strand, ReadingFrame, _Name) :-
-	Goal =.. [ Type, From, To, Strand, ReadingFrame ],
-	catch(call(Goal),_,fail).
+%annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
+%	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
+%	catch(call(Goal),_,fail).
 
-annotation(Type, From, To, Strand, ReadingFrame, Name) :-
-	Goal =.. [ Type, From, To, Strand, ReadingFrame, Name ],
-	catch(call(Goal),_,fail).
-
-annotation(Type, From, To, Strand, ReadingFrame, Name) :-
-	Goal =.. [ Type, From, To, Strand, ReadingFrame, Name, _ ],
+annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
+	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
 	catch(call(Goal),_,fail).
 
 annotations_in_range(Type, From, To, Strand, ReadingFrame, Name, RangeMin, RangeMax) :-

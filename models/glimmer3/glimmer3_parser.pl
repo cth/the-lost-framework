@@ -2,7 +2,6 @@
 :- lost_include_api(misc_utils).
 :- lost_include_api(utils_parser_report).
 
-
 glimmer3_parse_prediction_file(InputFile,OutputFile) :-
 	open(InputFile,read,InputStream2),
 	open(OutputFile,write,OStream),
@@ -15,8 +14,7 @@ glimmer3_prediction_parser(IS,OS) :-
         glimmer3_prediction_parser_rec(IS,OS,NextLine).
 
 % End of file:
-glimmer3_prediction_parser_rec(_,_,[-1]) :-
-        !.
+glimmer3_prediction_parser_rec(_,_,[-1]) :- !.
 
 % Empty lines:
 glimmer3_prediction_parser_rec(IS,OS,[]) :-
@@ -39,7 +37,7 @@ glimmer3_prediction_parser_rec(IS, OS, Line) :-
         write(OS,Term), write(OS,'.'), write(OS,'\n'),
         glimmer3_prediction_parser(IS,OS).
 
-glimmer3_prediction_line(glimmer3_prediction(Start,End,Strand,Frame,Score)) -->
+glimmer3_prediction_line(glimmer3_gene_prediction(Start,End,Strand,Frame,[score(Score)])) -->
 	[ _OrfId, Start, End],
 	strand_frame_token(Strand,Frame),
 	[ Score ],
