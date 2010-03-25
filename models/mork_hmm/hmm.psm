@@ -1,0 +1,24 @@
+%SM_081008_1.0_single state hidden markov model fully connected example
+%loadable,sampleable,probable and learneable
+
+target(model,1).
+
+values(transition(begin),[state_1]).
+values(transition(state_1), [state_1,state_2, end]).
+values(transition(state_2),[state_2,state_1]).
+values(emission(state_1), [a,c,g,t]).
+values(emission(state_2),[a,c,g,t]).
+
+model(List):-
+   msw(transition(begin), Hidden_state),
+   hmm(Hidden_state, List).
+
+hmm(end,[]):-!.
+
+hmm(Hidden_state,[Symbol|Rest]):-
+   Hidden_state\= end,
+   msw( emission(Hidden_state), Symbol),
+   msw( transition(Hidden_state,Symbol), Next_hidden_state),
+   hmm( Next_hidden_state, Rest).
+
+
