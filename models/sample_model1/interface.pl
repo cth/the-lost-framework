@@ -2,14 +2,23 @@
 :- lost_include_api(interface).
 :- lost_include_api(io).
 
+lost_option(lost_best_annotation,parameter_file,default,'The full path to a prism parameter file').
+	    
+% Some ideas for specification of input & output formats...
+%lost_output_format(lost_best_annotation, sequence).
+%lost_input_format(lost_best_annonation, [sequence_type1,sequence_type2,*sequence_type1]).
+
 % This is what is used to get the best annotation
 lost_best_annotation([InputFile],Options,OutputFile) :-
 	write('sample model 1: '),nl,
 	write(lost_best_annotation(ParamFile,[InputFile],Options,OutputFile)),nl,
-	lost_required_option(Options,parameter_file,ParamFile),
+	get_option(Options,parameter_file,ParamFile),
 	prism(sample1), % Load the actual PRISM model
-	write(restore_sw(ParamFile)),nl, % Restore switch values
-	restore_sw(ParamFile), % Restore switch values
+	% If no parameter file was specificed, just use default (uniform) parameters:
+	((ParamFile == default) ->
+	 true ;
+	 write(restore_sw(ParamFile)),nl,restore_sw(ParamFile)
+	),
 	load_annotation_from_file(sequence,[data_position(4)],InputFile,InputSequence),
         % Derive an annotation somehow
         write(viterbig(sample1(InputSequence,OutputSequence))),nl,

@@ -12,7 +12,7 @@ run_model1(ResultFile) :-
 	lost_model_parameter_file(sample_model1, test, Model1ParamFile),
 	get_annotation_file(sample_model1,
 			    [TinySequence],
-			    [parameter_file(Model1ParamFile)],
+			    [], %[parameter_file(Model1ParamFile)],
 			    ResultFile).
 
 run_model2(ResultFile) :-

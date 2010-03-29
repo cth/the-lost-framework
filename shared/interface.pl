@@ -19,14 +19,18 @@ get_annotation_file(Model, Inputs, Options, Filename) :-
 	check_or_fail(file_exists(ModelFile),interface_error(missing_model_file(ModelFile))),
 	check_or_fail(lost_interface_supports(Model,lost_best_annotation,3),
 		      interface_error(no_support(Model,lost_best_annotation/3))),
+	check_or_fail(verify_model_options_declared(Model, Goal, Options),
+		      error(interface(model_called_with_undeclared_options(Model,Options)))),
+	expand_model_options(Model, Goal, Options, ExpandedOptions),
+	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Check if a result allready exists:
 	lost_annotation_index_file(AnnotIndex),
-	lost_file_index_get_filename(AnnotIndex,Model,Inputs,Options,Filename),
+	lost_file_index_get_filename(AnnotIndex,Model,Inputs,ExpandedSortedOptions,Filename),
 	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
 	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
-	 term2atom(lost_best_annotation(Inputs,Options,Filename),Goal),
+	 term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
 	 launch_prism_process(ModelFile,Goal),
 	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
 	 lost_file_index_update_file_timestamp(AnnotIndex,Filename)
@@ -45,15 +49,17 @@ train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
 	check_or_fail(file_exists(ModelFile),interface_error(missing_model_file(ModelFile))),
 	check_or_fail(lost_interface_supports(Model,lost_best_annotation,3),
 		      interface_error(no_support(Model,lost_learn/3))),
+	check_or_fail(verify_model_optixons_declared(Model, Goal, Options),
+		      error(interface(model_called_with_undeclared_options(Model,Options)))),
+	expand_model_options(Model, Goal, Options, ExpandedOptions),
 	lost_model_parameter_index_file(Model,ParamFileIndex),
-	lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,Options,SavedParamsFile),
-	write(lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,Options,SavedParamsFile)),nl,
-	
+	lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedOptions,SavedParamsFile),
+	write(lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedOptions,SavedParamsFile)),nl,
 	!,
 	(file_exists(SavedParamsFile) ->
 	 write('Using existing parameter file: '), write(SavedParamsFile), nl
 	 ;
-	 term2atom(lost_learn(TrainingDataFiles,Options,SavedParamsFile),Goal),
+	 term2atom(lost_learn(TrainingDataFiles,ExpandedOptions,SavedParamsFile),Goal),
 	 launch_prism_process(ModelFile,Goal),
 	 check_or_fail(file_exists(SavedParamsFile),interface_error(missing_parameter_file(SavedParamsFile))),
 	 write('about to update file timestamp'),nl,
@@ -61,33 +67,60 @@ train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Option parsing
+% Check declared options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Get the Value of option with Key
-lost_option([option(Key,Value)|_], Key, Value) :- !.
+% Fail if a given option is undeclared.
+verify_model_options_declared(Model,Goal,Options) :-
+	declared_model_options(Model,Goal,DeclaredOptions),
+	option_is_declared(Options,DeclaredOptions).
 
-% This 'shortcut' works for options where the functor is used as key:
-lost_option([Opt|_], Key, Value) :-
-        Opt =.. [ Key, Value ],
-	Key \= option,
-        !.
+option_is_declared([], _).
+option_is_declared([Option|Rest], DeclaredOptions) :-
+	Option =.. [ OptionName, _ ],
+	DeclaredOptionMatcher =.. [ lost_option, _, OptionName, _, _],
+	member(DeclaredOptionMatcher,DeclaredOptions),
+	option_is_declared(Rest,DeclaredOptions).
 
-% Recursively check the rest.
-lost_option([_|OptionList], Key, Value) :-
-	lost_option(OptionList,Key,Value).
+% Expand the set of given options to contain options with default
+% values as declared by the model
+expand_model_options(Model, Goal, Options, ExpandedOptions) :-
+	declared_model_options(Model, Goal, DeclaredOptions),
+	expand_options(DeclaredOptions,Options,DefaultOptions),
+	append(Options,DefaultOptions,ExpandedOptions).
 
-% Used to retrieve the value of required options
-% Will throw expection if the value of the option cannot be found
+expand_options([],_,[]).
+
+% The declared option is part of given options
+expand_options([lost_option(_,OptionName,_,_)|Ds],Options,Rest) :-
+	OptionMatcher =.. [OptionName,_],
+	member(OptionMatcher, Options),
+	expand_options(Ds,Options,Rest).
+
+% The declared option is not part of given options:
+% Add it with a default value
+expand_options([lost_option(_,OptionName,DefaultValue,_)|Ds],Options,[DefaultOption|Rest]) :-
+	OptionMatcher =.. [OptionName,_],
+	not(member(OptionMatcher, Options)),
+	DefaultOption =.. [OptionName,DefaultValue],
+	expand_options(Ds,Options,Rest).
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Option parsing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TODO: Eventually we should have some
+
+get_option(Options, KeyValue) :-
+	member(KeyValue, Options).
+
+get_option(Options, Key, Value) :-
+        KeyValue =.. [ Key, Value ],
+	get_option(Options,KeyValue).
+
 lost_required_option(Options, Key, Value) :-
-	check_or_fail(lost_option(Options,Key,Value),error(missing_option(Key))).
+	write('!!! lost_required_option is deprecated since ALL declared options are now required. Use get_option/3 instead !!!'),nl,
+	get_option(Options,Key,Value).
 
-% Lost option with given default value
-lost_option(Options,Key,Value,DefaultValue) :-
-        lost_option(Options,Key,Value)
-        ;
-        Value = DefaultValue.
-		    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Launching a PRISM process
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -261,6 +294,12 @@ lost_interface_supports(Model,Functor,Arity) :-
 	lost_model_interface_file(Model,ModelFile),
 	terms_from_file(ModelFile, Terms),
 	terms_has_rule_with_head(Terms,Functor,Arity).
+
+declared_model_options(Model, Goal, DeclaredOptions) :-
+	lost_model_interface_file(Model, ModelFile),
+	terms_from_file(ModelFile, Terms),
+	findall(Term, (member(Term,Terms), Term =.. [lost_option,Goal,_OptionName,_DefaultValue,_Description]),DeclaredOptions).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Time stamp checking

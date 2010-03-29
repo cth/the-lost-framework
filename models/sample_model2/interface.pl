@@ -2,13 +2,15 @@
 :- lost_include_api(interface).
 :- lost_include_api(io).
 
+lost_option(lost_best_annotation,parameter_file,default,'The full path to a prism parameter file').
+
 % This is what is used to get the best annotation
 lost_best_annotation([InputFile1,InputFile2],Options,OutputFile) :-
 	write('sample model 2: '),nl,
 	write(lost_best_annotation(ParamFile,[InputFile1,InputFile2],Options,OutputFile)),nl,
 
 	% Check and retrieve option values:
-	lost_required_option(Options,parameter_file,ParamFile),
+	get_option(Options,parameter_file,ParamFile),
 
 	% Load the input sequences
 	load_annotation_from_file(sequence,[data_position(4)],InputFile1,InputSeq1),
@@ -17,8 +19,8 @@ lost_best_annotation([InputFile1,InputFile2],Options,OutputFile) :-
 	% Load the actual PRISM model
 	prism(sample2),
 
-	% Restore switch values:
-	restore_sw(ParamFile),
+	% If no parameter file was specificed, just use default (uniform) parameters:
+	((ParamFile == default) -> true ; write(restore_sw(ParamFile)),nl,restore_sw(ParamFile)),
 
 	writeq(		      viterbig(sample2(InputSeq1,InputSeq2,OutputSequence))),nl,
 
