@@ -276,7 +276,7 @@ xml_to_document1( false, Attributes, Terms, malformed(Attributes, Terms) ).
 % unparsed( +Unparsed, +Context, ?Terms, ?Residue, ?WellFormed )
 unparsed( Unparsed, _Context, [unparsed(Unparsed)], [], false ).
 
-xml_declaration( Attributes ) -->
+xml_declaration( _Attributes ) -->
 	spaces,
 	"".
 
@@ -563,9 +563,10 @@ dtd( Namespaces0, Namespaces1 ) -->
 	"",
 	{\+ character_entity( Name, _StandardChar ), 
 	 % Don't allow < &quote; etc. to be updated
-	 context_update( entity(Name), Namespaces0, String, Namespaces2 )},
+	 context_update( entity(Name), Namespaces0, _String, Namespaces2 )},
 	dtd( Namespaces2, Namespaces1 ).
-dtd( Namespaces0, Namespaces1 ) -->
+
+dtd( _Namespaces0, _Namespaces1 ) -->
 	spaces,
 	spaces.
 
@@ -1083,26 +1084,26 @@ document_generation( Format, xml(Attributes, Document) ) -->
 
 document_generation_body( [], Format, Document ) -->
 	generation( Document, "", Format, [], _Format1 ).
-document_generation_body( Attributes, Format, Document ) -->
+document_generation_body( Attributes, _Format, Document ) -->
 	{	Attributes = [_|_],
 		xml_declaration_attributes_valid( Attributes )
 	},
 	"",
 	indent( true, [] ),
-	generation( Document, "", Format0, [], _Format1 ).
+	generation( Document, "", _Format0, [], _Format1 ).
 
 generation( [], _Prefix, Format, _Indent, Format ) --> [].
 generation( [Term|Terms], Prefix, Format0, Indent, Format ) -->
 	generation( Term, Prefix, Format0, Indent, Format1 ),
 	generation( Terms, Prefix, Format1, Indent, Format ).
-generation( doctype(Name, External), _Prefix, Format, [], Format ) -->
+generation( doctype(_Name, _External), _Prefix, Format, [], Format ) -->
 	"".
-generation( instructions(Target,Process), _Prefix, Format, Indent, Format ) -->
+generation( instructions(_Target,_Process), _Prefix, Format, Indent, Format ) -->
 	indent( Format, Indent ),
 	"".
 generation( pcdata(Chars), _Prefix, _Format, _Indent, false ) -->
 	pcdata_generation( Chars ).
-generation( comment( Comment ), _Prefix, Format, Indent, Format ) -->
+generation( comment( _Comment ), _Prefix, Format, Indent, Format ) -->
 	indent( Format, Indent ),
 	"".
 generation( namespace(URI, Prefix, element(Name, Atts, Content)),
@@ -1116,7 +1117,7 @@ generation( element(Name, Atts, Content), Prefix, Format, Indent, Format ) -->
 	"<", generated_prefixed_name( Prefix, Name ),
 	generated_attributes( Atts, Format, Format1 ), 
 	generated_content( Content, Format1, Indent, Prefix, Name ).
-generation( cdata(CData), _Prefix, Format, Indent, Format ) -->
+generation( cdata(_CData), _Prefix, Format, Indent, Format ) -->
 	indent( Format, Indent ),
 	"".
 
@@ -1144,7 +1145,7 @@ generated_prefixed_name( Prefix, Name ) -->
 
 generated_content( [], _Format, _Indent, _Prefix, _Namespace ) -->
 	" />". % Leave an extra space for XHTML output.
-generated_content( [H|T], Format, Indent, Prefix, Namespace ) -->
+generated_content( [H|T], Format, Indent, Prefix, _Namespace ) -->
 	">",
 	generation( H, Prefix, Format, [0' |Indent], Format1 ),
 	generation( T, Prefix, Format1, [0' |Indent], Format2 ),
