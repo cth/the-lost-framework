@@ -175,7 +175,11 @@ combine_gene_scores(RefFunctor,
 gene_difficulty_score(NumGeneFinders, NumFoundGene, DifficultyScore) :-
 	NumFoundGene =< NumGeneFinders,
 	ScorePerGeneFinder is 1 / NumGeneFinders,
-	DifficultyScore is ScorePerGeneFinder * NumFoundGene.
+	DifficultyScore is 1 - (ScorePerGeneFinder * NumFoundGene).
+
+% FIXME:
+% It would be better?? if the difficulty score could also be weighted by the false positive
+% percentage of each gene finder, which would give a more "accurate" score
 
 gene_score_list_all(_, [], []).
 
