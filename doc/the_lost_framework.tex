@@ -1,13 +1,3 @@
-%%
-%% lostapis.tex
-%% 
-%% Made by Christian Theil Have
-%% Login   <cth@noosa>
-%% 
-%% Started on  Fri Mar  5 11:25:51 2010 Christian Theil Have
-%% Last update Fri Mar  5 11:25:51 2010 Christian Theil Have
-%%
-
 \documentclass{book}
 % Creation of index
 \usepackage{makeidx}
@@ -210,7 +200,7 @@ it will take this value.
 the option. Should be in single quotes. 
 \end{itemize}
 
-\noident
+\noindent
 As example, consider an option declaration:
 \begin{verbatim}
 lost_option(lost_best_annotation,parameter_file,default,'A parameter filename').
@@ -230,29 +220,50 @@ which will start a new PRISM process and invoke,
 lost_best_annotation(['/some/path/infile.seq'],[parameter_file(default)],FileOut),
 \end{verbatim}
 
-\noident
+\noindent
 where the option \texttt{parameter\_file} has been inserted with the
 default value. A default value is only inserted if the option is left
 unspecified.
 
 
-\subsection{Declaration for file formats for interface predicates}
+\subsection{Declaration of file formats for interface predicates}
 
-\paragraph{Note: This is preliminary thoughts and not yet implemented}
+%\paragraph{Note: This is preliminary thoughts and not yet implemented}
 
 For each model interface predicate the format of input files and
 output files should be declared as facts. To declare the format of the
 input files, a fact, 
 
 \begin{verbatim}
-lost_input_files(InterfacePredName, [ Format1, .., FormatN ]).
+lost_input(InterfacePredName, [ Format1, .., FormatN ]).
 \end{verbatim}
 
 \noindent
 where \texttt{InterfacePredName} is the name of the predicate to which 
 the declaration belong. The second argument is a list of format 
 identifiers as described in chapter \ref{chap:file_formats}.
+For instance, we may have a declaration,
+\begin{verbatim}
+lost_input(lost_best_annotation, 
+    [ text(prolog(sequence(dna))), text(prolog(sequence(amino_acids)))]).
+\end{verbatim}
 
+The last entry of the list of formats may have the special star quantifier, which works 
+similar to a kleene star: It states that the last entry is a placeholder for between zero or more entries of the specified type. For instance,
+\begin{verbatim}
+lost_input(lost_best_annotation, 
+    [ text(prolog(sequence(dna))), star(text(prolog(sequence(dna))))]).
+\end{verbatim}
+\noindent
+specifies that \texttt{lost\_best\_annotation} takes one or more input files of the type \texttt{text(prolog(sequence(dna)))}.
+
+Similarly, the output format of a lost model interface predicate is declared with a fact,
+\begin{verbatim}
+lost_output(InterfacePredName, Format).
+\end{verbatim}
+
+\noindent
+where \texttt{Format} is one of the formats described in chapter \ref{chap:file_formats}.
 
 \chapter{Lost shared APIs}
 \label{chap:lost_shared_apis}
@@ -644,8 +655,108 @@ must be called with four mandatory options:
 
 \chapter{File formats}
 
-This chapter should say something about the various types of file
-formats we use.
+The chapter documents the different types of file formats used in the
+lost framework. The naming of file formats follow a simple scheme
+using  nested Prolog functors where the outermost functor is the most
+general and the innermost is the most specific description of the file
+format. For instance, consider the naming for a DNA sequence expressed
+as a Prolog file,
+\begin{verbatim}
+text(prolog(sequence(dna)))
+\end{verbatim} 
+
+The outermost functor \texttt{text} specifies that the file is a text
+file, and the next functor \texttt{prolog} says that the text file
+contains Prolog code. The next one, \texttt{sequence}, specifies the
+type of data (sequence data) we expect to be expressed in the prolog
+facts finally, the innermost functor \texttt{dna} specifies the type
+of sequence that we are dealing with.
+
+\section{\texttt{text(prolog(\_))}}
+
+\texttt{text(prolog(\_))} formats contain Prolog facts. The functor and
+arity of those facts cannot be determined by knowing that it is
+\texttt{text(prolog(\_))}, but needs specification using further embbed
+functors.
+
+\subsection{\texttt{text(prolog(sequence(\_)))}}
+
+This format should be specified for sequence data expressed as prolog
+facts. For instance, a file of this format may contain facts like the
+ones below, which specifies the alphabet, 
+\begin{verbatim}
+data(alphabet,1,10, [a,b,c,d,e,f,g,h,i,j]).
+data(alphabet,11,20],[k,l,m,n,o,p,q,r,s,t]).
+data(alphabet,21,27,[u,v,w,x,y,z]).
+\end{verbatim}
+
+\noindent
+The form of these facts are, 
+\begin{verbatim}
+functor(Identifier,To,From,SequenceElementList).
+\end{verbatim}
+
+\noindent
+The format does not dictate the \texttt{functor} of the facts
+(e.g. \texttt{data}), nor the size of the data list in the fourth
+argument. However, the range expressed by \texttt{To} and
+\texttt{From} should correspond to the numer of elements
+in \texttt{SequenceElementList}.
+
+\subsubsection{\texttt{text(prolog(sequence(dna)))}}
+
+Like the above format but restricts the alphabet of the data elements
+in the \texttt{SequenceElementList} to the set \texttt{\{a,g,c,t\}}.
+
+\subsubsection{\texttt{text(prolog(sequence(rna)))}}
+
+Like the above format but restricts the alphabet of the data elements
+in the \texttt{SequenceElementList} to the set \texttt{\{a,g,c,u\}}.
+
+\subsubsection{\texttt{text(prolog(sequence(amino\_acids)))}}
+
+Like the above format but restricts the alphabet of the data elements
+in the \texttt{SequenceElementList} to the set
+\texttt{\{a,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,y\}}.
+
+\subsection{\texttt{text(prolog(ranges(\_)))}} 
+
+The format consists of Prolog facts, each of which contain an
+annotation for a particular range of some sequence
+
+\begin{verbatim}
+F =.. [ Functor, LeftEnd, RightEnd | _ ]
+\end{verbatim}
+
+The functor may vary depending on the type of annotation but is
+expected to be same within a file. The first two arguments,
+\texttt{LeftEnd} and \texttt{RightEnd} are positive integers which specifies 
+the range relative to the sequence. Both are inclusive.
+
+\subsubsection{\texttt{text(prolog(ranges(gene)))}} 
+
+The format consists of Prolog facts, each of which contain an
+gene annotation for a particular range of some DNA sequence
+ (all facts refer to the same sequence).
+
+The facts are on the form, 
+\begin{verbatim}
+functor(LeftEnd,RightEnd,Strand,Frame,ExtraList).
+\end{verbatim}
+
+The functor may vary depending on the type of annotation but is
+expected to be same within a file. The first two arguments,
+\texttt{Start} and \texttt{End} are positive integers which specifies 
+the range of the annotation relative to the DNA sequence. The
+\texttt{Strand} argument is \texttt{+} for the forward strand
+or\texttt{-} for the reverse strand. The \texttt{Frame} argument
+is one of \texttt{\{1,2,3\}}. The final argument, \texttt{ExtraList}
+is a list possibly containing extra information.
+
+
+\subsection{\texttt{text(prolog(prism\_switches))}}
+
+This is the format used by PRISM to save and load parameter files.
 
 \chapter{Notes and stuff}
 
@@ -661,7 +772,7 @@ useful file (lost, /shared/*.*, /scripts/*.*). Just let to the user
 to do consulting of model file. If it is possible, have a very simple
 interaction with the user to set the lost location, set platform, or list
 models or data available.
-\item Naming stuff: load_annotation_from_file -> load_sequence_from_file
+\item Naming stuff: \texttt{load\_annotation\_from\_file -> load\_data\_from\_file}
 \item Utility for removing generated sequence files 
 \item Document gene database file format and make sure that all models
   adhere to this format.
