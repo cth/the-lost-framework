@@ -26,9 +26,9 @@
 :- lost_include_api(interface).
 
 
-% Type nucleotid, codon, animo_acid
+% Type nucleotide, codon, animo_acid
 stats(Type,Options,Data,Input_Counting,Result) :-
-        member(Type,[nucleotid,codon,animo_acid]),
+        member(Type,[nucleotide,codon,animo_acid]),
         var(Input_Counting),
         !,
         (member(order(N),Options) ->
@@ -48,7 +48,7 @@ stats(Type,Options,Data,Input_Counting,Result) :-
         
         
 stats(Type,Options,Data,Input_Counting,Result) :-
-        member(Type,[nucleotid,codon,animo_acid]),
+        member(Type,[nucleotide,codon,animo_acid]),
         !,
         (member(order(N),Options) ->
             true
@@ -68,7 +68,7 @@ stats(Type,Options,Data,Input_Counting,Result) :-
 % Stats that records the past
 
 stats(Type,Options,Data,Input_Counting,Past_Final,Result) :-
-        member(Type,[nucleotid,codon,animo_acid]),
+        member(Type,[nucleotide,codon,animo_acid]),
         var(Input_Counting),
         !,
         (member(order(N),Options) ->
@@ -90,7 +90,7 @@ stats(Type,Options,Data,Input_Counting,Past_Final,Result) :-
 
 
 stats(Type,Options,Data,Input_Counting,Past_Final,Result) :-
-        member(Type,[nucleotid,codon,animo_acid]),
+        member(Type,[nucleotide,codon,animo_acid]),
         !,
         (member(order(N),Options) ->
             true
@@ -132,7 +132,6 @@ stats_rec([Datum|Rest_Data],Past,Input_Counting,Result) :-
 stats_rec([],Past,Result,Past,Result) :-
         !.
 
-
 stats_rec([Datum|Rest_Data],Past,Input_Counting,Past_Final,Result) :-
         update_counting(Datum,Past,Input_Counting,Input_Counting2),
         (Past = [] ->
@@ -159,7 +158,8 @@ stats_length([[Min,Max]|Ranges],Counting,Result) :-
 
 % init_counting
 %--------
-% Remark: Exponential explosion here: take care to select a reasonable order (especially for codon type
+% Remark: Exponential explosion here: take care to select a
+% reasonable order (especially for codon type
 
 init_counting(Type,0,[([],Init_List)]) :-
         !,
@@ -241,7 +241,7 @@ update_length(Length,[(Length_Above,Count)|Rest],[(Length,1),(Length_Above,Count
 % get_init/2
 
 
-get_init(nucleotid,[(a,0),(c,0),(g,0),(t,0)]) :-
+get_init(nucleotide,[(a,0),(c,0),(g,0),(t,0)]) :-
         !.
 
 get_init(codon,[([a,a,a],0),([a,a,c],0),([a,a,g],0),([a,a,t],0),
@@ -275,10 +275,10 @@ get_init(animo_acid,[(a,0),(c,0),(d,0),(e,0),
 
 % get(++Type,--Values).
 
-get(nucleotid,a).
-get(nucleotid,c).
-get(nucleotid,g).
-get(nucleotid,t).
+get(nucleotide,a).
+get(nucleotide,c).
+get(nucleotide,g).
+get(nucleotide,t).
 
 get(codon,[a,a,a]).
 get(codon,[a,a,c]).
@@ -395,11 +395,11 @@ build_past(N,[Elt|Rest],Past1-Past2,Rest_Data) :-
 %--------
 
 normalize(Type,[],[]) :-
-        member(Type,[nucleotid,codon,animo_acid]),
+        member(Type,[nucleotide,codon,animo_acid]),
         !.
         
 normalize(Type,[(Past,Countings)|Rest],[(Past,(Domain,Distribution))|Rest_Normalized]) :-
-        member(Type,[nucleotid,codon,animo_acid]),
+        member(Type,[nucleotide,codon,animo_acid]),
         !,
         normalize2(Countings,0,0,_Length_Final,_Sum_Final,Domain,Distribution),
         normalize(Type,Rest,Rest_Normalized).
