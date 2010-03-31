@@ -124,6 +124,13 @@ list_max([E|R],Max) :-
 	list_max(R,MR),
 	((E > MR) -> Max = E ; Max = MR).
 
+% Find minimum of list
+list_min([E],E).
+list_min([E|R],Min) :-
+	list_min(R,MR),
+	((E < MR) -> Min = E ; Min = MR).
+
+
 % atom_to_integer(++Atom,--Integer)
 % Converts and atom representing an integer number to an
 % Integer usuable in arithmetic operationes

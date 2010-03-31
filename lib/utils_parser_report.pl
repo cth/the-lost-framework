@@ -60,8 +60,6 @@ parser_line([],_Ignored_Chars,[]) :-
 parser_line(Entry_Codes,Ignored_Chars,Entry_Token) :-
         var(Token),
         parser_line_rec(Entry_Codes,Token-Token,Ignored_Chars,Entry_Token).
-        
-
 
 % End of the line
 parser_line_rec([],[]-[],_Ignored_Chars,[]) :- !.

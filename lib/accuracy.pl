@@ -13,7 +13,11 @@
 
 % Overall report the accuracy statistics for a particular predictor.
 accuracy_stats(RefFunctor,PredFunctor,Start,End,Outputfile) :-
+	write(called(accuracy_stats(RefFunctor,PredFunctor,Start,End,Outputfile))),nl,
+	trace,
 	count_genes(PredFunctor,Start,End,NumberPredictedGenes),
+	write('got here'),nl,	
+	
 	count_genes(RefFunctor,Start,End,NumberActualGenes),
 	number_of_correct_genes(RefFunctor, PredFunctor,Start,End,NumberCorrect),
 	number_of_wrong_genes(RefFunctor, PredFunctor, Start, End, NumberWrong),
@@ -31,6 +35,7 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,Outputfile) :-
 	simple_matching_coefficient(TP,FP,TN,FN,SMC),
 	average_conditional_probability(TP,FP,TN,FN,ACP),
 	aproximate_correlation(TP,FP,TN,FN,AC),
+	write('got here'),nl,
 	tell(Outputfile),
 	write('--------------- Gene level stats -----------------'), nl,
 	write('Number of predicted genes: '), write(NumberPredictedGenes),nl,
@@ -175,7 +180,11 @@ combine_gene_scores(RefFunctor,
 gene_difficulty_score(NumGeneFinders, NumFoundGene, DifficultyScore) :-
 	NumFoundGene =< NumGeneFinders,
 	ScorePerGeneFinder is 1 / NumGeneFinders,
-	DifficultyScore is ScorePerGeneFinder * NumFoundGene.
+	DifficultyScore is 1 - (ScorePerGeneFinder * NumFoundGene).
+
+% FIXME:
+% It would be better?? if the difficulty score could also be weighted by the false positive
+% percentage of each gene finder, which would give a more "accurate" score
 
 gene_score_list_all(_, [], []).
 
@@ -428,6 +437,12 @@ db_annotation_max(AnnotType, Strand,ReadingFrame,Max) :-
 	Goal =.. [ AnnotType, _, IncludeTo, Strand, ReadingFrame, _ ],
 	findall(IncludeTo,Goal, ResultList),
 	list_max(ResultList,Max).
+
+% Find the beginning of the range of an annotation
+db_annotation_min(AnnotType, Strand,ReadingFrame,Max) :-
+	Goal =.. [ AnnotType, _, IncludeTo, Strand, ReadingFrame, _ ],
+	findall(IncludeTo,Goal, ResultList),
+	list_min(ResultList,Max).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Various minor utility rules

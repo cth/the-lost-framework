@@ -85,7 +85,7 @@ fact_building_eg(List):-
         ;
             Frm = Temp
         ),
-        Cds =.. [eg,Start,End,Dir,Frm], % more arguments can be be added as neccassary
+        Cds =.. [eg,Start,End,Dir,Frm,[]], % more arguments can be be added as neccassary
 	write(Cds),
         write('.'),
         nl.

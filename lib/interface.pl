@@ -15,12 +15,8 @@
 % Inputs: A list of filenames given as input to the model.
 % Options: A list of options to the model.
 get_annotation_file(Model, Inputs, Options, Filename) :-
-	lost_model_interface_file(Model, ModelFile),
-	check_or_fail(file_exists(ModelFile),interface_error(missing_model_file(ModelFile))),
-	check_or_fail(lost_interface_supports(Model,lost_best_annotation,3),
-		      interface_error(no_support(Model,lost_best_annotation/3))),
-	check_or_fail(verify_model_options_declared(Model, Goal, Options),
-		      error(interface(model_called_with_undeclared_options(Model,Options)))),
+	lost_model_interface_file(Model, ModelFile),	
+	check_valid_model_call(Model, lost_best_annotation,3, Options),
 	expand_model_options(Model, Goal, Options, ExpandedOptions),
 	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Check if a result allready exists:
@@ -36,7 +32,7 @@ get_annotation_file(Model, Inputs, Options, Filename) :-
 	 lost_file_index_update_file_timestamp(AnnotIndex,Filename)
 	).
 
-% (cth) Considering to rename "get_annotation_file" to "run_model"
+% Alias for get_annotation_file...
 run_model(Model,Inputs,Options,Filename) :-
 	get_annotation_file(Model,Inputs,Options,Filename).
 
@@ -45,24 +41,20 @@ run_model(Model,Inputs,Options,Filename) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
-	lost_model_interface_file(Model, ModelFile),
-	check_or_fail(file_exists(ModelFile),interface_error(missing_model_file(ModelFile))),
-	check_or_fail(lost_interface_supports(Model,lost_best_annotation,3),
-		      interface_error(no_support(Model,lost_learn/3))),
-	check_or_fail(verify_model_optixons_declared(Model, Goal, Options),
-		      error(interface(model_called_with_undeclared_options(Model,Options)))),
+	lost_model_interface_file(Model, ModelFile),		
+	check_valid_model_call(Model, lost_best_annotation,3, Options),	
 	expand_model_options(Model, Goal, Options, ExpandedOptions),
+	sort(ExpandedOptions,ExpandedSortedOptions),	
 	lost_model_parameter_index_file(Model,ParamFileIndex),
-	lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedOptions,SavedParamsFile),
-	write(lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedOptions,SavedParamsFile)),nl,
+	lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile),
+	write(lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile)),nl,
 	!,
 	(file_exists(SavedParamsFile) ->
 	 write('Using existing parameter file: '), write(SavedParamsFile), nl
 	 ;
-	 term2atom(lost_learn(TrainingDataFiles,ExpandedOptions,SavedParamsFile),Goal),
+	 term2atom(lost_learn(TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile),Goal),
 	 launch_prism_process(ModelFile,Goal),
 	 check_or_fail(file_exists(SavedParamsFile),interface_error(missing_parameter_file(SavedParamsFile))),
-	 write('about to update file timestamp'),nl,
 	 lost_file_index_update_file_timestamp(ParamFileIndex,SavedParamsFile)
 	).
 
@@ -161,9 +153,9 @@ lost_models_directory(ModelsDir) :-
 	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir, '/models/', ModelsDir).
 
-lost_sequence_directory(Dir) :-
+lost_data_directory(Dir) :-
 	lost_config(lost_base_directory, Basedir),!,
-	atom_concat(Basedir,'/sequences/',Dir).
+	atom_concat(Basedir,'/data/',Dir).
 
 lost_model_directory(Model,ModelDir) :-
 	lost_models_directory(ModelsDir),
@@ -193,13 +185,16 @@ lost_model_parameter_file(Model,ParameterId,ParameterFile) :-
 	atom_concat(ParameterFile1,'.prb',ParameterFile).
 
 lost_annotation_index_file(IndexFile) :-
-	lost_sequence_directory(AnnotDir),
+	lost_data_directory(AnnotDir),
 	atom_concat(AnnotDir,'annotations.idx',IndexFile).
 
-lost_sequence_file(SequenceId, SequenceFile) :-
-	lost_sequence_directory(D),
+lost_data_file(SequenceId, SequenceFile) :-
+	lost_data_directory(D),
 	atom_concat(SequenceId,'.seq', Filename),
 	atom_concat(D, Filename, SequenceFile).
+
+lost_sequence_file(SequenceId, SequenceFile) :-
+	lost_data_file(SequenceId, SequenceFile).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost annotation index.
@@ -290,6 +285,19 @@ lost_file_index_inputfiles(IndexFile,Filename,InputFiles) :-
 % lost model interface analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+check_valid_model_call(Model, InterfacePredicate, Arity,Options) :-
+	lost_model_interface_file(Model, ModelFile),
+	check_or_fail(file_exists(ModelFile),interface_error(missing_model_file(ModelFile))),
+	check_or_fail(lost_interface_supports(Model,InterfacePredicate,Arity),
+		      interface_error(no_support(Model,InterfacePredicate/Arity))),
+	check_or_fail(verify_model_options_declared(Model,InterfacePredicate,Options),
+		      error(interface(model_called_with_undeclared_options(Model,Options)))),
+	write(lost_interface_input_formats(Model,InterfacePredicate, _)),nl,
+	check_or_fail(lost_interface_input_formats(Model,InterfacePredicate, _),
+		      error(interface(missing_input_formats_declaration(Model,InterfacePredicate)))),
+	check_or_fail(lost_interface_defines_output_format(Model,InterfacePredicate),
+		      error(interface(missing_output_format_declaration(Model,InterfacePredicate)))).
+
 lost_interface_supports(Model,Functor,Arity) :-
 	lost_model_interface_file(Model,ModelFile),
 	terms_from_file(ModelFile, Terms),
@@ -300,6 +308,20 @@ declared_model_options(Model, Goal, DeclaredOptions) :-
 	terms_from_file(ModelFile, Terms),
 	findall(Term, (member(Term,Terms), Term =.. [lost_option,Goal,_OptionName,_DefaultValue,_Description]),DeclaredOptions).
 
+lost_interface_input_formats(Model,InterfacePredicate, Formats) :-
+	lost_model_interface_file(Model,ModelFile),!,
+	terms_from_file(ModelFile,Terms),!,
+	InputDeclarationMatch =.. [ lost_input_formats, InterfacePredicate, Formats],
+	member(InputDeclarationMatch, Terms).
+
+lost_interface_defines_output_format(Model,InterfacePredicate) :-
+	lost_model_interface_file(Model,ModelFile),
+	terms_from_file(ModelFile, Terms),
+	Head =.. [ lost_output_format, InterfacePredicate, _options, _format],
+	Rule =.. [ :-, Head, _ ],
+	write(Head),nl,
+	write(Rule),nl,
+	(member(Head, Terms) ; member(Rule,Terms)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Time stamp checking
@@ -373,3 +395,23 @@ timestamp_list_after([Elem1|Rest1],[Elem2|Rest2]) :-
 	timestamp_list_after(Rest1,Rest2).
 
 timestamp_to_list(time(Year,Mon,Day,Hour,Min,Sec), [Year,Mon,Day,Hour,Min,Sec]).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Some utilitites
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+rm_gen :-
+	lost_data_directory(D),
+	atom_concat(D,'*.gen',FileGlobPattern),
+	atom_concat('rm -f ', FileGlobPattern, Command),
+	write(Command),nl,
+	system(Command).
+
+rm_tmp :-
+	lost_tmp_directory(D),
+	atom_concat(D,'*',FileGlobPattern),
+	atom_concat('rm -f ', FileGlobPattern, Command),
+	write(Command),nl,
+	system(Command).
+	
