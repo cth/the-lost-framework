@@ -431,3 +431,14 @@ collect_stream_terms(Stream, Rules) :-
 		append([T],Rest,Rules)
 	).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Utility for finding the functor in a text(prolog(_)) format
+% Eg. the file is expected to have only one functor
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+file_functor(Filename, Functor) :-
+	terms_from_file(Filename,Terms),
+	findall( F,((member(X,Terms), X =.. [ F |_ ])), Functors),
+	eliminate_duplicate(Functors,[Functor]).
+		 
+		

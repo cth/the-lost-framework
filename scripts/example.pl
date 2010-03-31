@@ -11,8 +11,8 @@ run_model1(ResultFile) :-
 	lost_sequence_file(tinytest,TinySequence),
 	lost_model_parameter_file(sample_model1, test, Model1ParamFile),
 	get_annotation_file(sample_model1,
-			    [TinySequence],
-			    [], %[parameter_file(Model1ParamFile)],
+			    [TinySequence,Model1ParamFile],
+			    [], 
 			    ResultFile).
 
 run_model2(ResultFile) :-
@@ -20,8 +20,8 @@ run_model2(ResultFile) :-
 	lost_sequence_file(tinytest,TinySequence),
 	lost_model_parameter_file(sample_model2, sample2, ParameterFile),
 	get_annotation_file(sample_model2,
-			    [TinySequence,AnnotModel1], 
-			    [parameter_file(ParameterFile)],
+			    [TinySequence,AnnotModel1,ParameterFile],
+			    [use_parameter_file(no)],
 			    ResultFile).
 
 test_run :-
