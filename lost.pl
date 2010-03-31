@@ -1,9 +1,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Configuration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+
+% Make changes to these three lines:
 lost_config(prism_command,'prism').
 lost_config(lost_base_directory,'/change/to/your/local/lost/directory').
 lost_config(platform,'to specify unix or windows').
+
+% Do not change below this line
 
 lost_include_api(_) :-
         lost_config(lost_base_directory,'/change/to/your/local/lost/directory'),
@@ -17,7 +22,7 @@ lost_include_api(_) :-
 % Basic rule to glue in other APIs
 lost_include_api(Name) :-
 	lost_config(lost_base_directory, Basedir),
-	atom_concat(Basedir,'shared/',SharedDir),
+	atom_concat(Basedir,'lib/',SharedDir),
 	atom_concat(SharedDir,Name,DirAndName),
 	atom_concat(DirAndName,'.pl',FullName),
 	consult(FullName).
