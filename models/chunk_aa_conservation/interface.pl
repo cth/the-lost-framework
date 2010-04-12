@@ -3,6 +3,10 @@
 %:- lost_include_api(misc_utils).
 %:- lost_include_api(io).
 :- lost_include_api(utils_parser_report).                                                                                                                                        
+
+lost_input_formats(lost_best_annotation, [text(fasta)]).
+lost_output_format(lost_best_annotation, _Options, [text(prolog(ranges(gene)))]).
+
                                                                                         
 % This is what is used to get the best annotation 
 % requires translationmode{0,1} and gencodefile.                                      

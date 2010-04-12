@@ -3,6 +3,9 @@
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).                                                                                                                                        
                                                                                         
+lost_input_formats(lost_best_annotation, [text(prolog(sequence(_)))]).
+lost_output_format(lost_best_annotation, _Options, [text(prolog(ranges(gene)))]).
+
 % This is what is used to get the best annotation 
 % requires direction (+/-) and frame (1,2,3)                                      
 lost_best_annotation([Sequence_File],Options,Orf_Chunk_File) :-                                 
