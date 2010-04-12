@@ -290,13 +290,13 @@ check_valid_model_call(Model, InterfacePredicate, Arity,Options) :-
 	check_or_fail(file_exists(ModelFile),interface_error(missing_model_file(ModelFile))),
 	check_or_fail(lost_interface_supports(Model,InterfacePredicate,Arity),
 		      interface_error(no_support(Model,InterfacePredicate/Arity))),
-	check_or_fail(verify_model_options_declared(Model,InterfacePredicate,Options),
+	check_or_warn(verify_model_options_declared(Model,InterfacePredicate,Options),
 		      error(interface(model_called_with_undeclared_options(Model,Options)))),
-	write(lost_interface_input_formats(Model,InterfacePredicate, _)),nl,
-	check_or_fail(lost_interface_input_formats(Model,InterfacePredicate, _),
-		      error(interface(missing_input_formats_declaration(Model,InterfacePredicate)))),
-	check_or_fail(lost_interface_defines_output_format(Model,InterfacePredicate),
-		      error(interface(missing_output_format_declaration(Model,InterfacePredicate)))).
+	%write(lost_interface_input_formats(Model,InterfacePredicate, _)),nl,
+	check_or_warn(lost_interface_input_formats(Model,InterfacePredicate, _),
+		      warning(interface(missing_input_formats_declaration(Model,InterfacePredicate)))),
+	check_or_warn(lost_interface_defines_output_format(Model,InterfacePredicate),
+		      warning(interface(missing_output_format_declaration(Model,InterfacePredicate)))).
 
 lost_interface_supports(Model,Functor,Arity) :-
 	lost_model_interface_file(Model,ModelFile),
