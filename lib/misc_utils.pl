@@ -153,6 +153,16 @@ check_or_fail(Check,_Error) :-
 check_or_fail(_File,Error) :-
 	throw(Error).
 
+% check_or_warn(Goal,Error):
+% call Goal and throw and exception with error if Goal fails.
+% Also, never backtrack beyond this point.
+check_or_warn(Check,_Error) :-
+	call(Check),
+	!.
+
+check_or_warn(_File,Error) :-
+	writeq(warning(Error)).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % File system
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
