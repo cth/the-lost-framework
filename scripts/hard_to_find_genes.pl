@@ -8,15 +8,14 @@ minitest :-
 	lost_sequence_file(eg_fragment,EGFile), % Easygene predictions
 	lost_sequence_file(gm_fragment,GMFile), % Genemark predictions
 	get_annotation_file(hard_to_find_genes,
-			    [GBFile,EGFile,GMFile],
-			    [option(file_functor(GBFile),gb),
-			     option(file_functor(EGFile),eg),
-			     option(file_functor(GMFile),gm)],
+			    [GBFile,EGFile,GMFile], [],
 			    OutputFile),
 	write('File written to: '), write(OutputFile), nl.
 
 
-test :-
+% This runs genemark and glimmer, but their options needs to be tweaked
+% a bit still...
+test1 :-
         lost_sequence_file('U00096_ptt',GenbankFile),
         get_annotation_file(parser_ptt, [GenbankFile], [], GBFile),
 	lost_sequence_file('U00096_fna',SeqFile),
