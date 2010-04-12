@@ -38,7 +38,8 @@
 :- [blosum62scores].
 %output_alignments(yes).
 %nongap_mismatch_score(1).
-blast_command('blastall -p tblastn -d EnteroBacteriales_RS.nt -m 2 -b 8 -Q 11 -D 11 -P 1 -s T -S 1').
+blast_command('legacy_blast.pl blastall -p tblastn -d EnteroBacteriales_RS.nt -m 2 -b 8 -Q 11 -D 11 -P 1 -s T -S 1').
+blast_path_option(' --path /usr/local/bin').
 blast_output_file('tblastn.aln').
 blast_input_file('tblastn.fst').
 %----------------------------------------------------------------------------
@@ -210,7 +211,9 @@ blast_next_chunk(Chunk_file,Blast_Output,QId,ChunkTerminated,Status):-
 		atom_concat(' -i ',Blast_Input, Arg1),
 		atom_concat(' -o ',Blast_Output, Arg2),
 		atom_concat(Arg1,Arg2,Args),
-		atom_concat(Blast_Command,Args,Command),
+		atom_concat(Blast_Command,Args,Arg3), % for Legacy_blast.pl use: Arg3 replaces command
+		blast_path_option(Path_option),				% for Legacy_blast.pl use
+		atom_concat(Arg3,Path_option,Command),% for Legacy_blast.pl use
 		%writeq(Command),
 		system(Command,Status)
 	;
