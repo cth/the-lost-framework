@@ -2,6 +2,9 @@
 :- lost_include_api(interface).                                                         
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).                                                                                                                                        
+
+lost_input_formats(lost_best_annotation, [text(prolog(ranges(gene))),text(prolog(ranges(gene)))]).
+lost_output_format(lost_best_annotation, _Options, [text(fasta)]).
                                                                                         
 % This is what is used to get the best annotation 
 % requires translationmode{0,1} and gencodefile.                                      
