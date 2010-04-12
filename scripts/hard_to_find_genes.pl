@@ -28,9 +28,7 @@ test :-
 	get_annotation_file(glimmer3,[SeqFile],[mode(from-scratch)],GlimFile),
         get_annotation_file(hard_to_find_genes,
 			    [GBFile,GMBestFile,GlimFile],
-			    [option(file_functor(GBFile),gb),
-			     option(file_functor(GMBestFile),genemark_gene_prediction),
-			     option(file_functor(GlimFile),glimmer3_gene_prediction)],
+			    [],
 			    Hard2FindGenesFile),
 	write('Find list of hard to find genes in: '), write(Hard2FindGenesFile),nl.
 
