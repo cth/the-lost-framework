@@ -3,6 +3,9 @@
 :- lost_include_api(autoAnnotations).
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).                                                                                                                                        
+
+lost_input_formats(lost_best_annotation, [text(prolog(ranges(gene))),text(prolog(ranges(gene)))]).
+lost_output_format(lost_best_annotation, _Options, [text(prolog(ranges(gene)))]).
                                                                                         
 % This is what is used to get the best annotation                                       
 lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-                                 
