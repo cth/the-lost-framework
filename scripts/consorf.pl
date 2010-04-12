@@ -9,6 +9,7 @@
 % Prolog files in the shared directory can be consulted
 % like this from anywhere..
 :- lost_include_api(interface).
+:- lost_include_api(utils_parser_report).
 
 
 % topology 
@@ -53,15 +54,18 @@ run_chunk_translator(Sequence_File,Options,Translated_Chunk_File) :-
 %--------------------------------------------------------------------------------------------------
 % Computing conservation annotation
 %--------------------------------------------------------------------------------------------------
-% 	Possible options include scoring mode for non-gap mismatches : 
-%			0, nongap-mismatches score nothing, 
-%			1, nongap-mismathces score fully%		
+% 	Possible options include scoring mode for non-gap mismatches : nmScore(Score)
+%			Score = 0, nongap-mismatches score nothing, 
+%			Score = 1, nongap-mismathces score fully
+%
+%		and an optional : alignment outputfile : alignments(Alnfile)
+% 	also direction and frame are needed
 %--------------------------------------------------------------------------------------------------
 run_chunk_conservation(Sequence_File,Options,Conservation_File) :-
 	run_chunk_translator(Sequence_File,Options,Translated_Chunk_File),
-	get_annotation_file(chunk_conservation,
+	get_annotation_file(chunk_aa_conservation,
 			    [Translated_Chunk_File],
-			    [],
+			    Options,
 			    Conservation_File).
 
 %--------------------------------------------------------------------------------------------------
@@ -73,7 +77,7 @@ consorf(InputOrfFile,InputConsFile):-
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),	
 	get_annotation_file(consorf_genefinder,  					
 			    [LostInputOrfFile,LostInputConsFile], 						
-			    [option(parameter_file,ParameterFile)],   
+			    [parameter_file(ParameterFile)],   
 			    AnnotFile),
 	write('Resulting consorf prediction file'),nl,
 	writeln(AnnotFile).

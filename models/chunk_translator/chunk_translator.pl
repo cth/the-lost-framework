@@ -19,13 +19,16 @@ chunk_translator(FileIn,Mode,AFastaOut):-
 chunk_translator_main(end_of_file,_Mode,_FileIn,_FastaOut).
 
 % mode = 0 : entire chunk is translated
-chunk_translator_main(chunk(Id,Start,End,Dir,Frm,Seq,_Type,_Starts),0,	FileInStream,	AFastaStream):-
+chunk_translator_main(chunk(Id,Start,End,Seq,Dir,Frm,_Starts,_Stops),0,	FileInStream,	AFastaStream):-
+%write('0-0 raw              '),writeln(Seq),		
 	(
 		Dir = '-' -> reverse_complement(Seq,[],SeqR,0,_Length)
 	;
 		SeqR = Seq
-	),	
+	),
+%write('0-1 b4 translation '),writeln(SeqR),	
 	translate(SeqR,Product),		
+%write('0-2 af translation '),writeln(Product),	
 	report_prod(AFastaStream,Id,Start,Start,End,Dir,Frm,_Length,Product),	
 	read(FileInStream,Term),
 	chunk_translator_main(Term,0,FileInStream,AFastaStream)
@@ -33,13 +36,16 @@ chunk_translator_main(chunk(Id,Start,End,Dir,Frm,Seq,_Type,_Starts),0,	FileInStr
 
 
 % mode =1 : only orfs are translated	
-chunk_translator_main(chunk(Id,Start,End,Dir,Frm,Seq,orf,Starts),1,	FileInStream,	AFastaStream):-
+chunk_translator_main(chunk(Id,Start,End,Seq,Dir,Frm,Starts,Stops),1,	FileInStream,	AFastaStream):-
+%write('0-0 raw              '),writeln(Seq),		
+	Stops \= [],
 	Starts = [OrfStart|_Starts],
 	(
 		Dir = '-' -> reverse_complement(Seq,[],SeqR,0,_Length)
 	;
 	 	SeqR = Seq
-	),
+	),	
+%write('0-1 b4 segment      '),writeln(SeqR),
 	(
 		Dir = '+' -> 
 			PreStartLength is OrfStart - Start -1 ,	
@@ -49,12 +55,14 @@ chunk_translator_main(chunk(Id,Start,End,Dir,Frm,Seq,orf,Starts),1,	FileInStream
 			Length is End - Start +1
 	),		
 	segment(PreStartLength,_PreStart,Orf,SeqR),
+%write('0-2 b4 translation  '),writeln(Orf),	
 	translate(Orf,Product),
+%write('1-3 af translation  '),writeln(Product),
 	report_prod(AFastaStream,Id,Start,OrfStart,End,Dir,Frm, Length,Product),
 	read(FileInStream,Term),
 	chunk_translator_main(Term,1,FileInStream,AFastaStream).
 
-chunk_translator_main(chunk(Id,Start,End,Dir,Frm,_Seq,rst,_Starts),1,	FileInStream,	AFastaStream):-
+chunk_translator_main(chunk(Id,Start,End,_Seq,Dir,Frm,_Starts,[]),1,	FileInStream,	AFastaStream):-
 	Product = [],
 	Length is 0,
 	report_prod(AFastaStream,Id,Start,End,End,Dir,Frm,Length,Product),
@@ -133,3 +141,11 @@ complement(t,a).
 complement(c,g).
 complement(g,c).
 	
+%=======================================================
+% testgoals
+%=======================================================
+testgoal1(Mode):-
+	chunk_translator('u00096-500_+1.gen',Mode,'u00096-500_+1-tx').
+
+testgoal2(Mode):-
+	chunk_translator('u00096-500_-1.gen',Mode,'u00096-500_-1-tx').	
