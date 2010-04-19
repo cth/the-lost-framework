@@ -20,7 +20,6 @@
 % NOTE TO THE USER : 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%%%%%%%%%%%%%%%%%%%%%%
 % load_annotation_from_file(++Type_Info,++Options,++File,--Annotation)
 %
@@ -31,7 +30,8 @@
 % Terms in File are composed of List of data.
 % Annotation is a list
 % Options available: Options = [data_position(Position),
-%                               all_lists,range(Min,Max)]
+%                               all_lists,range(Min,Max),
+%                               ranges(List_of_Ranges)]
 % all_lists does not support a range option
 %%%%%%%%%
 load_annotation_from_file(sequence,Options,File,Annotation) :-
@@ -40,6 +40,26 @@ load_annotation_from_file(sequence,Options,File,Annotation) :-
 	% interface is used
 	sort('=<',Terms,SortedTerms), 
         sequence_terms_to_annotations(Options,SortedTerms,Annotation).
+
+
+
+% Predicate used to compute only one time terms
+load_annotation_from_file(sequence,Options,File,Terms,Annotation) :-
+        var(Terms),
+        !,
+        terms_from_file(File,Terms),
+        % Technically not necessary since they will be sorted if this
+	% interface is used
+	sort('=<',Terms,SortedTerms), 
+        sequence_terms_to_annotations(Options,SortedTerms,Annotation).
+
+
+load_annotation_from_file(sequence,Options,_File,Terms,Annotation) :-
+        % Technically not necessary since they will be sorted if this
+	% interface is used
+	sort('=<',Terms,SortedTerms), 
+        sequence_terms_to_annotations(Options,SortedTerms,Annotation).
+
 
 
 %%%%%%%%%%%%%%%%%%%%
@@ -118,6 +138,7 @@ sequence_terms_to_annotations(Options,[Data|Data_Terms],Annotation) :-
         !,
         Data =.. [_Functor,_,Sequence_Data|_],  % Default functor(Num,Sequence_Data,...)
         sequence_terms_to_annotations_rec(Sequence_Data,range(Min,Max),1,2,Data_Terms,Annotation).
+
 
 
 % Options Data Position only

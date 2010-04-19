@@ -34,7 +34,7 @@
 %----------------------------------------------------------------------------
 % Declarations
 %----------------------------------------------------------------------------
-:- [blast_parser].
+% :- [blast_parser].
 :- [blosum62scores].
 %output_alignments(yes).
 %nongap_mismatch_score(1).
@@ -80,10 +80,9 @@ cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTermin
 %writeln('preblast '),
 	blast_next_chunk(Chunk_File,Blast_File,QId,ChunkTerminated,Status),
 %writeln('postblast '),
-	%(ChunkTerminated == 'no' -> writeln('ok1');true),
+%(ChunkTerminated == 'no' -> writeln('ok1');true),
 	(
 	Status == 0 ->
-		% open(Blast_File,read,Blast_Stream,[alias(blast_in)]),
 %writeln('pre blast parse init '),	writeq(parse_blast_init(Blast_Stream,Length,IDs)),	
 		parser_blast(Blast_File, IDS, First_Pos, Pos_After, All_alignments),
 		Length is Pos_After - First_Pos,
@@ -109,16 +108,15 @@ cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTermin
 %cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
 cons_main(IDs,FirstPos,LastPos,All_alignments,Aln_Stream,Cons,AvgCons):-
 %writeln('cons_main 0'),
-		%parse_blast_main_new(Input_Stream,IDs,FirstPos,PosAfter,All_alignments),		
+		%parse_blast_main_new(Input_Stream,IDs,FirstPos,PosAfter,All_alignments), /* obsolete parser_call */		
 		%LastPos is PosAfter -1,
 		(
 			All_alignments \= [], All_alignments \= ['n/a','n/a'] ->
 			determine_best_alns(All_alignments,Best_alignments),
 %writeln('cons_main 1'),
-%(output_alignments(yes) -> writeln('yes cons_main'); true),
 			(
 				output_alignments(yes)-> 
-				%writeln('yes'),
+%writeln('outputting alignments'),
 				report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
 			; 
 				true

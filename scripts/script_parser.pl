@@ -101,3 +101,65 @@ parser_genemark(Report_Name,OutputFile) :-
         
         write('Parsing succeeds!! see.: '),
         write(OutputFile).
+
+
+
+% Parser Blast output 2 Ole 
+parser_blast(XML_File,List_Ids2,FirstPos,PosAfter,All_alignments) :-
+        get_annotation_file(parser_blastxml,
+                            [XML_File],
+                            [],
+                            Outputfile),
+        consult(Outputfile),
+        findall(Id,blast(_,Id,_),List_Ids),
+        remove_dups(List_Ids,List_Ids2),
+        blast(Query_Id,_,Data),
+        member('Hsp_query-from'(FirstPos),Data),
+        member('Hsp_query-to'(PosAfter),Data),
+        PosAfter1 is PosAfter+1,
+        member('Hsp_qseq'(QuerySeq),Data),
+        Tuplet_Query = (Query_Id,FirstPos,PosAfter1,QuerySeq),
+        build_uplets(Rest_tuplet),
+        All_alignments = [Tuplet_Query|Rest_tuplet].
+
+
+
+% build_uplets
+
+
+build_uplets(Uplets) :-
+        findall(Id,blast(_,Id,_),List_Ids),
+        findall(Firstpos,(blast(_,_,Data),member('Hsp_hit-from'(Firstpos),Data)),List_First),
+        findall(Posafter,(blast(_,_,Data),member('Hsp_hit-to'(Posafter),Data)),List_After),
+        findall(Allignment,(blast(_,_,Data),member('Hsp_hseq'(Allignment),Data)),List_Allignements),
+        build_uplets_rec(List_Ids,List_First,List_After,List_Allignements,Uplets).
+
+
+build_uplets_rec([],[],[],[],[]) :-
+        !.
+
+build_uplets_rec([Id|Rest_Ids],[First|Rest_First],[After|Rest_After],[Allignment|Rest_Allignements],[Uplet|Rest_Uplets]) :-
+        Uplet = (Id,First,After,Allignment),
+        build_uplets_rec(Rest_Ids,Rest_First,Rest_After,Rest_Allignements,Rest_Uplets).
+
+
+
+
+remove_dups([],[]) :-
+        !.
+
+
+remove_dups(List,Result) :-
+        remove_dups_rec(List,[],Result).
+
+remove_dups_rec([],_,[]) :-
+        !.
+
+remove_dups_rec([A|Rest],List,Result) :-
+        member(A,List),
+        !,
+        remove_dups_rec(Rest,List,Result).
+
+
+remove_dups_rec([A|Rest],List,[A|Rest_Result]) :-
+        remove_dups_rec(Rest,[A|List],Rest_Result).
