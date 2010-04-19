@@ -38,8 +38,7 @@
 :- [blosum62scores].
 %output_alignments(yes).
 %nongap_mismatch_score(1).
-blast_command('legacy_blast.pl blastall -p tblastn -d EnteroBacteriales_RS.nt -m 2 -b 8 -Q 11 -D 11 -P 1 -s T -S 1').
-blast_path_option(' --path /usr/local/bin').
+blast_command('tblastn -db EnteroBacterialesGB.nt -outfmt 2 -db_gencode 11 -use_sw_tback').
 blast_output_file('tblastn.aln').
 blast_input_file('tblastn.fst').
 %----------------------------------------------------------------------------
@@ -51,7 +50,10 @@ conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
 	at_end_of_stream(Chunk_Stream) -> true
 	;
 %writeln('cons pre 1'),
-		cons_init(Chunk_Stream,Blast_Stream,[QId|DBIDS],QLength,ChunkTerminated,Status),
+		cons_init(Chunk_Stream,Blast_File,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
+		
+%retur her%
+
 %writeln(Status),
 %writeln('cons pre 2'),
 %(ChunkTerminated == 'no' -> writeln('ok2');true),
@@ -59,7 +61,7 @@ conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
 		(
 		Status == 0 ->
 %writeq(cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,Aln_Stream,Cons,Avg_Cons)),			
-			cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,Aln_Stream,Cons,Avg_Cons),
+			cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
 			% write(' -->'),writeln((AFirst,ALast,QLength)),
 			%writeln(Cons),
 			cons_cleanup(Blast_Stream)
@@ -80,19 +82,25 @@ conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
 cons_cleanup(Blast_Stream):-
 	close(Blast_Stream).
 
-cons_init(Chunk_File,Blast_Stream,IDs,Length,ChunkTerminated,Status):-
+cons_init(Chunk_File,Blast_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTerminated,Status):-
 %writeln('preblast '),
 	blast_next_chunk(Chunk_File,Blast_File,QId,ChunkTerminated,Status),
 %writeln('postblast '),
 	%(ChunkTerminated == 'no' -> writeln('ok1');true),
 	(
 	Status == 0 ->
-		open(Blast_File,read,Blast_Stream,[alias(blast_in)]),
+		% open(Blast_File,read,Blast_Stream,[alias(blast_in)]),
 %writeln('pre blast parse init '),	writeq(parse_blast_init(Blast_Stream,Length,IDs)),	
-		parse_blast_init(Blast_Stream,Length,IDs)
+		parser_blast(Blast_File, IDS, First_Pos, Pos_After, All_alignments),
+		Length is Pos_After - First_Pos,
+		LastPos is Pos_After -1
+		% parse_blast_init(Blast_Stream,Length,IDs)
 	;
 		IDs = [QId],
-		Length = 0
+		Length = 0,
+		All_Alignments = [],
+		First_Pos = 0,
+		Last_pos  = 0
 	)
 %,writeln('post blast parse init ')
 	.
@@ -104,11 +112,11 @@ cons_init(Chunk_File,Blast_Stream,IDs,Length,ChunkTerminated,Status):-
 % must return also start and end of alignment, both in [1..QueryLength].
 %
 %cons_main_new(Blast_Stream,[QId|DBIDS],AFirst,		ALast,Cons),
-%cons_main_new(Blast_Stream,IDs,				FirstPos,LastPos,Cons)
-cons_main(Input_Stream,IDs,FirstPos,LastPos,Aln_Stream,Cons,AvgCons):-
+%cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
+cons_main(IDs,FirstPos,LastPos,All_alignments,Aln_Stream,Cons,AvgCons):-
 %writeln('cons_main 0'),
-		parse_blast_main_new(Input_Stream,IDs,FirstPos,PosAfter,All_alignments),		
-		LastPos is PosAfter -1,
+		%parse_blast_main_new(Input_Stream,IDs,FirstPos,PosAfter,All_alignments),		
+		%LastPos is PosAfter -1,
 		(
 			All_alignments \= [], All_alignments \= ['n/a','n/a'] ->
 			determine_best_alns(All_alignments,Best_alignments),
@@ -208,13 +216,11 @@ blast_next_chunk(Chunk_file,Blast_Output,QId,ChunkTerminated,Status):-
 %writeln('post copy fasta'),
 	(
 	CopyFasta_OK = 'yes' ->
-		atom_concat(' -i ',Blast_Input, Arg1),
-		atom_concat(' -o ',Blast_Output, Arg2),
+		atom_concat(' -query ',Blast_Input, Arg1),
+		atom_concat(' -out ',Blast_Output, Arg2),
 		atom_concat(Arg1,Arg2,Args),
-		atom_concat(Blast_Command,Args,Arg3), % for Legacy_blast.pl use: Arg3 replaces command
-		blast_path_option(Path_option),				% for Legacy_blast.pl use
-		atom_concat(Arg3,Path_option,Command),% for Legacy_blast.pl use
-		%writeq(Command),
+		atom_concat(Blast_Command,Args,Command), 
+		writeq(Command),
 		system(Command,Status)
 	;
 		Status = 2
