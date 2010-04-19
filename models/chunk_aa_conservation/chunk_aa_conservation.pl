@@ -44,39 +44,25 @@ blast_output_file('tblastn.aln').
 blast_input_file('tblastn.fst').
 %----------------------------------------------------------------------------
 conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-		
-%writeln('cons pre 0'),		
-%(output_alignments(yes) -> writeln('yes conservation'); true),	
-	(
-	at_end_of_stream(Chunk_Stream) -> true
+	(at_end_of_stream(Chunk_Stream) ->
+            true
 	;
-%writeln('cons pre 1'),
-		cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
-		writeq(cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status)),
-		nl,
-%writeln(Status),
-%writeln('cons pre 2'),
-%(ChunkTerminated == 'no' -> writeln('ok2');true),
-%writeln(QLength),
-		(
-		Status == 0 ->
-%writeq(cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,Aln_Stream,Cons,Avg_Cons)),			
-			cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
-			writeq(cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons)),
-			nl
-% write(' -->'),writeln((AFirst,ALast,QLength)),
-%writeln(Cons),
-		;
-			Cons = [],Avg_Cons is 0
-		),
-%writeln('cons post 1'),		
-% writeln(user_output,'after cons_main_new call'),
-		report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength,Cons,Avg_Cons),
-%writeln('cons post 2'),				
-%(ChunkTerminated == 'no' -> writeln('ok3');true),
-% write(user_output,'after report cons call'),
-		Counter2 is Counter+1,
-		conservation(Chunk_Stream,Counter2,Dir,Frame,Aln_Stream,Cons_Stream)
-%,writeln('cons done')		
+            cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
+            writeq(cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status)),
+            nl,
+            (Status == 0 ->
+                write('test'),nl,
+                cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
+                writeq(cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons)),
+                nl
+            ;
+                Cons = [],Avg_Cons is 0
+            ),
+            write(report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength,Cons,Avg_Cons)),nl,
+            report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength,Cons,Avg_Cons),
+            write(report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength,Cons,Avg_Cons)),nl,
+            Counter2 is Counter+1,
+            conservation(Chunk_Stream,Counter2,Dir,Frame,Aln_Stream,Cons_Stream)
 	).
 		
 
@@ -115,24 +101,21 @@ cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTermin
 %cons_main_new(Blast_Stream,[QId|DBIDS],AFirst,		ALast,Cons),
 %cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
 cons_main(_IDs,FirstPos,LastPos,All_alignments,Aln_Stream,Cons,AvgCons):-
-%writeln('cons_main 0'),
-		%parse_blast_main_new(Input_Stream,IDs,FirstPos,PosAfter,All_alignments), /* obsolete parser_call */		
-		%LastPos is PosAfter -1,
-		(
-			All_alignments \= [], All_alignments \= ['n/a','n/a'] ->
-			determine_best_alns(All_alignments,Best_alignments),
-%writeln('cons_main 1'),
-			(
-				output_alignments(yes)-> 
-%writeln('outputting alignments'),
-				report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
-			; 
-				true
-			),
-			compute_conservation(Best_alignments,Cons,AvgCons)
-		;
-			Cons = [], AvgCons is 0
-		).
+        (
+          All_alignments \= [], All_alignments \= ['n/a','n/a'] ->
+          determine_best_alns(All_alignments,Best_alignments),
+          (
+            output_alignments(yes)-> 
+            report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
+          ; 
+            true
+          ),
+          write(compute_conservation(Best_alignments,Cons,AvgCons)),nl,
+          compute_conservation(Best_alignments,Cons,AvgCons),
+          write(compute_conservation(Best_alignments,Cons,AvgCons)),nl
+        ;
+          Cons = [], AvgCons is 0
+        ).
 
 
 determine_best_alns([Q|All_alignments],[Q|Best_alignments]):-
@@ -149,9 +132,9 @@ determine_best_alns([Q|All_alignments],[Q|Best_alignments]):-
 %===================================================================================
 score_alns([],[]).
 score_alns([(ID,P11,P12,M)|Rest1],[(ID,P31,P32,M3)|Rest3]):-
-	score(M,M1,_,Score1),
-	best_of_rest(Rest1,ID,P21,P22,M2,Rest2,Score2),
-	(
+        score(M,M1,_,Score1),
+        best_of_rest(Rest1,ID,P21,P22,M2,Rest2,Score2),
+      	(
 	Score1 > Score2 -> 
 		P31 = P11,
 		P32 = P12, 
@@ -194,7 +177,12 @@ best_of_rest(Rest1,ID,P31,P32,M3,Rest3,Score3):-
 % replaces terminated subseqs in L1 with a seq of blanks in L2, and copies the rest of L1 to L2,
 % computes a score for the adjusted matches and keeps the best for each unique DBID
 %=============================================================================================
-score([],[],0,0). 													% First list empty? so is second list and no stops so far
+score([],[],0,0) :-
+        !.
+
+score([42],[],0,0) :-
+        !.
+        
 score([X|L1],[Y|L2],Saw_a_stop,Score):-		
 	score(L1,L2,Saw_a_stop_in_rest,ScoreRest),
 	(
@@ -247,85 +235,65 @@ copy_fasta(Infile,OutFile,QId,ChunkTerminated,OK):-
 	
 		
 report_cons(Cons_Stream, Dir, Frame, Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength, ConsRev,Avg_Cons):-						% QId pattern : ec100k_115/142-255_AA
-	% writeln((AFirst,1,QLength,ALast)),
-	% writeln(user_output,'report_cons 1'),
-%writeln('report pre 1'),
-	( ConsRev \= [] ->
-	PreAdjust is AFirst - 1,
-	makelist(PreAdjust,0,PreList), 	% change 0/*
-%writeln('report pre 2'),
-	PostAdjust is QLength - ALast,		
-	makelist(PostAdjust,0,PostList),% change 0/*
-%writeln('report pre 3'),
-	append(ConsRev,PostList,Cons1Rev),
-	append(PreList,Cons1Rev,Cons2Rev)
+	(ConsRev \= [] ->
+            PreAdjust is AFirst - 1,
+            makelist(PreAdjust,0,PreList), % change 0/*
+            PostAdjust is QLength - ALast,		
+            makelist(PostAdjust,0,PostList), % change 0/*
+            append(ConsRev,PostList,Cons1Rev),
+            append(PreList,Cons1Rev,Cons2Rev)
 	;
-	Cons2Rev = ConsRev
+            Cons2Rev = ConsRev
 	),
-	% writeln(user_output,'report_cons 2'),
-	% atom_codes(QIDAtom,QId),writeln(user_output,QIDAtom),
+        write(extract(QId,Dir,QName,Left,Right,Pfx)),nl,
 	extract(QId,Dir,QName,Left,Right,Pfx), % change -/* Prefix is calculated wrongly in the reverse strand (trans mode 1)
-%writeln('report pre 4'),
-	% writeln(user_output,'report_cons 3'),
+        write(extract(QId,Dir,QName,Left,Right,Pfx)),nl,
 	Len is Right - Left + 1,
-	% write(user_output,'length is '),writeln(user_output,Len),
 	(Dir = '-' -> 
-		reverse(Cons2Rev,Cons)
-	; 
-		Cons = Cons2Rev
+            reverse(Cons2Rev,Cons)
+	;
+            write(test3),nl,
+            Cons = Cons2Rev
 	),
-	
-	( 
-	% writeln(user_output,'report_cons 4'),
+        ( 
 	Cons == [] ->									% if no conservation, make len-long list of 0's
-		% writeln(user_output,'report_cons 5a-1'),
-		makelist(Len,0,Chunk_Cons)% 				change 0/+
-		% ,writeln(user_output,'report_cons 5a-2')
-	;															% else no conservation, make pfx-long list of 0's and append to conservation, and '-,-,-' for final stop-codon	
-		% writeln(user_output,'report_cons 5b-1'),
-		% write(user_output,'Pfx is '), writeln(user_output,Pfx),
-		makelist(Pfx,0,Prefix),   % change 0/*
-		% writeln(user_output,'report_cons 5b-2'),
-		times_3(Cons,BaseCons),
-		% writeln(user_output,'report_cons 5b-3'),
-%writeln('report pre 5'),		
-		(
-		Dir == '+' ->
-				(
-				ChunkTerminated == 'yes' ->							 % if original chunk ended with a stop codon/* it needs terminating triple, else not
-					append(BaseCons,[0,0,0],BaseConsTerm)  % originally annotated as '-','-','-'				
-				;
-					Trailing is Len mod 3,
-					makelist(Trailing,0,Zeros),
-					append(BaseCons,Zeros,BaseConsTerm)
-					% BaseConsTerm = BaseCons
-				),
-				append(Prefix,BaseConsTerm,Chunk_Cons)
-		;
-				append(BaseCons,Prefix,BaseConsTerm),
-				(
-				ChunkTerminated == 'yes' ->							% if original chunk ended with a stop codon/* it needs terminating triple, else not
-					Chunk_Cons = [0,0,0|BaseConsTerm]			% originally annotated as '-','-','-'
-				;
-					Trailing is Len mod 3,
-					makelist(Trailing,0,Zeros),
-					append(Zeros,BaseConsTerm,Chunk_Cons)
-					% Chunk_Cons = BaseConsTerm
-				)
-		)		
+          makelist(Len,0,Chunk_Cons) % 				change 0/+
+	;
+          makelist(Pfx,0,Prefix), % change 0/*
+          times_3(Cons,BaseCons),
+          (
+            Dir == '+' ->
+            (
+              ChunkTerminated == 'yes' -> % if original chunk ended with a stop codon/* it needs terminating triple, else not
+              append(BaseCons,[0,0,0],BaseConsTerm) % originally annotated as '-','-','-'
+            ;
+              Trailing is Len mod 3,
+              makelist(Trailing,0,Zeros),
+              append(BaseCons,Zeros,BaseConsTerm)
+                                % BaseConsTerm = BaseCons
+            ),
+            append(Prefix,BaseConsTerm,Chunk_Cons)
+          ;
+            append(BaseCons,Prefix,BaseConsTerm),
+            (
+              ChunkTerminated == 'yes' -> % if original chunk ended with a stop codon/* it needs terminating triple, else not
+              Chunk_Cons = [0,0,0|BaseConsTerm] % originally annotated as '-','-','-'
+             ;
+              Trailing is Len mod 3,
+              makelist(Trailing,0,Zeros),
+              append(Zeros,BaseConsTerm,Chunk_Cons)
+                                % Chunk_Cons = BaseConsTerm
+            )
+          )		
 	),
-			% ,writeln(user_output,'report_cons 6')
-%writeln('report pre 6'),
-%writeln(Entry),	
-	Entry =.. [conservation,QName,Left,Right,Dir,Frame,Chunk_Cons,Avg_Cons,Status],
-%writeln(Entry),
+        Entry =.. [conservation,QName,Left,Right,Dir,Frame,Chunk_Cons,Avg_Cons,Status],
+        write(Entry),nl,
 	write(Cons_Stream,Entry),writeln(Cons_Stream,'.'),	
-%writeln('report post 1'),	
 	Dot is Counter mod 10, 
 	Line is Counter mod 200, 
 	(Dot = 0 -> write(user_output,'.'); true),	
-	(Line = 0 -> nl(user_output); true)	
-	.
+	(Line = 0 -> nl(user_output); true).
+
 % : report_alns(Aln_Stream,FirstPos,LastPos,Alns,Alns2)
 report_alns(Aln_Stream,AFirst,ALast,Alns,Alns2):-
 	% write(user_output,'before '),writeln(user_output,Alns),
@@ -441,8 +409,9 @@ makelist(N,X,[X|Rest]):-
 	makelist(M,X,Rest).
 
 extract(QId,Dir,QName,P1,P3,Pfx):-																	% QId pattern : ec100k_115/142-255_AA
-	append(QId_codes,[95|Body1],QId),
-	append(P1_codes,[47|Body2],Body1),
+        atom_codes(QId,List_QId),
+	append(QId_codes,[95|Body1],List_QId),
+        append(P1_codes,[47|Body2],Body1),
 	append(P2_codes,[45|Body3],Body2),
 	append(P3_codes,[95|_],Body3),
 	atom_codes(QName,QId_codes),
@@ -462,8 +431,7 @@ extract(QId,Dir,QName,P1,P3,Pfx):-																	% QId pattern : ec100k_115/14
 		Pfx is P3 - P2 + 1 					% orignal +1 added
 		
 		)
-	)
-	.
+	).
 
 times_3([],[]).	
 times_3([H|Rest],[H,H,H|Rest_times_3]):-
@@ -508,7 +476,7 @@ test3:- open(tblastn_test,read,Blast_Stream,[alias(blast_in)]),
 				writeln(user_output,Cons).
 				
 				
-testgoal:-run_chunk_conservation('u00096-20k',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).				
+testgoal:-run_chunk_conservation('u00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).				
 	
 testlist1([73,83,75,86,84,83,73,67,65,77,80,82,71,65,71,119,73,80,83,82,76,78]).
 testlist2([32,32,32,86,84,83,73,67,65,77,45,82,71,65,71,119,73,80,83,82,76,78]).

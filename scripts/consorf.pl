@@ -95,3 +95,9 @@ run_consorf(Sequence_File,Options,Prediction_File):-
 			    Prediction_File),     													
 	write('Resulting consorf prediction file'),nl,
 	writeln(Prediction_File).
+
+
+
+% test predicate
+
+testgoal:-run_chunk_conservation('U00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).				
