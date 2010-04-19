@@ -161,7 +161,9 @@ check_or_warn(Check,_Error) :-
 	!.
 
 check_or_warn(_File,Error) :-
-	writeq(warning(Error)).
+        write('!!! '),
+	writeq(warning(Error)),
+        nl.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % File system
