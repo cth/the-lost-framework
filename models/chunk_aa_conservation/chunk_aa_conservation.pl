@@ -35,10 +35,11 @@
 % Declarations
 %----------------------------------------------------------------------------
 % :- [blast_parser].
+:- [read_line].
 :- [blosum62scores].
 %output_alignments(yes).
 %nongap_mismatch_score(1).
-blast_command('tblastn -db EnteroBacterialesGB.nt -outfmt 2 -db_gencode 11 -use_sw_tback').
+blast_command('tblastn -db EnteroBacterialesGB.nt -outfmt 5 -db_gencode 11 -use_sw_tback').
 blast_output_file('tblastn.aln').
 blast_input_file('tblastn.fst').
 %----------------------------------------------------------------------------
@@ -50,6 +51,8 @@ conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
 	;
 %writeln('cons pre 1'),
 		cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
+		writeq(cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status)),
+		nl,
 %writeln(Status),
 %writeln('cons pre 2'),
 %(ChunkTerminated == 'no' -> writeln('ok2');true),
@@ -58,6 +61,8 @@ conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
 		Status == 0 ->
 %writeq(cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,Aln_Stream,Cons,Avg_Cons)),			
 			cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
+			writeq(cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons)),
+			nl
 % write(' -->'),writeln((AFirst,ALast,QLength)),
 %writeln(Cons),
 		;
@@ -84,16 +89,19 @@ cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTermin
 	(
 	Status == 0 ->
 %writeln('pre blast parse init '),	writeq(parse_blast_init(Blast_Stream,Length,IDs)),	
-		parser_blast(Blast_File, IDS, First_Pos, Pos_After, All_alignments),
+		lost_config(lost_base_directory,Lost_Directory),
+		atom_concat(Lost_Directory,'models/chunk_aa_conservation/',Directory),
+		atom_concat(Directory,Blast_File,Abs_Blast_File),
+		parser_blast(Abs_Blast_File, IDs, First_Pos, Pos_After, All_alignments),
 		Length is Pos_After - First_Pos,
-		LastPos is Pos_After -1
+		Last_Pos is Pos_After -1
 		% parse_blast_init(Blast_Stream,Length,IDs)
 	;
 		IDs = [QId],
 		Length = 0,
-		All_Alignments = [],
+		All_alignments = [],
 		First_Pos = 0,
-		Last_pos  = 0
+		Last_Pos  = 0
 	)
 %,writeln('post blast parse init ')
 	.
@@ -106,7 +114,7 @@ cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTermin
 %
 %cons_main_new(Blast_Stream,[QId|DBIDS],AFirst,		ALast,Cons),
 %cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
-cons_main(IDs,FirstPos,LastPos,All_alignments,Aln_Stream,Cons,AvgCons):-
+cons_main(_IDs,FirstPos,LastPos,All_alignments,Aln_Stream,Cons,AvgCons):-
 %writeln('cons_main 0'),
 		%parse_blast_main_new(Input_Stream,IDs,FirstPos,PosAfter,All_alignments), /* obsolete parser_call */		
 		%LastPos is PosAfter -1,

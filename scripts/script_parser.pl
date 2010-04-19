@@ -1,6 +1,5 @@
 :- ['../lost.pl'].
 :- lost_include_api(interface).
-
 % Series of script for several parsers of data
 
 
@@ -105,9 +104,10 @@ parser_genemark(Report_Name,OutputFile) :-
 
 
 % Parser Blast output 2 Ole 
-parser_blast(XML_File,List_Ids2,FirstPos,PosAfter,All_alignments) :-
+parser_blast(XML_File,[Query_Id|List_Ids2],FirstPos,PosAfter,All_alignments) :-
+        remove_2_lines(XML_File,XML_File2),
         get_annotation_file(parser_blastxml,
-                            [XML_File],
+                            [XML_File2],
                             [],
                             Outputfile),
         consult(Outputfile),
@@ -163,3 +163,30 @@ remove_dups_rec([A|Rest],List,Result) :-
 
 remove_dups_rec([A|Rest],List,[A|Rest_Result]) :-
         remove_dups_rec(Rest,[A|List],Rest_Result).
+
+
+
+
+remove_2_lines(XML_File,XML_File2) :-
+        lost_config(lost_base_directory,Lost_Dir),
+        atom_concat(Lost_Dir,'models/chunk_aa_conservation/tblastn2.aln',XML_File2),
+        open(XML_File,read,Stream_In),
+        open(XML_File2,write,Stream_Out),
+        read_line(Stream_In,_),
+        read_line(Stream_In,_),
+        read_line(Stream_In,CodeList),
+        remove_2_lines_rec(Stream_In,CodeList,Stream_Out),
+        close(Stream_In),
+        close(Stream_Out).
+
+
+remove_2_lines_rec(_Stream_In,[eof],_Stream_Out) :-
+        !.
+
+
+remove_2_lines_rec(Stream_In,Codelist,Stream_Out) :-
+        atom_codes(Atom,Codelist),
+        write(Stream_Out,Atom),
+        nl(Stream_Out),
+        read_line(Stream_In,New_CodeList),
+        remove_2_lines_rec(Stream_In,New_CodeList,Stream_Out).
