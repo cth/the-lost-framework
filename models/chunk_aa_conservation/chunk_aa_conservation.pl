@@ -44,16 +44,12 @@ blast_input_file('tblastn.fst').
 %----------------------------------------------------------------------------
 conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-		
 %writeln('cons pre 0'),		
-%(output_alignments(yes) -> writeln('yes conservation'); true),
-	
+%(output_alignments(yes) -> writeln('yes conservation'); true),	
 	(
 	at_end_of_stream(Chunk_Stream) -> true
 	;
 %writeln('cons pre 1'),
-		cons_init(Chunk_Stream,Blast_File,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
-		
-%retur her%
-
+		cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
 %writeln(Status),
 %writeln('cons pre 2'),
 %(ChunkTerminated == 'no' -> writeln('ok2');true),
@@ -62,27 +58,25 @@ conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
 		Status == 0 ->
 %writeq(cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,Aln_Stream,Cons,Avg_Cons)),			
 			cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
-			% write(' -->'),writeln((AFirst,ALast,QLength)),
-			%writeln(Cons),
-			cons_cleanup(Blast_Stream)
+% write(' -->'),writeln((AFirst,ALast,QLength)),
+%writeln(Cons),
 		;
 			Cons = [],Avg_Cons is 0
 		),
 %writeln('cons post 1'),		
-		% writeln(user_output,'after cons_main_new call'),
+% writeln(user_output,'after cons_main_new call'),
 		report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength,Cons,Avg_Cons),
 %writeln('cons post 2'),				
-		%(ChunkTerminated == 'no' -> writeln('ok3');true),
-		% write(user_output,'after report cons call'),
+%(ChunkTerminated == 'no' -> writeln('ok3');true),
+% write(user_output,'after report cons call'),
 		Counter2 is Counter+1,
 		conservation(Chunk_Stream,Counter2,Dir,Frame,Aln_Stream,Cons_Stream)
 %,writeln('cons done')		
 	).
 		
-cons_cleanup(Blast_Stream):-
-	close(Blast_Stream).
 
-cons_init(Chunk_File,Blast_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTerminated,Status):-
+
+cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTerminated,Status):-
 %writeln('preblast '),
 	blast_next_chunk(Chunk_File,Blast_File,QId,ChunkTerminated,Status),
 %writeln('postblast '),
