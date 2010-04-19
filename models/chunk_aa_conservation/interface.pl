@@ -2,7 +2,7 @@
 :- lost_include_api(interface).                                                         
 %:- lost_include_api(misc_utils).
 %:- lost_include_api(io).
-:- lost_include_scripts(script_parser).
+:- lost_include_script(script_parser).
 :- lost_include_api(utils_parser_report).                                                                                                                                        
 
 lost_input_formats(lost_best_annotation, [text(fasta)]).
