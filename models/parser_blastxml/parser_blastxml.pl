@@ -53,17 +53,28 @@ parser_blastxml(XML2PL_File,Output_File) :-
         xml(_,[element(_Node_Name,[],BlastOutput)]),
         member(element('BlastOutput_iterations',_,BlastOutput_iterations),BlastOutput), 
         member(element('Iteration',_,Iteration),BlastOutput_iterations), 
-        member(element('Iteration_query-def',_,[pcdata(Query_Def)]),Iteration),
-        append([39|Query_Def],[39],Query_Def2),
-        member(element('Iteration_hits',_,Iteration_hits),Iteration),
-        findall(Hit,member(element('Hit',_,Hit),Iteration_hits),List_Hits),
-        atom_codes(Query_Def_Atom,Query_Def2),
-        write_hits(Stream_Output,Query_Def_Atom,List_Hits).
-
-
-write_hits(Stream_Output,_Query_Def_Atom,[]) :-
-        !,
+        
+        (member(element('Iteration_message',_,[pcdata(Message)]),Iteration) -> % No Hit Found
+            atom_codes(Mess_Atom,Message),
+            write(Mess_Atom),nl,
+            member(element('Iteration_query-def',_,[pcdata(Query_Def)]),Iteration),
+            append([39|Query_Def],[39],Query_Def2),
+            atom_codes(Query_Def_Atom,Query_Def2),          
+            write(Stream_Output,blast(Query_Def_Atom,'n/a',[])),write(Stream_Output,'.'),
+            nl(Stream_Output)
+        ;
+            member(element('Iteration_query-def',_,[pcdata(Query_Def)]),Iteration),
+            append([39|Query_Def],[39],Query_Def2),
+            member(element('Iteration_hits',_,Iteration_hits),Iteration),
+            findall(Hit,member(element('Hit',_,Hit),Iteration_hits),List_Hits),
+            atom_codes(Query_Def_Atom,Query_Def2),
+            write_hits(Stream_Output,Query_Def_Atom,List_Hits)
+        ),
         close(Stream_Output).
+
+
+write_hits(_Stream_Output,_Query_Def_Atom,[]) :-
+        !.
 
 
 write_hits(Stream_Output,Query_Def_Atom,[Hit|Rest_Hits]) :-

@@ -111,16 +111,23 @@ parser_blast(XML_File,[Query_Id|List_Ids2],FirstPos,PosAfter,All_alignments) :-
                             [],
                             Outputfile),
         consult(Outputfile),
-        findall(Id,blast(_,Id,_),List_Ids),
-        remove_dups(List_Ids,List_Ids2),
         blast(Query_Id,_,Data),
-        member('Hsp_query-from'(FirstPos),Data),
-        member('Hsp_query-to'(PosAfter),Data),
-        PosAfter1 is PosAfter+1,
-        member('Hsp_qseq'(QuerySeq),Data),
-        Tuplet_Query = (Query_Id,FirstPos,PosAfter1,QuerySeq),
-        build_uplets(Rest_tuplet),
-        All_alignments = [Tuplet_Query|Rest_tuplet].
+        (Data = [] ->  % No Hits Founds
+            List_Ids2 = [],
+            FirstPos = 0,
+            PosAfter = 0,
+           All_alignments = []
+        ;
+            findall(Id,blast(_,Id,_),List_Ids),
+            remove_dups(List_Ids,List_Ids2),
+            member('Hsp_query-from'(FirstPos),Data),
+            member('Hsp_query-to'(PosAfter),Data),
+            PosAfter1 is PosAfter+1,
+            member('Hsp_qseq'(QuerySeq),Data),
+            Tuplet_Query = (Query_Id,FirstPos,PosAfter1,QuerySeq),
+            build_uplets(Rest_tuplet),
+            All_alignments = [Tuplet_Query|Rest_tuplet]
+        ).
 
 
 
