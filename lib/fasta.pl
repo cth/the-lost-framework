@@ -3,36 +3,55 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :- lost_include_api(misc_utils).
+:- lost_include_api(io).
 
 %
 % fasta_load_sequence(++InputFile,++SequenceIdentifier,--FastaHeaderLine,--Sequence)
 % 
 fasta_load_sequence(InputFile,SequenceIdentifier,FastaHeaderLine,Sequence) :-
 	readFile(InputFile,FileContents),
+	write('after read file'),nl,
 	fasta_format(_, FastaEntries, FileContents, []),
+	write('done parsing fasta file'),nl,
 	nth1(SequenceIdentifier, FastaEntries, [FastaHeaderLine,SequenceCodes]),
 	map(upper_lower, SequenceCodes, SequenceCodesLowerCase),
-	fasta_make_atom_list(SequenceCodesLowerCase, Sequence).
+	atom_code_list(SequenceCodesLowerCase, Sequence).
 
-fasta_make_atom_list([], []).
-fasta_make_atom_list([Code|CRest], [Atom|ARest]) :-
+fasta_save_sequence(OutputFile,SequenceData,Header) :-
+	open(OutputFile,write,OS),
+	write(OS,'>'),
+	write(OS,Header),
+	write(OS,'\n'),
+	atom_code_list(SequenceCodes, SequenceData), 	% Convert sequence to codes
+	map(upper_lower(output,input), SequenceCodes, SequenceCodesUppercase), % Convert all codes to upper case
+	split_list_in_chunks(70,SequenceCodesUppercase,Chunks), % Divide the sequence into chunks for each fasta line
+	map(atom_codes(output,input),Chunks,AtomChunks), % Convert each chunk to an atom
+	forall(member(X,AtomChunks),(write(OS,X),write(OS,'\n'))), % write all lines
+	close(OutputFile).
+
+	
+atom_code_list([], []).
+atom_code_list([Code|CRest], [Atom|ARest]) :-
 	atom_codes(Atom,[Code]),
-	fasta_make_atom_list(CRest,ARest).
+	atom_code_list(CRest,ARest).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DCG parser for the generic FASTA format
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fasta_format(EolType,FastaEntries) -->
+	{assert(line_count(1)),!},
 	maybe_empty_lines,
 	fasta_entries(EolType,FastaEntries).
 
-fasta_entries(EolType,[FastaEntry|Rest]) --> fasta_entry(EolType,FastaEntry), fasta_entries(EolType,Rest).
+fasta_entries(EolType,[FastaEntry|Rest]) -->
+	fasta_entry(EolType,FastaEntry),
+	fasta_entries(EolType,Rest).
 
 fasta_entries(EolType,[FastaEntry]) --> fasta_entry(EolType,FastaEntry).
 
 fasta_entry(EolType,[Header,Sequence]) -->
-	fasta_header_line(EolType,Header),
+	fasta_header_line(EolType,Header),!,
 	fasta_sequence(EolType,Sequence),
 	maybe_empty_lines.
 
@@ -43,14 +62,23 @@ fasta_header_line(EolType,Header) -->
 
 fasta_sequence(EolType,[E|Rest]) -->
 	fasta_sequence_entry(E),
+	{!},
 	fasta_sequence(EolType,Rest).
 
 fasta_sequence(EolType,Rest) -->
 	end_of_line(EolType),
+	{
+	 line_count(C1),
+	 retractall(line_count(_)),
+	 C2 is C1 + 1,
+	 assert(line_count(C2)),
+	 write('parsed line '),
+	 write(C1),
+	 nl
+	},
 	fasta_sequence(EolType,Rest).
 
 fasta_sequence(EolType,[]) -->
-
 	end_of_line(EolType).
 	
 fasta_sequence_entry(E) -->
