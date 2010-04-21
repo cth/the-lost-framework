@@ -599,7 +599,7 @@ Pre-defined models are introduced.  These models are used to build more complex 
 \section{Parsers of Biological Data}
 
 To extract information from different Biological database, several parsers have been designed 
-to parse report of analyses available on different web-servers (Easygene, Genemark) and database (Genbank). 
+to parse report of analyses (Blast, Easygene and Genemark) and database (Genbank). 
 These parsers generated a series of Prolog terms that can be used after that
 input of different probabilistic models. \texttt{script\_parser.pl} collects different scripts to generate
 different data files.
@@ -611,7 +611,7 @@ Parser\_fna permits to parse this *fna.file from Genbank and generate
 list of terms. These terms store the genome into a Prolog list
 composed of $\{a,c,g,t\}$. Two scripts are implemented:\\ 
 \texttt{parser\_fna(++Name\_FNA\_File,++Name\_GBK\_File,++Options)}\index{parser\_fna$\slash$3} and \\
-\texttt{parser\_fna(++Name\_FNA\_File,++Name\_GBK\_File,++Options,--OutputFile)}\index{parser\_fna$\slash$4}
+\texttt{parser\_fna(++Name\_FNA\_File,++Name\_GBK\_File,++Options,--OutputFile)}\index{parser\_fna$\slash$4}. \\
 Note that *.gbk file is necessary as well. This file is used to automatically extract
 genome information (Genbank key and size of genome).
 
@@ -642,17 +642,40 @@ data('U00096',281,560,[c,c,c,...]).
 \subsection{Parser\_ptt}
 
 *.ptt file of Genbank is composed of information about known or predicted
-genes in a genome. Parser\_ptt parses this *.pt file from Genbank and generate
+genes in a genome. Parser\_ptt parses this *.ptt file from Genbank and generate
 list of terms. Two scripts are implemented:\\ 
 \texttt{parser\_ptt(++Name\_PTT\_File)}\index{parser\_ptt$\slash$1} and \\
-\texttt{parser\_fna(++Name\_PTT\_File,,--OutputFile)}\index{parser\_fna$\slash$2}
+\texttt{parser\_ptt(++Name\_PTT\_File,,--OutputFile)}\index{parser\_ptt$\slash$2}.
 
 Output format of the generated terms are:\\
 \texttt{gb(Genebank\_Key,Start,End)}.
 
 \subsection{Parser\_Easygene}
 
+This parser allows to generate from the \href{http://servers.binf.ku.dk/easygene/1.2/gff_output.html}{GFF format} 
+of Easygene prediction several Prolog terms with the following format:
+\texttt{eg(Left,Right,Dir,Frame,[])}.
+
+Two scripts are implemented:\\ 
+\texttt{parser\_easygene(++Report\_Name)}\index{parser\_easygene$\slash$1} and \\
+\texttt{parser\_easygene(++Report\_Name,--OutputFile)}\index{parser\_easygene$\slash$2}.
+
 \subsection{Parser\_Genemark}
+
+This parser allows to generate from a report of Genemark.HMM 
+of Easygene prediction several Prolog terms with the following format:
+\texttt{gm(Left,Right,Dir,Frame,[])}. 
+Genemark report of prediction coordinates is parsed.
+
+Two scripts are implemented:\\ 
+\texttt{parser\_genemark(++Report\_Name)}\index{parser\_genemark$\slash$1} and \\
+\texttt{parser\_genemark(++Report\_Name,--OutputFile)}\index{parser\_genemark$\slash$2}.
+
+\subsection{Parser\_Blast}
+
+This parser translated into Prolog terms the XML report of Tblastn. The parser a fact for
+each hits detected in the XML report.
+
 
 \section{Models for measurement and statistical reports}
 
