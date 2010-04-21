@@ -56,7 +56,8 @@ parser_fna(Options,FNA_File,Genbank_Key,N_BP,Output_File) :-
 
 
 %Default 
-parser_fna_data([],FNA_Stream,Genbank_Key,N_BP,Output_Stream) :-
+parser_fna_data([list('none')],FNA_Stream,Genbank_Key,N_BP,Output_Stream) :-
+        !,
         compute_data(FNA_Stream,N_BP,List_Nuc),
         Data = data(Genbank_Key,1,N_BP,List_Nuc),
         write(Output_Stream,Data),
@@ -65,6 +66,7 @@ parser_fna_data([],FNA_Stream,Genbank_Key,N_BP,Output_Stream) :-
 
 % List
 parser_fna_data([list(Size)],FNA_Stream,Genbank_Key,N_BP,Output_Stream) :-
+        Size \= 'none',
         compute_data(FNA_Stream,Size,List_Nuc),
         Data = data(Genbank_Key,1,Size,List_Nuc),
         write(Output_Stream,Data),
