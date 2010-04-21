@@ -12,7 +12,7 @@ fasta_load_sequence(InputFile,SequenceIdentifier,FastaHeaderLine,Sequence) :-
 	readFile(InputFile,FileContents),
 	write('after read file'),nl,
 	fasta_format(_, FastaEntries, FileContents, []),
-	write('done parsing fasta file'),nl,
+	write('done parsing fasta filee'),nl,
 	nth1(SequenceIdentifier, FastaEntries, [FastaHeaderLine,SequenceCodes]),
 	map(upper_lower, SequenceCodes, SequenceCodesLowerCase),
 	atom_code_list(SequenceCodesLowerCase, Sequence).
@@ -51,8 +51,10 @@ fasta_entries(EolType,[FastaEntry|Rest]) -->
 fasta_entries(EolType,[FastaEntry]) --> fasta_entry(EolType,FastaEntry).
 
 fasta_entry(EolType,[Header,Sequence]) -->
-	fasta_header_line(EolType,Header),!,
+	fasta_header_line(EolType,Header),
+	{!},
 	fasta_sequence(EolType,Sequence),
+	{!},
 	maybe_empty_lines.
 
 fasta_header_line(EolType,Header) -->
