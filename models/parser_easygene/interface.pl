@@ -4,8 +4,12 @@
 
 % Generate a file of predicate based on Easygene report.
 
-test(A,B) :-
-        parser_line(A,B).
+
+% Input Format Specification
+lost_input_formats(lost_best_annotation,[text(easygene_report)]).
+% Output Format Specification
+lost_output_format(lost_best_annotation,_,[text(prolog(ranges(_)))]).
+
 
 lost_best_annotation([Easygene_Report],_Options,OutputFile) :-
 	consult('eg_parser.pl'),  % Not nice 
