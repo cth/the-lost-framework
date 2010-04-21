@@ -816,7 +816,7 @@ This is the format used by PRISM to save and load parameter files.
 
 TODO ptt files
 
-\subsection{\texttt{text(easygene_report)}}
+\subsection{\texttt{text(easygene\_report)}}
 
 TODO ptt files
 
@@ -832,14 +832,14 @@ letter of the identifier. It is recommended that all lines of text be
 shorter than 80 characters. The sequence ends if another line starting
 with a ">" appears; this indicates the start of another sequence. 
 
-The format identifier \texttt{text(fasta(_))} is used to refer to any
+The format identifier \texttt{text(fasta(\_))} is used to refer to any
 type of file in FASTA format, but we distinguish between different 
 subtypes with \texttt{SequenceType}. A ground value for
 \texttt{SequenceType} may be one of the following:
 
 \begin{itemize}
 \item \texttt{fasta}: Specifies generic fasta format. This is the same
-  as specifying \textt{text(fasta(_))}.
+  as specifying \texttt{text(fasta(\_))}.
 \item \texttt{fna}: fasta nucleic acid. 
 \item \texttt{ffn}: FASTA nucleotide coding regions. Contains coding
   regions for a genome.
@@ -871,7 +871,7 @@ subtypes with \texttt{SequenceType}. A ground value for
 
 \end{itemize}
 
-Som things that we have discussed, but  decided not to do
+Some things that we have discussed, but  decided not to do
 \begin{itemize}
 \item Do something to avoid multiple declaration of lost\_include\_api
  everywhere... (Matthieu).
