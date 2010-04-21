@@ -639,7 +639,6 @@ data('U00096',281,560,[c,c,c,...]).
 ....
 \end{verbatim}
 
-
 \subsection{Parser\_ptt}
 
 *.ptt file of Genbank is composed of information about known or predicted
@@ -821,26 +820,62 @@ TODO ptt files
 
 TODO ptt files
 
+\subsection{\texttt{text(fasta(SequenceType)}}
+
+A sequence in FASTA format begins with a single-line description,
+followed by lines of sequence data. The description line is
+distinguished from the sequence data by a greater-than (">") symbol in
+the first column. The word following the ">" symbol is the identifier
+of the sequence, and the rest of the line is the description (both are
+optional). There should be no space between the ">" and the first
+letter of the identifier. It is recommended that all lines of text be
+shorter than 80 characters. The sequence ends if another line starting
+with a ">" appears; this indicates the start of another sequence. 
+
+The format identifier \texttt{text(fasta(_))} is used to refer to any
+type of file in FASTA format, but we distinguish between different 
+subtypes with \texttt{SequenceType}. A ground value for
+\texttt{SequenceType} may be one of the following:
+
+\begin{itemize}
+\item \texttt{fasta}: Specifies generic fasta format. This is the same
+  as specifying \textt{text(fasta(_))}.
+\item \texttt{fna}: fasta nucleic acid. 
+\item \texttt{ffn}: FASTA nucleotide coding regions. Contains coding
+  regions for a genome.
+\item \texttt{ffa}: fasta amino acid.
+\end{itemize}
+
 \chapter{Notes and stuff}
 
 \section{Feature wish list}
 
 \begin{itemize}
+
 \item Division of models into models (probabilistic models) and nodes
   (which are just data processing).
-\item kind of \texttt{make.pl} file that manages the consulting of all the
-useful file (lost, /lib/*.*, /scripts/*.*). Just let to the user
-to do consulting of model file. If it is possible, have a very simple
-interaction with the user to set the lost location, set platform, or list
-models or data available.
-\item Naming stuff: \texttt{load\_annotation\_from\_file -> load\_data\_from\_file}
-\item Utility for removing generated sequence files 
+
+\item 
+
 \item Document gene database file format and make sure that all models
   adhere to this format.
-\item Default option value declarations for models. 
+
+\item Option, input and output formats for all models. (Matthieu, Christian)
+
+\item Data outside git (Christian)
+
+\item Models should \texttt{lost\_tmp\_directory} for intermediary
+  files. 
+
+\item Document all of undocumented models. (Matthieu, Christian)
+
 \end{itemize}
 
-
+Som things that we have discussed, but  decided not to do
+\begin{itemize}
+\item Do something to avoid multiple declaration of lost\_include\_api
+ everywhere... (Matthieu).
+\end{itemize}
 
 \printindex
 
