@@ -196,6 +196,14 @@ lost_data_file(SequenceId, SequenceFile) :-
 lost_sequence_file(SequenceId, SequenceFile) :-
 	lost_data_file(SequenceId, SequenceFile).
 
+% lost_sequence_file applied on a list of name
+get_sequence_files([],[]) :-
+        !.
+
+get_sequence_files([SequenceId|Rest_SequenceId],[SequenceFile|Rest_SequenceFile]) :-
+        lost_sequence_file(SequenceId,SequenceFile),
+        get_sequence_files(Rest_SequenceId,Rest_SequenceFile).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost annotation index.
 % rule prefix: lost_file_index_
