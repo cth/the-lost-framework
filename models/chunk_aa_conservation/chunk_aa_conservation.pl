@@ -39,7 +39,11 @@
 :- [blosum62scores].
 %output_alignments(yes).
 %nongap_mismatch_score(1).
-blast_command('tblastn -db EnteroBacterialesGB.nt -outfmt 5 -db_gencode 11 -use_sw_tback').
+blast_database('/opt/db/blast/EnteroBacterialesGB/EnteroBacterialesGB.nt').
+blast_command(Cmd) :-
+        blast_database(Database),
+        atom_concat('tblastn -db ', Database, FirstPart),
+        atom_concat(FirstPart, ' -outfmt 5 -db_gencode 11 -use_sw_tback',Cmd).
 blast_output_file('tblastn.aln').
 blast_input_file('tblastn.fst').
 %----------------------------------------------------------------------------
