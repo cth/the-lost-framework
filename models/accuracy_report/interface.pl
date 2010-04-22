@@ -4,8 +4,8 @@
 :- lost_include_api(accuracy).
 
 
-lost_option(lost_best_annotation,start,min,'An positive integer indicating the start of the range.').
-lost_option(lost_best_annotation,end,max,'A positive integer indicating the end of the range.').
+lost_option(lost_best_annotation,start,min,'An positive integer indicating the start of the range. The default value, \'min\' is used to specify the minimal start for any of the inputs').
+lost_option(lost_best_annotation,end,max,'A positive integer indicating the end of the range. The default value, \'max\' is used to specify the minimal start for any of the inputs').
 
 % TODO: implement support text(prolog(accuracy_report) of this option 
 lost_option(lost_best_annotation,output_format,text(flat(accuracy_report)),
