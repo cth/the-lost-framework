@@ -1,3 +1,4 @@
+
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
@@ -41,8 +42,8 @@ run_model(Model,Inputs,Options,Filename) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
-	lost_model_interface_file(Model, ModelFile),		
-	check_valid_model_call(Model, lost_best_annotation,3, Options),	
+	lost_model_interface_file(Model, ModelFile),	
+	check_valid_model_call(Model, lost_learn,3, Options),
 	expand_model_options(Model, Goal, Options, ExpandedOptions),
 	sort(ExpandedOptions,ExpandedSortedOptions),	
 	lost_model_parameter_index_file(Model,ParamFileIndex),
@@ -57,6 +58,8 @@ train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
 	 check_or_fail(file_exists(SavedParamsFile),interface_error(missing_parameter_file(SavedParamsFile))),
 	 lost_file_index_update_file_timestamp(ParamFileIndex,SavedParamsFile)
 	).
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check declared options
@@ -96,11 +99,12 @@ expand_options([lost_option(_,OptionName,DefaultValue,_)|Ds],Options,[DefaultOpt
 	not(member(OptionMatcher, Options)),
 	DefaultOption =.. [OptionName,DefaultValue],
 	expand_options(Ds,Options,Rest).
-	
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Option parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TODO: Eventually we should have some
+
 
 get_option(Options, KeyValue) :-
 	member(KeyValue, Options).
@@ -323,13 +327,35 @@ lost_interface_defines_output_format(Model,InterfacePredicate) :-
 	write(Rule),nl,
 	(member(Head, Terms) ; member(Rule,Terms)).
 
+lost_interface_output_format_to_file(Model,InterfacePredicate, Options, OutputFormatFile) :-
+	lost_model_interface_file(Model, ModelFile),
+	lost_interface_defines_output_format(Model,InterfacePredicate),
+	expand_model_options(Model,InterfacePredicate,Options,ExpandedOptions),
+	sort(ExpandedOptions,ExpandedSortedOptions),
+	term2atom(call((tell(OutputFormatFile),
+			lost_output_format(InterfacePredicate,ExpandedSortedOptions,OutputFormat),
+			write(output_format(OutputFormat)),
+			atom_codes(Dot,[46]),
+			write(Dot),
+			nl,
+			told)),
+		  Goal),
+	launch_prism_process(ModelFile,Goal).
+
+% Determines the output format for a given Model and Interface given a list of options.
+lost_interface_output_format(Model,InterfacePredicate,Options,OutputFormat) :-
+	lost_tmp_directory(Tmp),
+	atom_concat(Tmp, 'lost_interface_output_format.pl', Filename),
+	lost_interface_output_format_to_file(Model,InterfacePredicate,Options,Filename),
+	terms_from_file(Filename, [output_format(OutputFormat)]).
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Time stamp checking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 file_modification_time(File,Timestamp) :-
 	lost_annotation_index_file(IndexFile),
-	lost_file_index_filename_member(IndexFile,File),	
+	lost_file_index_filename_member(IndexFile,File),
 	lost_file_index_get_file_timestamp(IndexFile,File,Timestamp).
 
 % To be tested...
@@ -414,4 +440,58 @@ rm_tmp :-
 	atom_concat('rm -f ', FileGlobPattern, Command),
 	write(Command),nl,
 	system(Command).
+
+
+% Allows to query for models that support a particular 
+% pattern of InputFiles, Options, and OutputFormat
+%list_models_of_type(InputFiles,Options,OutputFormat,Models) :-
+%	list_lost_models(AllModels),
+%	findall(Model, (member(Model,AllModels), lost_model_is_of_type(Model,InputFiles,Options,OutputFormat)), Models).
+
+%lost_model_is_of_type(Model,InputFiles,Options,OutputFormat) :-
+
+list_lost_models_to_file(File) :-
+	open(File,write,OStream),
+	list_lost_models(Models),
+	write(OStream,lost_models(Models)),
+	write(OStream,'.\n'),
+	close(OStream).
 	
+list_lost_models(Models) :-
+	lost_models_directory(ModelsDir),
+	directory_files(ModelsDir,Files),
+	subtract(Files,['.','..'],Models).
+%	directories_in_list(Files,Models).	
+
+directories_in_list([],[]).
+
+directories_in_list([File|FileList],[File|DirectoryList]) :- 
+	file_property(File,directory),
+	!,
+	directories_files(FileList,DirectoryList).
+
+directories_in_list([_|FileList],DirectoryList) :-
+	directories_in_list(FileList,DirectoryList).
+
+list_lost_model_options_to_file(Model,Goal,OutputFile) :-
+	open(OutputFile,write,OStream),
+	declared_model_options(Model, Goal, Options),
+	write_model_options(OStream, Options),
+	close(OStream).
+
+write_model_options(_,[]).
+write_model_options(OStream, [Option1|Rest]) :-
+	writeq(OStream, Option1),
+	write(OStream, '.\n'),
+	write_model_options(OStream,Rest).
+
+
+%%%
+% Write the input formats of a Model called with Goal to the file OutputFile
+%
+lost_model_input_formats_to_file(Model,Goal,OutputFile) :-
+	open(OutputFile,write,OStream),
+	lost_interface_input_formats(Model,Goal,Formats),
+	write(OStream,lost_input_formats(Model,Goal,Formats)),
+	write(OStream, '.\n'),
+	close(OStream).
