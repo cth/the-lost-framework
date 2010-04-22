@@ -1,20 +1,20 @@
-:- ['../../lost.pl'].                                                                   
-:- lost_include_api(interface).                                                         
+:- ['../../lost.pl'].
+:- lost_include_api(interface).
 :- lost_include_api(misc_utils).
-:- lost_include_api(io).                                                                                                                                        
-                                                                                        
+:- lost_include_api(io).
+
 lost_input_formats(lost_best_annotation, [text(prolog(sequence(_)))]).
 lost_output_format(lost_best_annotation, _Options, [text(prolog(ranges(gene)))]).
 
-% This is what is used to get the best annotation 
-% requires direction (+/-) and frame (1,2,3)                                      
-lost_best_annotation([Sequence_File],Options,Orf_Chunk_File) :-                                 
-	write('LoSt orf chopper: '),nl,                                                         
+% This is what is used to get the best annotation
+% requires direction (+/-) and frame (1,2,3)
+lost_best_annotation([Sequence_File],Options,Orf_Chunk_File) :-
+	write('LoSt orf chopper: '),nl,
 				lost_required_option(Options,direction,Dir),
 				lost_required_option(Options,frame,Frame),
-				% write(lost_best_annotation(ParamFile,[OrfFile,ConsFile],Options,OutputFile)),nl,             
-				% lost_required_option(Options,parameter_file,ParamFile),                               
-				cl('orf_chopper.pl'), % Load the actual PRISM model                                         
+				% write(lost_best_annotation(ParamFile,[OrfFile,ConsFile],Options,OutputFile)),nl,
+				% lost_required_option(Options,parameter_file,ParamFile),
+				cl('orf_chopper.pl'), % Load the actual PRISM model
 				% write('parameters loaded'),nl,
 			  open(Sequence_File,read,InputStream,[alias(seqin)]),
 				open(Orf_Chunk_File,write,OutputStream,[alias(chunkout)]),
@@ -25,10 +25,10 @@ lost_best_annotation([Sequence_File],Options,Orf_Chunk_File) :-
 				close(InputStream),
 				close(OutputStream),
   			write('LoSt orf-chopper completed succesfully'),nl.
-        
-  
-        
-				
+
+
+
+
 /**************************************************************************************/
 % Recusive call of the prediction routine
 %
@@ -42,30 +42,30 @@ lost_best_annotation([Sequence_File],Options,Orf_Chunk_File) :-
 *===============================================================================
 */
 
-dna_chop_init(S,SeqStartPos,Dir,Frame, L,Id,ChunkFileOutStream):-	
+dna_chop_init(S,SeqStartPos,Dir,Frame, L,Id,ChunkFileOutStream):-
 	Pm3 is SeqStartPos mod 3,
-	init_frame(Pm3, Frame,Offset,S,S2), 
+	init_frame(Pm3, Frame,Offset,S,S2),
 	ChunkStartPos = SeqStartPos + Offset,
 	( Dir = -1 ->
-		reverse_complement(S2,[],S3,ChunkStartPos,SeqEndPos),																								
-		Trailing is (SeqEndPos - ChunkStartPos)mod 3,																								
-		nFirst(Trailing,S3,_Firstfew,S4),								%cutoff(Trailing,_,S3,S4),		
-		LeftPos is SeqEndPos - Trailing,																								
+		reverse_complement(S2,[],S3,ChunkStartPos,SeqEndPos),
+		Trailing is (SeqEndPos - ChunkStartPos)mod 3,
+		nFirst(Trailing,S3,_Firstfew,S4),								%cutoff(Trailing,_,S3,S4),
+		LeftPos is SeqEndPos - Trailing,
 		RightPos is ChunkStartPos
 	;
 		S4 = S2,
 		LeftPos is ChunkStartPos,
 		L = RightPos
-	),	
-	nonprob_msw(dna(start),FirstState),	
+	),
+	nonprob_msw(dna(start),FirstState),
 	dna_chop(FirstState,Dir,Frame,S4-[],				LeftPos, RightPos, Id,ChunkFileOutStream).
-	
+
 
 dna_chop(end,_Dir,_Frm,S-S, 									P,	P, _Id,_Chunk).
-dna_chop(This,Dir,Frame,S1-S2,								P1, P2, Id,ChunkFileOutStream):-	
+dna_chop(This,Dir,Frame,S1-S2,								P1, P2, Id,ChunkFileOutStream):-
 	This \= end,
 	sub_parse(This,Dir,S1-S3,										P1, P3, Begins-[],Ends-[]),		% emit a sequence of type This
-	(Dir = 1 -> Dir_symbol = '+'; Dir_symbol = '-'), 
+	(Dir = 1 -> Dir_symbol = '+'; Dir_symbol = '-'),
 	report(Id,P1,P3,S1,Dir_symbol,Frame,Begins,Ends,ChunkFileOutStream),
 	nonprob_msw(trans(This),Next),
 	dna_chop(Next,Dir,Frame,S3-S2,							P3, P2,Id,ChunkFileOutStream).
@@ -96,18 +96,18 @@ init_frame(0,		3,	0,			S,			S).
 % complement/2
 %--------------------------------------------------------------------------------------
 % reverses and complements the sequence
-% 
-reverse_complement([X|Y],Z,W,P1,L) :- 					
+%
+reverse_complement([X|Y],Z,W,P1,L) :-
 	P2 is P1+1,
 	complement(X,Xc),
 	reverse_complement(Y,[Xc|Z],W,P2,L).
 
 reverse_complement([],X,X,L,L).
-	
+
 complement(a,t).
 complement(t,a).
 complement(c,g).
-complement(g,c).			
+complement(g,c).
 
 %--------------------------------------------------------------------------------------
 % nfirst/4
@@ -126,7 +126,7 @@ nFirst(N,[X|T1],[X|T2],Remaining):-
 %
 nonprob_msw(S,V):-
 	values(S,Range),
-	member(V,Range).	
+	member(V,Range).
 
 %--------------------------------------------------------------------------------------
 % report(Dir_symbol,Frame,S1,P1,P3,Begins,Stops,Id,ChunkFileOutStream),
@@ -134,11 +134,11 @@ nonprob_msw(S,V):-
 % Outputs current chunk to the output file
 %
 report(Id,P1,P2,S1,Dir,Frame,Begins,Ends,ChunkFileOutStream):-
-	(Dir = '+' -> 
+	(Dir = '+' ->
 		N is P2-P1,	Left is P1 ,	Right is P2-1  % this was added /*+1*/
 		;
 		N is P1-P2,	Left is P2 , Right is P1-1 % this was added /*+1*/
-	), 
+	),
 	nFirst(N,S1,S,_),
 	(Dir = '+' ->
 		S2 = S
@@ -146,4 +146,4 @@ report(Id,P1,P2,S1,Dir,Frame,Begins,Ends,ChunkFileOutStream):-
 		reverse_complement(S,[],S2,0,_)
 	),
 	Entry =.. [chunk,Id,Left,Right,S,Dir,Frame,Begins,Ends],
-	write(ChunkFileOutStream,Entry), writeln(ChunkFileOutStream,'.').	
+	write(ChunkFileOutStream,Entry), writeln(ChunkFileOutStream,'.').

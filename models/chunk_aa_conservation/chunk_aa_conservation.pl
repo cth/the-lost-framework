@@ -3,21 +3,21 @@
 % 24.03.2010
 % Ole Torp Lassen
 %============================================================================
-% conservation/2, 
-% in: file of fasta-formatted AA sequences: 
+% conservation/2,
+% in: file of fasta-formatted AA sequences:
 % out: a file of terms indicating the conservation of each seqeunce in a given database (here enterobateriales.nt)
 % ---------------------------------------------------------------------------
-%	first line of AA-sequences must be of the form: 
+%	first line of AA-sequences must be of the form:
 %
 % 																	>#1_#2/#3-#4_AA ...
 %	where:
 %				 	#1 is a seq-ID i.e.: ecoli_100k
-%					#2 is the nucleotide starting position for chunk 
-%					#3 is the nucleotide starting position for translation 
+%					#2 is the nucleotide starting position for chunk
+%					#3 is the nucleotide starting position for translation
 %					#4 is the nucleotide ending postion for chunk
 %					AA can be left out but the (>,_,/,-,_)'s are neccesary
 %
-% second line of AA-seqeunces must be one unbroken sequence of single letter aminoacid symbols in lower case. 			
+% second line of AA-seqeunces must be one unbroken sequence of single letter aminoacid symbols in lower case.
 %----------------------------------------------------------------------------
 % Output terms are in the form:
 %					conservation(#1,#2,#4,Consevation_List).
@@ -26,9 +26,9 @@
 %					number of databases seqeunces that conserve the query symbol at the respective position
 %					as reported by a tblastn analysis of the query against the database.
 %
-%					If no conservation was reported by tblastn  the conservation List wil be empty ([]).	
+%					If no conservation was reported by tblastn  the conservation List wil be empty ([]).
 %					If #2 is different from #3 the difererence is represented by spaces, ' '.
-%					The final three postion of a nonempty conservations list is always 3 spaces [' ',' ',' '] 
+%					The final three postion of a nonempty conservations list is always 3 spaces [' ',' ',' ']
 %					corresponding to the stopcodon that is not translated.
 %============================================================================
 %----------------------------------------------------------------------------
@@ -43,7 +43,7 @@ blast_command('tblastn -db EnteroBacterialesGB.nt -outfmt 5 -db_gencode 11 -use_
 blast_output_file('tblastn.aln').
 blast_input_file('tblastn.fst').
 %----------------------------------------------------------------------------
-conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-		
+conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
 	(at_end_of_stream(Chunk_Stream) ->
             true
 	;
@@ -64,7 +64,7 @@ conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
             Counter2 is Counter+1,
             conservation(Chunk_Stream,Counter2,Dir,Frame,Aln_Stream,Cons_Stream)
 	).
-		
+
 
 
 cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTerminated,Status):-
@@ -74,7 +74,7 @@ cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTermin
 %(ChunkTerminated == 'no' -> writeln('ok1');true),
 	(
 	Status == 0 ->
-%writeln('pre blast parse init '),	writeq(parse_blast_init(Blast_Stream,Length,IDs)),	
+%writeln('pre blast parse init '),	writeq(parse_blast_init(Blast_Stream,Length,IDs)),
 		lost_config(lost_base_directory,Lost_Directory),
 		atom_concat(Lost_Directory,'models/chunk_aa_conservation/',Directory),
 		atom_concat(Directory,Blast_File,Abs_Blast_File),
@@ -91,9 +91,9 @@ cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTermin
 	)
 %,writeln('post blast parse init ')
 	.
-		
 
-		
+
+
 % her kan alignment listerne (Alns) gemmes i separat fil hvis nødvendigt.
 % --->  i SÅ fald Sæt "output_alignmnets(yes) i linje 35"
 % must return also start and end of alignment, both in [1..QueryLength].
@@ -105,9 +105,9 @@ cons_main(_IDs,FirstPos,LastPos,All_alignments,Aln_Stream,Cons,AvgCons):-
           All_alignments \= [], All_alignments \= ['n/a','n/a'] ->
           determine_best_alns(All_alignments,Best_alignments),
           (
-            output_alignments(yes)-> 
+            output_alignments(yes)->
             report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
-          ; 
+          ;
             true
           ),
           write(compute_conservation(Best_alignments,Cons,AvgCons)),nl,
@@ -135,31 +135,31 @@ score_alns([(ID,P11,P12,M)|Rest1],[(ID,P31,P32,M3)|Rest3]):-
         score(M,M1,_,Score1),
         best_of_rest(Rest1,ID,P21,P22,M2,Rest2,Score2),
       	(
-	Score1 > Score2 -> 
+	Score1 > Score2 ->
 		P31 = P11,
-		P32 = P12, 
+		P32 = P12,
 		M3  = M1
 	;
 		P31 = P21,
-		P32 = P22, 
+		P32 = P22,
 		M3	= M2
 	),
 	score_alns(Rest2,Rest3).
-	
+
 best_of_rest(Rest1,ID,P31,P32,M3,Rest3,Score3):-
 	(
 		select((ID,P11,P12,M),Rest1,Rest2)->
 		score(M,M1,_,Score1),
 		best_of_rest(Rest2,ID,P21,P22,M2,Rest3,Score2),
 		(
-			Score1 > Score2 -> 
+			Score1 > Score2 ->
 			P31 = P11,
-			P32 = P12, 
+			P32 = P12,
 			M3 	= M1,
 			Score3 is Score1
 		;
 			P31 = P21,
-			P32 = P22, 
+			P32 = P22,
 			M3 	= M2,
 			Score3 is Score2
 		)
@@ -170,7 +170,7 @@ best_of_rest(Rest1,ID,P31,P32,M3,Rest3,Score3):-
 		Score3 	= 0,
 		Rest3 	= Rest1
 	).
-	
+
 
 
 % score(L1+,L2-,Stops-,Score-)
@@ -182,11 +182,11 @@ score([],[],0,0) :-
 
 score([42],[],0,0) :-
         !.
-        
-score([X|L1],[Y|L2],Saw_a_stop,Score):-		
+
+score([X|L1],[Y|L2],Saw_a_stop,Score):-
 	score(L1,L2,Saw_a_stop_in_rest,ScoreRest),
 	(
-	X \= 42, Saw_a_stop_in_rest = 0 -> 
+	X \= 42, Saw_a_stop_in_rest = 0 ->
 		Y = X, Saw_a_stop = 0										% copies X to Y and reports "no stops" if X is not a '*' AND "no stops" in rest
 	;
 		Y = 32,Saw_a_stop = 1										% replaces X by ' ' and reports "stop(s) seen" oherwise
@@ -198,8 +198,8 @@ score([X|L1],[Y|L2],Saw_a_stop,Score):-
 blast_next_chunk(Chunk_file,Blast_Output,QId,ChunkTerminated,Status):-
 	blast_command(Blast_Command),
 	blast_input_file(Blast_Input),
-	blast_output_file(Blast_Output),	
-%writeln('pre copy fasta'),	
+	blast_output_file(Blast_Output),
+%writeln('pre copy fasta'),
 	copy_fasta(Chunk_file,Blast_Input,QId,ChunkTerminated,CopyFasta_OK),
 %writeln('post copy fasta'),
 	(
@@ -207,23 +207,23 @@ blast_next_chunk(Chunk_file,Blast_Output,QId,ChunkTerminated,Status):-
 		atom_concat(' -query ',Blast_Input, Arg1),
 		atom_concat(' -out ',Blast_Output, Arg2),
 		atom_concat(Arg1,Arg2,Args),
-		atom_concat(Blast_Command,Args,Command), 
+		atom_concat(Blast_Command,Args,Command),
 		writeq(Command),
 		system(Command,Status)
 	;
 		Status = 2
 	).
-	
+
 
 copy_fasta(Infile,OutFile,QId,ChunkTerminated,OK):-
 %writeq(read_line(Infile,[62|QId])),nl,
-	read_line(Infile,[62|QId]),	
+	read_line(Infile,[62|QId]),
 	read_line(Infile,Seq_codes),
 	read_line(Infile,_),
 	atom_codes(Title_Line,[62|QId]),
 	atom_codes(Seq_Line,Seq_codes),
 	(append(_,[42],Seq_codes) -> ChunkTerminated = 'yes'; ChunkTerminated = 'no'),		% check for ChunkTerminated to adjust trailing annotaions
-	( Seq_Line \= 'n/a' ->							
+	( Seq_Line \= 'n/a' ->
 	open(OutFile,write,Output),
 	writeln(Output,Title_Line),
 	writeln(Output,Seq_Line),
@@ -232,13 +232,13 @@ copy_fasta(Infile,OutFile,QId,ChunkTerminated,OK):-
 	;
 	OK = 'no'
 	).
-	
-		
+
+
 report_cons(Cons_Stream, Dir, Frame, Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength, ConsRev,Avg_Cons):-						% QId pattern : ec100k_115/142-255_AA
 	(ConsRev \= [] ->
             PreAdjust is AFirst - 1,
             makelist(PreAdjust,0,PreList), % change 0/*
-            PostAdjust is QLength - ALast,		
+            PostAdjust is QLength - ALast,
             makelist(PostAdjust,0,PostList), % change 0/*
             append(ConsRev,PostList,Cons1Rev),
             append(PreList,Cons1Rev,Cons2Rev)
@@ -249,13 +249,13 @@ report_cons(Cons_Stream, Dir, Frame, Counter,QId,ChunkTerminated,Status,AFirst,A
 	extract(QId,Dir,QName,Left,Right,Pfx), % change -/* Prefix is calculated wrongly in the reverse strand (trans mode 1)
         write(extract(QId,Dir,QName,Left,Right,Pfx)),nl,
 	Len is Right - Left + 1,
-	(Dir = '-' -> 
+	(Dir = '-' ->
             reverse(Cons2Rev,Cons)
 	;
             write(test3),nl,
             Cons = Cons2Rev
 	),
-        ( 
+        (
 	Cons == [] ->									% if no conservation, make len-long list of 0's
           makelist(Len,0,Chunk_Cons) % 				change 0/+
 	;
@@ -284,14 +284,14 @@ report_cons(Cons_Stream, Dir, Frame, Counter,QId,ChunkTerminated,Status,AFirst,A
               append(Zeros,BaseConsTerm,Chunk_Cons)
                                 % Chunk_Cons = BaseConsTerm
             )
-          )		
+          )
 	),
         Entry =.. [conservation,QName,Left,Right,Dir,Frame,Chunk_Cons,Avg_Cons,Status],
         write(Entry),nl,
-	write(Cons_Stream,Entry),writeln(Cons_Stream,'.'),	
-	Dot is Counter mod 10, 
-	Line is Counter mod 200, 
-	(Dot = 0 -> write(user_output,'.'); true),	
+	write(Cons_Stream,Entry),writeln(Cons_Stream,'.'),
+	Dot is Counter mod 10,
+	Line is Counter mod 200,
+	(Dot = 0 -> write(user_output,'.'); true),
 	(Line = 0 -> nl(user_output); true).
 
 % : report_alns(Aln_Stream,FirstPos,LastPos,Alns,Alns2)
@@ -308,15 +308,15 @@ report_alns(Aln_Stream,AFirst,ALast,Alns,Alns2):-
 	write(' Full Alignments:'), nl,
 	write(' ----------------'), nl,
 			% writeln(user_output,'report alns1'),
-	( Alns \= 'n/a' -> 
-		report_aln(Alns); 
+	( Alns \= 'n/a' ->
+		report_aln(Alns);
 		writeln('n/a')
 	),
 	% writeln(user_output,'report alns2 ok'),
 	write(' Alignments with removed terminated prefixes:'), nl,
 	write(' --------------------------------------------------------------------'), nl,
-	( Alns2 \= 'n/a' -> 
-		report_aln(Alns2); 
+	( Alns2 \= 'n/a' ->
+		report_aln(Alns2);
 		writeln('n/a')
 	),
 	% writeln(user_output,'report alns3 ok'),
@@ -334,10 +334,10 @@ report_aln([(_,_,_,QSeq)|DBs]):-												% Aln = [Query|DBs]
 		write('Query    ,'),write('n/a'),nl
 	)	,																										% DBs = [DB|DBsRest]
   nl.																										% DB = (DBID,DBSequence)
-  
+
 report_DBs([]).
 report_DBs([(DBId,_,_,DBSeq)|DBsRest]):-
-	
+
 	atom_codes(DBIdAtom,DBId),
 	(
 	DBSeq \= 'n/a' ->
@@ -346,16 +346,16 @@ report_DBs([(DBId,_,_,DBSeq)|DBsRest]):-
 	;
 		write(DBIdAtom),write(','),write('n/a'),nl
 	),
-	report_DBs(DBsRest)	
+	report_DBs(DBsRest)
 	.
 
 % compute_conservation/2
 % Arguments:
 % 	Arg1, +, Alignments
 %   Arg2, -, Conservation_List
-%   Arg3, -, normalised average conservation pr position 
+%   Arg3, -, normalised average conservation pr position
 %=========================
-% Alignments, is a list [Q|DB_Alignments], where 
+% Alignments, is a list [Q|DB_Alignments], where
 % 		Q is a query (QId, Start,Stop, Query_Sequence)
 %			DB_Alignments is a list of DB_Alignments each of which has the form (DBId, Start, Stop, DB_Sequence)
 % 		both Query_Seqeunce and DB_Sequences are lists of charcodes, all DB_seqeunces have same length as Query sequences.
@@ -366,28 +366,28 @@ report_DBs([(DBId,_,_,DBSeq)|DBsRest]):-
 compute_conservation([(_Qid,_StartQ,_StopQ,Qseq)|DB_Aligns], Cons, AvgCons):-
 	length(Qseq,AlignmentLength),
 	query_vs_dbs(Qseq,DB_Aligns,Cons,SummedCons),
-	AvgCons is SummedCons / AlignmentLength. 
+	AvgCons is SummedCons / AlignmentLength.
 
-	
+
 query_vs_dbs([],_,[],0).
 
 query_vs_dbs([Qhead|Qtail],DB,[Chead|Ctail],SummedCons):-
-	qhead_vs_dbheads(Qhead,DB,DBtails,Chead), 
+	qhead_vs_dbheads(Qhead,DB,DBtails,Chead),
 	query_vs_dbs(Qtail,DBtails,Ctail,CtailSum),
 	SummedCons is Chead + CtailSum. 				 % Before adding: divide Chead by # dbseqs to get percentage-meassure
 
-	
-qhead_vs_dbheads(_Qhead,[],[],0).																																													% end of DBs	
+
+qhead_vs_dbheads(_Qhead,[],[],0).																																													% end of DBs
 
 qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-				% Match_case  Scores declared in start of module
 	!,																																																											% Match qhead to heads in rest of DBs
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest),																																		% add (DBID,Start,Stop,DBtail) to rest of dbtails	
-	CountQ is 1 + CountQRest.	% increment match count	
+	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest),																																		% add (DBID,Start,Stop,DBtail) to rest of dbtails
+	CountQ is 1 + CountQRest.	% increment match count
 
 qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[32|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-  			% mismatch: gap(space) in  DBhead
 	!,
 	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
-	
+
 qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[45|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-  			% mismatch: gap(hyphen) in  DBhead
 	!,
 	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
@@ -395,13 +395,13 @@ qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[45|TailDB1])|RestDBs],[(DBID,Start,Sto
 qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[_DBhead|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-  		% mismatch: different nongap DBhead
 	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest),
 	nongap_mismatch_score(NMS),																																															% NMS is 0 or 1, depending on how to count nonperfect matches.
-	CountQ is NMS + CountQRest																																															% declared in line 37		
+	CountQ is NMS + CountQRest																																															% declared in line 37
 	.
 
 qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[])|RestDBs],[(DBID,Start,Stop,[])|RestTails],CountQRest):-  										% mismatch: no DBhead
 	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
 
-	
+
 makelist(0,_,[]).
 makelist(N,X,[X|Rest]):-
 	N > 0,
@@ -419,7 +419,7 @@ extract(QId,Dir,QName,P1,P3,Pfx):-																	% QId pattern : ec100k_115/14
 	number_codes(P2,P2_codes),
 	number_codes(P3,P3_codes),
 	(
-	Dir = '+' -> 
+	Dir = '+' ->
 		(P2 = P1 -> Pfx is 0
 		;
 		Pfx is P2 - P1 -1 % -1 added
@@ -429,14 +429,14 @@ extract(QId,Dir,QName,P1,P3,Pfx):-																	% QId pattern : ec100k_115/14
 		P1 = P2 -> Pfx is 0
 		;
 		Pfx is P3 - P2 + 1 					% orignal +1 added
-		
+
 		)
 	).
 
-times_3([],[]).	
+times_3([],[]).
 times_3([H|Rest],[H,H,H|Rest_times_3]):-
 	times_3(Rest,Rest_times_3).
-	
+
 toggle(alnout):-
 	(
 	alnout(true)-> retract_all(alnout(_)),assert(alnout(false))
@@ -444,7 +444,7 @@ toggle(alnout):-
 	retract_all(alnout(_)),assert(alnout(true))
 	).
 
-	
+
 %==========================================================================
 % Testgoals
 
@@ -474,10 +474,10 @@ test3:- open(tblastn_test,read,Blast_Stream,[alias(blast_in)]),
 				close(blast_in),
 				close(aln_out),
 				writeln(user_output,Cons).
-				
-				
-testgoal:-run_chunk_conservation('u00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).				
-	
+
+
+testgoal:-run_chunk_conservation('u00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).
+
 testlist1([73,83,75,86,84,83,73,67,65,77,80,82,71,65,71,119,73,80,83,82,76,78]).
 testlist2([32,32,32,86,84,83,73,67,65,77,45,82,71,65,71,119,73,80,83,82,76,78]).
 testlist3([73,83,75,86,84,83,73,67,65,77,42,82,71,65,71,119,73,80,83,82,76,78]).
@@ -508,13 +508,13 @@ testalns2([
 					([78,67,95,48,48,48,57,49,51],682595,680934,[32,32,32,32,73,71,73,68,76,71,84,84,78,83,108,73,65,86,119,107,100,103,65,97,81,76,73,112,78,107,102,71,69,121,108,84,80,83,73,73,83,109,100,69,78,78,72,105,76,86,71,75,80,65,118,115,82,114,84,83,72,80,68,75,84,97,97,108,70,75,82,97,77,71,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,83,78,116,110,87,45,82,76,103,83,68,116,70,110,97,80,69,76,83,83,108,86,76,82,83,76,75,69,100,65,69,69,70,76,113,82,80,73,107,68,86,86,73,83,86,80,65,89,70,83,68,101,81,82,75,104,84,82,108,65,65,69,76,65,71,76,78,65,118,82,76,73,78,69,80,84,65,65,65,77,65,89,71,76,104,116,113,113,78,84,82,83,76,45,86,70,68,76,71,71,71,84,70,68,86,84,86,76,69,121,45,45,45,45,65,116,112,86,73,69,86,104,65,83,97,71,68,78,102,76,71,71,69,68,70,116,104,109,76,86,68,101,86,76,75,45,45,82,97,68,118,65,114,116,116,108,78,69,115,45,101,76,97,97,76,121,97,67,86,69,97,65,75,45,45,45,45,99,83,78,81,83,112,76,72,73,114,87,113,121,113,69,101,84,45,45,45,45,114,69,99,69,102,121,69,110,69,76,69,68,76,119,108,112,76,76,78,82,108,114,118,80,73,69,113,65,76,82,68,65,114,76,75,112,83,81,73,68,83,76,86,76,86,71,71,97,83,81,77,80,76,86,81,82,105,65,86,82,76,70,71,75,108,80,121,81,83,121,68,80,83,116,105,86,65,97,65,67,114,76,82,83,101,100,73,101,101,118,73,108,116,100,73,99,112,121,115,108,103,86,69,86,78,114,81,103,116,116,118,112,86,83,114,86,101,84,121,83,84,109,104,80,101,81,100,83,105,84,118,78,86,121,81,103,69,78,104,107,86,107,110,78,73,76,118,101,83,102,100,118,112,108,107,75,116,71,97,121,81,115,105,100,45,45,45,45,105,114,102,115,108,101,118,68,86,108,76,101,100,103,115,118,107,83,114,86,73,78,104,83,112,118,116,108,83,65,113,81,105,69,69,115,114,116,82,108,83,65,108,107,105,121,112,82,100,77,45,45,45,45,45,45,45,45,45,45,108,105,78,82,116,70,75,97,107,76,119,65,82,45,45,45,97,108,103,100,69,114,101,69,105,105,84,68,102,100,65,97,108,113,115,110,68,109,97,114,86,100,69,118,114,114,114,65,115,68,121,108,97,105,101,105,112,42,84,114,76,112,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32]),
 					([78,67,95,48,48,48,57,49,51],2145701,2147440,[32,32,32,70,73,71,70,68,121,71,84,65,78,99,115,86,65,86,77,114,100,103,107,80,72,76,76,75,109,101,78,100,83,116,108,108,80,83,77,76,67,45,65,112,116,114,69,65,86,115,101,119,108,121,82,72,72,100,86,112,97,100,68,68,101,116,113,65,76,108,82,114,97,105,82,121,110,82,69,69,68,73,68,118,116,65,75,115,86,113,70,103,76,115,83,108,112,75,83,102,108,103,65,45,115,103,108,75,112,81,65,113,108,112,101,65,101,97,110,116,81,97,81,103,105,108,101,82,97,97,107,114,97,103,102,114,68,86,86,70,113,121,101,112,118,97,108,118,86,68,105,103,71,109,103,112,113,119,82,115,114,108,100,82,101,97,115,76,76,71,72,115,103,67,114,105,103,71,110,100,76,68,105,65,108,65,102,75,78,76,109,112,45,108,76,71,109,71,103,101,116,101,75,103,73,97,76,69,116,114,97,83,108,112,102,73,83,101,115,65,108,83,113,112,108,116,114,105,114,119,97,101,118,118,105,99,76,82,108,115,113,102,102,99,99,108,116,42,114,70,104,113,82,72,103,80,99,119,115,77,97,100,99,81,114,114,102,81,112,109,115,102,103,71,104,102,82,72,121,114,76,83,86,99,87,114,121,45,45,45,45,45,45,82,102,73,82,112,69,104,107,116,65,102,116,97,114,70,112,118,68,110,114,108,103,81,77,118,97,107,112,102,104,76,108,78,65,116,45,45,45,84,103,110,105,99,103,99,70,110,116,107,82,112,42,114,114,70,84,82,82,97,110,65,103,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32])
 					]).
-					
+
 testalns3([
 					([78,67,95,48,48,48,57,49,51],12163,13965,		[77,71,75]),
 					([78,67,95,48,48,48,57,49,51],2656891,2655167,[32,32,75]),
 					([78,67,95,48,48,48,57,49,51],682595,680934,	[32,32,32]),
 					([78,67,95,48,48,48,57,49,51],2145701,2147440,[32,70,73])
 					]).
-					
-					
+
+
 clean:-	close(aln_out),close(cons_out).
