@@ -41,12 +41,13 @@ test1 :-
 % from the division variable.
 
 script_hard([Golden_Standart|List_Predictions],Nucleotids_File,Division,Result_Files) :-
-        get_sequence_files([Golden_Standart|List_Predictions],List_Files),
+        map(lost_sequence_file,[Golden_Standart|List_Predictions],List_Files),
         lost_sequence_file(Nucleotids_File,Data_File),
 	get_annotation_file(hard_to_find_genes,
 			   List_Files,[],
 			    OutputFile),
-        find_and_build_gene(OutputFile,Data_File,Division,Result_Files).
+        consult(OutputFile),
+        find_and_build_gene(Data_File,Division,Result_Files).
 
 
 
@@ -55,15 +56,14 @@ script_hard([Golden_Standart|List_Predictions],Nucleotids_File,Division,Result_F
 % Utils script hard          
 %----
 
-find_and_build_gene(_OutputFile,_Nucleotids_File,[],[]) :-
+find_and_build_gene(_Data_File,[],[]) :-
         !.
         
 
-find_and_build_gene(OutputFile,Nucleotids_File,[Range|Rest_Ranges],[Result_File|Rest_Files]) :-
+find_and_build_gene(Data_File,[Range|Rest_Ranges],[Result_File|Rest_Files]) :-
         !,
-        lost_sequence_file(Nucleotids_File,Data_File),
         find_gene(Range,Data_File,Result_File),
-        find_and_build_gene(OutputFile,Data_File,Rest_Ranges,Rest_Files).
+        find_and_build_gene(Data_File,Rest_Ranges,Rest_Files).
 
 
 % find gene        
@@ -73,6 +73,7 @@ find_gene((Range_Min,Range_Max),Data_File,File_Name) :-
                                   in_range(Value,(Range_Min,Range_Max))
                                  ),
                 Data_Infos),
+        write(Data_Infos),nl,
         open(File_Name,write,Stream),
         build_data(Stream,Data_File,Data_Infos),
         close(Stream).
@@ -103,13 +104,13 @@ build_data(Stream,Data_File,[[Min,Max,Strand]|Rest_Data]) :-
         write([Min,Max,Strand]),nl,
         write(Stream,Predicate),write(Stream,'.'),
         nl(Stream),
-        build_data(Stream,Data_File,Rest_Data,Terms).
+        build_data_rec(Stream,Data_File,Rest_Data,Terms).
 
 
-build_data(_Stream,_Data_File,[],_) :-
+build_data_rec(_Stream,_Data_File,[],_) :-
         !.
 
-build_data(Stream,Data_File,[[Min,Max,Strand]|Rest_Data],Terms) :-
+build_data_rec(Stream,Data_File,[[Min,Max,Strand]|Rest_Data],Terms) :-
         load_annotation_from_file(sequence,[range(Min,Max),data_position(4)],Data_File,Terms,Annotation),
         (Strand = + ->
             Annotation2 = Annotation
@@ -120,7 +121,7 @@ build_data(Stream,Data_File,[[Min,Max,Strand]|Rest_Data],Terms) :-
         write([Min,Max,Strand]),nl,
         write(Stream,Predicate),write(Stream,'.'),
         nl(Stream),
-        build_data(Stream,Rest_Data,Terms).
+        build_data_rec(Stream,Data_File,Rest_Data,Terms).
 
 
 
