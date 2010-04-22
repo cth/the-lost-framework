@@ -59,8 +59,6 @@ train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
 	 lost_file_index_update_file_timestamp(ParamFileIndex,SavedParamsFile)
 	).
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check declared options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,7 +102,6 @@ expand_options([lost_option(_,OptionName,DefaultValue,_)|Ds],Options,[DefaultOpt
 % Option parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TODO: Eventually we should have some
-
 
 get_option(Options, KeyValue) :-
 	member(KeyValue, Options).
@@ -340,9 +337,11 @@ lost_interface_output_format_to_file(Model,InterfacePredicate, Options, OutputFo
 	lost_interface_defines_output_format(Model,InterfacePredicate),
 	expand_model_options(Model,InterfacePredicate,Options,ExpandedOptions),
 	sort(ExpandedOptions,ExpandedSortedOptions),
-	term2atom(call((tell(OutputFormatFile),
-			lost_output_format(InterfacePredicate,ExpandedSortedOptions,OutputFormat),
-			write(output_format(OutputFormat)),
+	% Delete OutputFormatFile if it allready exists
+	(file_exists(OutputFormatFile) -> delete_file(OutputFile) ; true),	
+	term2atom(call((lost_output_format(InterfacePredicate,ExpandedSortedOptions,OutputFormat),
+			tell(OutputFormatFile),
+			write(output_format(Model,InterfacePredicate,Options,OutputFormat)),
 			atom_codes(Dot,[46]),
 			write(Dot),
 			nl,
@@ -356,7 +355,29 @@ lost_interface_output_format(Model,InterfacePredicate,Options,OutputFormat) :-
 	atom_concat(Tmp, 'lost_interface_output_format.pl', Filename),
 	lost_interface_output_format_to_file(Model,InterfacePredicate,Options,Filename),
 	terms_from_file(Filename, [output_format(OutputFormat)]).
-	
+
+
+lost_model_option_values_to_file(Model,InterfacePredicate,OptionName, OutputFile) :-
+	lost_model_interface_file(Model, ModelFile),
+	% Check if option is declared!!!
+	% Delete OutputFile if it allready exists
+	(file_exists(OutputFile) -> delete_file(OutputFile) ; true),
+	term2atom(call((lost_option_values(InterfacePredicate, OptionName, Values),
+		       tell(OutputFile),
+		       writeq(lost_option_values(Model,InterfacePredicate, OptionName, Values)),
+		       atom_codes(Dot,[46]),
+		       write(Dot),
+		       nl,
+		       told)),
+		  Goal),
+	launch_prism_process(ModelFile,Goal).
+
+lost_model_option_values(Model, InterfacePredicate, OptionName, Values) :-
+	lost_tmp_directory(Tmp),
+	atom_concat(Tmp, 'lost_model_option_values.pl', Filename),
+	lost_model_option_values_to_file(Model,InterfacePredicate,OptionName,Filename),
+	terms_from_file(Filename, [lost_option_values(Model,InterfacePredicate,OptionName,Values)]).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Time stamp checking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

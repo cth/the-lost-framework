@@ -9,11 +9,24 @@
 :- lost_include_api(interface).
 :- lost_include_api(misc_utils).
 
+lost_option(lost_best_annotation,parameters,'Escherichia_coli_K12','The named parameter set to use for prediction. Should be similar to organism of the sequence').
+
+lost_option_values(lost_best_annotation,parameters,Values) :-
+	genemark_config(genemark_parameters_dir,GMDir),
+	directory_files(GMDir,DirFileAtoms),
+	map(atom_codes, DirFileAtoms, DirFileCodes),
+	atom_codes('.mat',ExtensionCode),
+	findall(Head, (member(DirFileCode,DirFileCodes),match_tail(DirFileCode,Head,ExtensionCode)), ValuesCodes),
+	map(atom_codes(output,input), ValuesCodes, Values).
+	
+lost_input_formats(lost_best_annotation, [text(fasta(fna))]).
+lost_output_format(lost_best_annotation, [text(prolog(range(gene)))]).
+
 % Load configuration options
 % Load configuration options
 % InputFile: Should be a file in fasta format
 lost_best_annotation([InputFile], Options, OutputFile) :-
-      lost_required_option(Options,parameters, ParamsId),
+      get_option(Options,parameters, ParamsId),
       genemark_parameter_file(ParamsId,ParamsFile),
       write(ParamsFile),nl,
       genemark_setup(InputFile,GMInputFile),
@@ -45,15 +58,13 @@ genemark_cleanup(GMInputFile) :-
         atom_concat(GMInputFile,'.lst',GeneMarkOutput1),
         atom_concat(GMInputFile,'.ldata',GeneMarkOutput2),
         atom_concat(GMInputFile,'.gdata',GeneMarkOutput3),
-       !.
-       /*
+	!,
 	(file_exists(GeneMarkOutput1) ->
 	 delete_file(GeneMarkOutput1) ; true),
 	(file_exists(GeneMarkOutput2) ->
 	 delete_file(GeneMarkOutput2) ; true),
 	(file_exists(GeneMarkOutput3) ->
 	 delete_file(GeneMarkOutput3) ; true).
-         */
 
 %testme :-
 %        lost_best_annotation(['/tmp/U00096_fna.seq'], 

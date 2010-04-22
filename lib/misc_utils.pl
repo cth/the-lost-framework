@@ -84,6 +84,12 @@ replace(Symbol, Replacement, [Elem|InListRest], [Elem|OutListRest]) :-
 	Symbol \= Elem,
 	replace(Symbol,Replacement,InListRest,OutListRest).
 
+% match_tail(++InputList,--HeadOfInputList,++TailOfInputList)
+% true if InputList ends with TailOfInputList
+match_tail(Match,[],Match).
+match_tail([H|T],[H|Hr],Match) :- match_tail(T,Hr,Match).
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Term manipulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,8 +111,6 @@ abs(A,A) :-
 abs(A,B) :-
 	A < 0,
 	B is A * -1.
-
-
 
 % Find minimum element
 min(A,A,A).
