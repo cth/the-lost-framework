@@ -5,7 +5,7 @@
 %============================================================================
 % read_line/2, read_tab/2, read_token/2
 %----------------------------------------------------------------------------
-% reads in a line or a tab or a token with no spaces of data from specified input-stream 
+% reads in a line or a tab or a token with no spaces of data from specified input-stream
 % and represents it as a list of character codes..
 %============================================================================
 read_line(File,CodeList):-
@@ -38,7 +38,7 @@ read_rest_of_line(File,CodeList):-
 	CodeList=[Code|RestOfCodes]
 	)
 	).
-%========================================================================	
+%========================================================================
 read_tab(File,CodeList):-
 	get_code(File,Code),
 	Code = -1 -> CodeList = [eof]
@@ -80,7 +80,7 @@ read_token(File,N_spaces,CodeList):-
 	).
 
 read_rest_of_token(File,CodeList):-
-	
+
 	get_code(File,Code),
 	(
 	Code = -1 -> CodeList = [eof]
@@ -93,7 +93,7 @@ read_rest_of_token(File,CodeList):-
 	CodeList=[Code|RestOfCodes]
 	)
 	).
-	
+
 next_nonspace(File,N,Code):-
 	get_code(File,C),
 	(
@@ -101,9 +101,9 @@ next_nonspace(File,N,Code):-
 	;
 	Code = C,	N is 0
 	).
-		
+
 read_n_spaces(_,0).
 read_n_spaces(File,N):-
 	get_code(File,32),
 	M is N-1,
-	read_n_spaces(File,M).	
+	read_n_spaces(File,M).
