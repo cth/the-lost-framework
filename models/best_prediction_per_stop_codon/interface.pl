@@ -1,13 +1,21 @@
-
 :- ['../../lost.pl'].
 :- lost_include_api(interface).
 :- lost_include_api(misc_utils).
 :- lost_include_api(genedb).
+:- lost_include_api(io).
+
+lost_option(lost_best_annotation,prediction_functor,auto,'The functor of the facts used in the prediction file. The default value \"auto\" means that the model will try to figure it out automatically').
+lost_option(lost_best_annotation,score_functor,not_set,'This model expects a fact in the extra list argument, which contains a score for the each gene prediction. score_functor determines the functor of this fact.').
+
+lost_input_formats(lost_best_annotation, [text(prolog(ranges(gene)))]).
+lost_output_format(lost_best_annotation, _, [text(prolog(ranges(gene)))]).
 
 lost_best_annotation([InputFile],Options,OutputFile) :-
 	consult(InputFile),
-	lost_required_option(Options,prediction_functor,PredFunctor),
-	lost_required_option(Options,score_functor,ScoreFunctor),
+	get_option(Options,prediction_functor,PredFunctorOpt),
+	((PredFunctorOpt == auto) -> file_functor(InputFile,PredFunctor) ;  PredFunctor = PredFunctorOpt),
+	get_option(Options,score_functor,ScoreFunctor),
+	((ScoreFunctor == not_set) -> throw(error(score_functor_must_be_set)) ; true),
 	genedb_distinct_stop_codons(PredFunctor,DistinctStops),
 	length(DistinctStops,DSL),
 	write('distinct stops: '), write(DSL),nl,
