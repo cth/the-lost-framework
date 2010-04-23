@@ -7,3 +7,13 @@ Before using it you should do two things:
 1) run user_setup.sh to set up the license key
 2) Edit config.pl and make sure the the paths are correct
    (on mox, they should be).
+
+
+If you want to run it locally you need to do following:
+
+1) Download and instanll Genemark-S (install your own license key)
+
+2) Download parameter data and install it 
+
+3) Setup paths in config.pl 
+

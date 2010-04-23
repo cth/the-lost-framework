@@ -20,7 +20,7 @@ lost_option_values(lost_best_annotation,parameters,Values) :-
 	map(atom_codes(output,input), ValuesCodes, Values).
 	
 lost_input_formats(lost_best_annotation, [text(fasta(fna))]).
-lost_output_format(lost_best_annotation, [text(prolog(range(gene)))]).
+lost_output_format(lost_best_annotation, _, text(prolog(ranges(gene)))).
 
 % Load configuration options
 % Load configuration options
@@ -70,4 +70,3 @@ genemark_cleanup(GMInputFile) :-
 %        lost_best_annotation(['/tmp/U00096_fna.seq'], 
 %                             [option(parameters,'Escherichia_coli_K12')],
 %                             'Test.out').
-
