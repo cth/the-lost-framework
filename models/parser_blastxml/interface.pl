@@ -8,7 +8,7 @@
 % Input Format Specification
 lost_input_formats(lost_best_annotation,[text(xml(_))]).
 % Output Format Specification
-lost_output_format(lost_best_annotation,_,[text(prolog(blast_hit))]).
+lost_output_format(lost_best_annotation,_,text(prolog(blast_hit))).
 
 
 lost_best_annotation([XML_File],Options,OutputFile) :-

@@ -9,7 +9,7 @@ lost_option(lost_best_annotation,start,min, 'An positive integer indicating the 
 lost_option(lost_best_annotation,end,max, 'A positive integer indicating the end of the range.').
 
 lost_input_formats(lost_best_annotation,[text(prolog(ranges(gene))),star(text(prolog(ranges(gene))))]).
-lost_output_format(lost_best_annotation,_options,[text(prolog(ranges(gene)))]).
+lost_output_format(lost_best_annotation,_options,text(prolog(ranges(gene)))).
 
 lost_best_annotation([GoldenStandardFile|PredictionsFiles], Options, OutFile) :-
         % Consult all input files 

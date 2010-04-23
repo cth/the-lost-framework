@@ -8,7 +8,7 @@ lost_input_formats(lost_best_annotation, [text(prolog(sequence)),
 					  text(prolog(sequence)),
 					  text(prolog(prism_switches))]).
 
-lost_output_format(lost_best_annotation, _, [text(prolog(sequence))]).
+lost_output_format(lost_best_annotation, _, text(prolog(sequence))).
 
 
 % This is what is used to get the best annotation

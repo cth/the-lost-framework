@@ -8,7 +8,7 @@ lost_option(lost_best_annotation,prediction_functor,auto,'The functor of the fac
 lost_option(lost_best_annotation,score_functor,not_set,'This model expects a fact in the extra list argument, which contains a score for the each gene prediction. score_functor determines the functor of this fact.').
 
 lost_input_formats(lost_best_annotation, [text(prolog(ranges(gene)))]).
-lost_output_format(lost_best_annotation, _, [text(prolog(ranges(gene)))]).
+lost_output_format(lost_best_annotation, _, text(prolog(ranges(gene)))).
 
 lost_best_annotation([InputFile],Options,OutputFile) :-
 	consult(InputFile),

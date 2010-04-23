@@ -6,7 +6,7 @@ lost_option(lost_best_annotation,use_parameter_file,yes,'Load parameters from th
 	    
 % Some ideas for specification of input & output formats...
 lost_input_formats(lost_best_annotation, [text(prolog(sequence)),text(prolog(prism_switches))]).
-lost_output_format(lost_best_annotation, _, [text(prolog(sequence))]).
+lost_output_format(lost_best_annotation, _, text(prolog(sequence))).
 
 % This is what is used to get the best annotation
 lost_best_annotation([InputFile,ParamFile],Options,OutputFile) :-

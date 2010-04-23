@@ -7,7 +7,7 @@
 lost_option(lost_best_annotation,prediction_functor,auto,'The functor of the facts used in the prediction file. The default value \"auto\" means that the model will try to figure it out automatically').
 
 lost_input_formats(lost_best_annotation, [text(prolog(ranges(gene)))]).
-lost_output_format(lost_best_annotation, _, [text(prolog(ranges(gene)))]).
+lost_output_format(lost_best_annotation, _, text(prolog(ranges(gene)))).
 
 
 lost_best_annotation([InputFile],Options,OutputFile) :-

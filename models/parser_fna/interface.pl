@@ -10,7 +10,7 @@ lost_option(lost_best_annotation,list,'none','Divided sequences of Nucleotids in
 % Input Format Specification
 lost_input_formats(lost_best_annotation,[text(fna),text(gbk)]).
 % Output Format Specification
-lost_output_format(lost_best_annotation,_,[text(prolog(sequence(dna)))]).
+lost_output_format(lost_best_annotation,_,text(prolog(sequence(dna)))).
 
 
 lost_best_annotation([FNA_File,GBK_File],Options,OutputFile) :-
