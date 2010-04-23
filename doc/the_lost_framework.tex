@@ -731,6 +731,94 @@ must be called with four mandatory options:
   (inclusive) on which accuracy should be measured.
 \end{itemize}
 
+\section{Prediction/Gene filter models}
+
+Common for these models is that they all take files in the
+\texttt{text(prolog(ranges(\_)))} format and produce output in 
+the same format. Usually, the output will be a subset of the entries
+from the input file.
+
+\subsection{longest\_predication\_per\_stop\_codon}
+
+Given an input file with gene predictions, this model selects for each
+stop codon the longest matching prediction. Only the longest
+prediction for each stop coden will be written to the output file.
+
+For the goal \texttt{lost\_best\_annotation/3}, the following files
+and options are expected:
+\begin{itemize}
+\item Input files: \texttt{text(prolog(ranges(gene)))}
+\item Output file: \texttt{text(prolog(ranges(gene)))}
+\end{itemize}
+
+The model only takes one option, \texttt{file\_functor}, which is 
+used to set the functor to identify the gene predictions in the input
+file. If the input file contains only facts with the same functor the 
+default value \texttt{auto} can be used and the model will infer the 
+functor automatically.
+
+\subsection{best\_prediction\_per\_stop\_codon}
+
+Given an input file with gene predictions this model selects, for each
+stop codon, the prediction with the highest score and write such
+predictions to the output file. The score is for each prediction is
+assumed to be present the \texttt{Extra} list argument of the
+prediction facts in the input file. 
+
+For the goal \texttt{lost\_best\_annotation/3}, the following files
+and options are expected:
+\begin{itemize}
+\item Input files: \texttt{text(prolog(ranges(gene)))}
+\item Output file: \texttt{text(prolog(ranges(gene)))}
+\end{itemize}
+
+The model only takes two option:
+
+\begin{itemize} 
+\item \texttt{file\_functor}: Is used to set the functor to
+  identify the gene predictions in the input file. If the input file
+  contains only facts with the same functor the default value
+  \texttt{auto} can be used and the model will infer the functor
+  automatically.
+\item \texttt{score\_functor}: Is used to specify how the score is
+  represented in the \texttt{Extra} list. For instance, if the Extra
+  list looks like \verb|[...,score(0.75),..]|,  then the
+  \texttt{score\_functor} option should be set to \texttt{score}.
+  The argument of the score functor (\texttt{0.75} in the example)
+  should be a number or at least something comparable with the
+  standard less-than-or-equal-to Prolog operators.
+\end{itemize}
+
+\section{Model that integrate other programs}
+
+\subsection{Genemark}
+
+To be documented...
+
+\subsection{Glimmer3}
+
+To be documented...
+
+\section{Various models}
+
+\subsection{hard\_to\_find\_genes}
+
+The model \texttt{hard\_to\_find\_genes} ranks a given set of genes
+according to how many genefinders that find the gene.
+
+The input to the model is a list of files, of which the first element
+is taken to the \emph{golden standard} - a set of \emph{true} genes.
+The rest of the files in the input file list are files that contain
+gene predictions of various genefinders (one genefinder per input
+file). All the files are expected to be in the
+\texttt{text(prolog(ranges(gene)))} format.
+
+For each gene in the \emph{golden standard} file, the model checks 
+which of the gene finders predicted this gene. 
+
+To be continued... Monday.
+
+
 \chapter{File formats}
 
 The chapter documents the different types of file formats used in the
