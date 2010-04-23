@@ -1,4 +1,3 @@
-
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
@@ -331,7 +330,7 @@ lost_interface_output_format_to_file(Model,InterfacePredicate, Options, OutputFo
 	expand_model_options(Model,InterfacePredicate,Options,ExpandedOptions),
 	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Delete OutputFormatFile if it allready exists
-	(file_exists(OutputFormatFile) -> delete_file(OutputFile) ; true),	
+	% (file_exists(OutputFormatFile) -> delete_file(OutputFile) ; true),
 	term2atom(call((lost_output_format(InterfacePredicate,ExpandedSortedOptions,OutputFormat),
 			tell(OutputFormatFile),
 			write(output_format(Model,InterfacePredicate,Options,OutputFormat)),
@@ -347,14 +346,14 @@ lost_interface_output_format(Model,InterfacePredicate,Options,OutputFormat) :-
 	lost_tmp_directory(Tmp),
 	atom_concat(Tmp, 'lost_interface_output_format.pl', Filename),
 	lost_interface_output_format_to_file(Model,InterfacePredicate,Options,Filename),
-	terms_from_file(Filename, [output_format(OutputFormat)]).
+	terms_from_file(Filename, [output_format(Model,InterfacePredicate,Options,OutputFormat)]).
 
 
 lost_model_option_values_to_file(Model,InterfacePredicate,OptionName, OutputFile) :-
 	lost_model_interface_file(Model, ModelFile),
 	% Check if option is declared!!!
 	% Delete OutputFile if it allready exists
-	(file_exists(OutputFile) -> delete_file(OutputFile) ; true),
+	% (file_exists(OutputFile) -> delete_file(OutputFile) ; true),
 	term2atom(call((lost_option_values(InterfacePredicate, OptionName, Values),
 		       tell(OutputFile),
 		       writeq(lost_option_values(Model,InterfacePredicate, OptionName, Values)),
@@ -512,8 +511,17 @@ write_model_options(OStream, [Option1|Rest]) :-
 % Write the input formats of a Model called with Goal to the file OutputFile
 %
 lost_model_input_formats_to_file(Model,Goal,OutputFile) :-
-	open(OutputFile,write,OStream),
 	lost_interface_input_formats(Model,Goal,Formats),
+	open(OutputFile,write,OStream),
 	write(OStream,lost_input_formats(Model,Goal,Formats)),
 	write(OStream, '.\n'),
 	close(OStream).
+
+
+/*lost_model_output_format_to_file(Model,Goal,Options,OutputFile) :-
+	lost_interface_output_format(Model,Goal,Option,OutputFormat),
+	open(OutputFile,write,OStream),
+	write(OStream,lost_model_output_format(Model,Goal,Options,OutputFormat)),
+	write(OStream, '.\n'),
+	close(OStream).
+*/	
