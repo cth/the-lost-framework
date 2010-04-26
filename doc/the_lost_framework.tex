@@ -807,17 +807,50 @@ The model \texttt{hard\_to\_find\_genes} ranks a given set of genes
 according to how many genefinders that find the gene.
 
 The input to the model is a list of files, of which the first element
-is taken to the \emph{golden standard} - a set of \emph{true} genes.
-The rest of the files in the input file list are files that contain
+is taken to the \emph{golden standard} - a file containing a set of \emph{true} genes.
+The rest of the $n$ files in the input file list are files that contain
 gene predictions of various genefinders (one genefinder per input
 file). All the files are expected to be in the
 \texttt{text(prolog(ranges(gene)))} format.
 
 For each gene in the \emph{golden standard} file, the model checks 
-which of the gene finders predicted this gene. 
+which of the gene finders predicts this gene. It writes each of these 
+genes to the output file, but with facts added to the \texttt{Extra}
+list. The added facts are 
+\begin{itemize}
+\item \texttt{found\_by\_genefinders(F)}: Where \texttt{F} is a list of $n$ entries
+  containing
+  \begin{itemize}
+  \item \texttt{1} if the $n$th gene finder predicts the gene.
+  \item \texttt{0} if the $n$th gene finder did not predict the gene.
+  \end{itemize}
+\item \texttt{gene\_finding\_difficulty\_score(S)}: Where \texttt{S}
+  is a decimal number between zero and one representing the inverse of
+  the proportion   of genefinders that predicts this gene. E.g. if it
+  is zero, no gene finders predicts the gene, and if it is one, then
+  all $n$ gene finders predicts the gene.
+\end{itemize}
 
-To be continued... Monday.
+\noindent
+The model take a number of options: 
 
+\begin{itemize}
+\item \texttt{start}: Is a positive integer indicating the start of
+  the range in which to consider genes. Only genes starting/ending
+  after this position are included in the output file. The default
+  value \texttt{min} is taken to mean the start of the file,
+  e.g. position 1.
+\item \texttt{end}: Is a positive integer indicating the end of the
+  range in which to consider genes. Only genes with a right border
+  below this value included in the output file. The default value
+  \texttt{max} is taken to mean the maximal position of any gene in the
+  \emph{golden standard} file.
+\item \texttt{gene\_match\_criteria}: Is used to determine what is
+  required for a gene prediction to \emph{match} a gene. If the value
+  is set to \texttt{start\_and\_stop} (default), then both start codon
+  and stop codon needs to match. If the value is set to \texttt{stop}
+  then only the stop codon needs to match.
+\end{itemize}
 
 \chapter{File formats}
 
