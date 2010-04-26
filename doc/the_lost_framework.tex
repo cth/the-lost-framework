@@ -96,7 +96,7 @@ The lost framework is divided into several parts:
 
 \section{Lost model conventions}\label{sec:lost_model_conventions}
 
-Each model is located in its own subdirectory of the of the
+Each model is located in its own subdirectory of the 
 \texttt{\$LOST/models/} directory, henceforth called \texttt{\$MODELS}. 
 So for instance, the sample model called \texttt{sample\_model1} is located in
 \texttt{\$MODELS/sample\_model1/}. In the following, we will refer to the directory 
@@ -111,15 +111,14 @@ this file gives access to all the shared APIs (See chapter \ref{chap:lost_shared
 
 To integrate into the framework each model must provide a file called
 \texttt{interface.pl}, which must be located in the same directory as
-the model. \texttt{interface.pl} can then implement various predefined
-predicates which serves as an entry point of using the
-model. 
-
-The supported interface predicates which a model can provide are:
+the model. In the file \texttt{interface.pl}, one or more of the predefined
+predicates
 \begin{itemize}
 \item \texttt{lost\_best\_annotation/3}.
 \item \texttt{lost\_learn/3}
 \end{itemize}
+\noindent
+are implemented and these serve as entry points of using the model. 
 
 The general form of these predicates is that they take a list of
 input files, a list of options and the name of an output file. They 
@@ -133,7 +132,7 @@ training the model and the output file would usually be the learned
 parameters of the trained model.
 
 Models should declare the \emph{type} associated to the arguments of
-these predicates. These include, 
+these predicates. These declarations include
 \begin{itemize}
 \item The formats of input files, see section
   \ref{sec:file_formats_declarations}.
@@ -141,6 +140,7 @@ these predicates. These include,
   \ref{sec:file_formats_declarations}.
 \item Options and default values for options, see section
   \ref{sec:option_declarations}.
+\item Optionally, a set of possible values any declared option.
 \end{itemize}
 
 %By convention models are expected to store switch probabilities the
@@ -151,84 +151,85 @@ these predicates. These include,
 
 \subsection{Model interface predicates}
 
-This section describes predicates, that when implemented by 
-the \texttt{interface.pl} provided by a model, allows the 
+This section describes predicates, that when implemented in 
+the \texttt{interface.pl} file provided by a model, allows the 
 model provide functionalities that integrate into the general framework.
 
-\noindent
-\texttt{lost\_best\_annotation(+InputFileNames,+Options,+OutputFilename)}:
+\subsubsection{
+  \texttt{
+    lost\_best\_annotation(+InputFileNames,+Options,+OutputFilename)
+  }
+}
+
 The framework calls this predicate to obtain a ``best annotation''
 from the model. The model is free to provide this annotation in
 any way it sees fit. It is the responsibility of the model to save the
-annotation to \texttt{OutputFilename}, before the completion of
-\texttt{lost\_best\_annotation}. 
+annotation to \texttt{OutputFilename}, when
+\texttt{lost\_best\_annotation} is called. If the model for some
+reason is unable to write the annotation to \texttt{OutputFilename},
+then it should \texttt{throw} an exception. The predicate takes the
+following arguments:
+\begin{itemize}
 
-\texttt{InputFileNames}: Is a list of filenames (with absolute paths),
-each containing an input to the model. 
+\item \texttt{InputFileNames}: Is a list of filenames (with absolute paths),
+  each containing an input to the model. 
+  There is no restriction on the format of the files, but the model
+  should declare what file formats it expects.
+  Predicates to parse a wide range of fileformats are supplied 
+  in the \emph{io} API (see section \ref{sec:io}). 
 
-There is no restriction on the format of the files, but the model
-should declare what file formats it expects.
-Predicates to parse a wide range of fileformats are supplied 
-in the \emph{io} API (see section \ref{sec:io}). 
+\item \texttt{Options}: Is a list of facts on the form, where the functor
+  works as key and the first argument serves as the value of the
+  option, egg. \texttt{key(Value)}. This list is used to parameterize the model
+  in various ways. To check the value of a given option, the predicate
+  \texttt{get\_option} (see section \ref{sec:interface}) should be used.
+  The options must be declared as described in section
+  \label{sec:option_declarations}.
 
-\texttt{Options}: Is a list of facts on the form, where the functor
-works as key and the first argument serves as the value of the
-option, egg. \texttt{key(Value)}. This list is use to parameterize the model
-in various ways. For convenience, option values can be checked an
-extracted using the predicates \texttt{get\_option} (see section \ref{sec:interface}).
+\item \texttt{OutputFilename}: Full filename which the resulting ``best
+  annotation'' should be saved to. The model is expected to save
+  the resulting annotation to this file before the completion of 
+  \texttt{lost\_best\_annotation}. The \emph{io} API contains some
+  common predicates for saving annotations (see section \ref{sec:io}).
+\end{itemize}
 
-%Some options may be quite common and it is suggested to use the
-%same functor name for such option. An incomplete list of these common
-%option keys are,
-%\begin{itemize}
-%\item \texttt{parameter\_file}: Indicates that the model should use
-% the switch probability associated with the \texttt{Value}. 
-%\end{itemize}
-The options used must be declared as described in section
-\label{sec:option_declarations}.
-
-\texttt{OutputFilename}: Full filename which the resulting ``best
-annotation'' should be saved to. The model is expected to save
-the resulting annotation to this file before the completion of 
-\texttt{lost\_best\_annotation}. The \emph{io} API contains some
-common predicates for saving annotations (see section \ref{sec:io}).
-
-\noindent
-\texttt{lost\_learn(+InputFileNames,+Options,+OutputFilename)}
+\subsubsection{
+  \texttt{
+    lost\_learn(+InputFileNames,+Options,+OutputFilename)
+  }
+}
 
 This predicate is used for training models. The model is expected to 
 save the result of the training session (e.g. a switch parameter file
-or similar) to \texttt{OutputFilename}. 
-
-\texttt{InputFileNames}: Is a list of filenames (with absolute paths),
-each containing an input to the model. These are used for providing 
-the traning data. 
-There is no restriction on the format of the files, but the model
-should declare what file formats it expects.
-Predicates to parse a wide range of fileformats are supplied in
- the \emph{io} API (see section \ref{sec:io}). 
-
-\texttt{Options}:Is a list of facts on the form, where the functor
-works as key and the first argument serves as the value of the
-option, egg. \texttt{key(Value)}. This list is use to parameterize the model
-in various ways. For convenience, option values can be checked an
-extracted using the predicates \texttt{get\_option} (see section \ref{sec:interface}).
-
-\texttt{OutputFilename}: Full filename which the resulting switch
-parameters or similar should be saved to. The model is expected to save
-the result to this file before the completion of 
-\texttt{lost\_learn}. The \emph{io} API contains some
-common predicates for saving annotations (see section \ref{sec:io}).
+or similar) to \texttt{OutputFilename}.  It expects three arguments
+\begin{itemize}
+\item \texttt{InputFileNames}: Is a list of filenames (with absolute paths),
+  each containing an input to the model. These are used for providing 
+  the traning data. 
+  There is no restriction on the format of the files, but the model
+  should declare what file formats it expects.
+  Predicates to parse a wide range of file formats are supplied in
+  the \emph{io} API (see section \ref{sec:io}). 
+\item \texttt{Options}: Is a list of facts, where the functor
+  works as key and the first argument serves as the value of the
+  option, eg. \texttt{key(Value)}. 
+  % This list is use to parameterize the model in various ways. 
+  For convenience, option values can be checked an
+  extracted using the predicates \texttt{get\_option} (see section \ref{sec:interface}).
+\item \texttt{OutputFilename}: Full filename which the resulting switch
+  parameters or similar should be saved to. The model is expected to save
+  the result to this file when \texttt{lost\_learn} is called. If the
+  model is unable to do this, it should throw an exception.
+\end{itemize}
 
 \subsection{Declaration of options for interface predicates}
 \label{sec:option_declarations}
 
-Options to interface predicates should also be declared in the
+Options to interface predicates should be declared in the
 \texttt{interface.pl} file. An option is declared by adding a 
-fact \texttt{lost\_option/4} to the file:
-
+fact 
 \begin{verbatim}
-lost_option(InterfaceGoal, OptionName, DefaultValue, Description).
+lost_option(+InterfaceGoal,+OptionName,+DefaultValue,+Description).
 \end{verbatim}
 
 \begin{itemize}
@@ -248,28 +249,52 @@ the option. Should be in single quotes.
 \noindent
 As example, consider an option declaration:
 \begin{verbatim}
-lost_option(lost_best_annotation,,default,'A parameter filename').
+lost_option(lost_best_annotation,debug,no,'Enable/disable debug prints').
 \end{verbatim}
 
-In this declaration, we say that the goal
+In this declaration, we state that the goal
 \texttt{lost\_best\_annotation} take the option
-\texttt{parameter\_file}. If this option is not a member of the
-\texttt{Options} list, then it will be added before calling 
-\texttt{lost\_best\_annotation}. For instance, assume the model is
-\texttt{sample\_model1}, then we might call
-\begin{verbatim}
-get_annotation_file(sample_models1,['/some/path/infile.seq'],[],FileOut),
-\end{verbatim}
-which will start a new PRISM process and invoke,
-\begin{verbatim}
-lost_best_annotation(['/some/path/infile.seq'],[parameter_file(default)],FileOut),
-\end{verbatim}
+\texttt{debug}. If this option is not a member of the
+\texttt{Options} list, then it will be added with the default value \texttt{no} before 
+\texttt{lost\_best\_annotation} is called by the framework. 
 
-\noindent
-where the option \texttt{parameter\_file} has been inserted with the
+For instance, assuming the model is called \texttt{my\_model}, it
+might be called from a script with
+\begin{verbatim}
+get_annotation_file(my_model,['/some/path/infile'],[],FileOut),
+\end{verbatim}
+which will start a new PRISM process and invoke 
+\begin{verbatim}
+lost_best_annotation(['/some/path/infile'],[debug(no)],FileOut),
+\end{verbatim}
+in \texttt{\$MODELS/my\_model/interface.pl}.
+Note that the option \texttt{debug} has been inserted with the
 default value. A default value is only inserted if the option is left
 unspecified.
 
+\subsubsection{Declaring option values}
+
+If the values of an option can be enumerated, then the model should
+provide a declaration of by defining a predicate, 
+\begin{verbatim}
+lost_option_values(+Predicate,+OptionName,-ValuesList).
+\end{verbatim}
+
+In our example above, the option \texttt{debug} might have two
+possible values, \texttt{no} and \texttt{yes}, so a declaration might
+look like, 
+\begin{verbatim}
+lost_option_values(lost_best_annotation, debug, [yes,no]).
+\end{verbatim}
+
+\subsubsection{Option checking}
+
+When a model is invoked by the framework, options are checked before 
+invoking the model. If a model is called with an option which has not
+been declared by the model, then a warning will be issued. Similarly, 
+if a declared option for a predicate also has a
+\texttt{lost\_option\_values} declaration and the a predicate is called
+with the option set to value which is not part of the declaration, the a warning is issued. 
 
 \subsection{Declaration of file formats for interface predicates}
 
@@ -317,7 +342,14 @@ lost_output_format(PredicateName,Options, Format)
 
 \noindent
 This predicate should specify the relation between a set of \texttt{Options} and a particular \texttt{Format} for the interface predicate \texttt{PredicateName}.
-\texttt{Format} should unify to one of the formats described in chapter \ref{chap:file_formats}.
+\texttt{Format} should unify to one of the formats described in
+chapter \ref{chap:file_formats}.
+
+\subsubsection{Checking of file formats}
+
+The framework checks that file formats are declared according to the 
+scheme described above. If a model neglects to declare file formats or
+declares them wrongly, then a warning will be issued.
 
 \chapter{Lost shared APIs}
 \label{chap:lost_shared_apis}
@@ -342,37 +374,46 @@ extension.
 The API provides the interface to lost models following the
 conventions described in section \ref{sec:lost_model_conventions}.
 
-get\_annotation\_file(Model, Inputs, Options, Filename)
+The predicate,
+\begin{verbatim}
+get_annotation_file(Model, Inputs, Options, OutputFile)
+\end{verbatim}
 
-This API provides \texttt{get\_annotation\_file/4} which is used to
-retrieve the best annotation generated by a specified model with
-specified parameters and input sequences. If no such file currently
-exists, then the model will be run (e.g. the
-\texttt{lost\_best\_annotation/3} provided by the model will be
-called).
+is used to retrieve the best annotation generated by a specified
+\texttt{Model} invoked with the specified \texttt{Inputs} and
+\texttt{Options}. \texttt{Inputs} is a list of file names containing 
+input for the model. \texttt{Options} is a list of facts on the form
+\texttt{key(Value)}, where \texttt{key} is the name of an
+option and \texttt{Value} is a concrete value.
 
-The generated annotation files are named according to a convention. 
-All annotation files will be placed in the \texttt{\$LOST/data/}
-directory. 
-The \texttt{Filename} is construed according to the following convention:
+As a consequence of calling this predicate the output \emph{best
+  annotation}) from the model is written to the file
+\texttt{OutputFile}. If the model has been previously invoked with exactly
+the same \texttt{Inputs} and \texttt{Options} , then
+\texttt{OutputFile} will unify with the outcome of the previous
+invokation. In this way, the results of running a model are cached.
+
+The generated annotation files are named according to a convention, where 
+all annotation files will be placed in the \texttt{\$LOST/data/}
+directory and the \texttt{Filename} is construed according to the following convention:
 \begin{verbatim}
 {Modelname}_{Id}.gen
 \end{verbatim}
 
-The first time an annotation is generated the file
-\texttt{annotation.idx} will be created in this directory. This file
-serves as a database to map filenames of the generated annotation
-files to the (models ,inputs,probability parameters) that generated
-the particular annotations. This database file contains Prolog facts 
-on the form,
+The first time a model \texttt{OutputFile} is generated, the file
+\texttt{annotation.idx} will be created in \texttt{\$LOST/data/}. This file
+serves as a database to map the filename of a generated annotation
+file to the model, input files and options that generated
+the particular annotation. This database file contains Prolog facts 
+of the form
 \begin{verbatim}
 fileid(Id,Filename,Model,Options,InputFiles).
 \end{verbatim}
 
 The annotation index is automatically maintained by
-\texttt{get\_annotation/4} and should normally not be edited by hand.
+\texttt{get\_annotation\_file/4} and should not be edited by hand.
 
-If annotation for a particular run of a model is not present then
+If an annotation for a particular run of a model is not present then
 \texttt{get\_annotation\_file/4} will start a new PRISM process 
 that invokes the \texttt{lost\_best\_annotation} predicate provided
 be the model \texttt{interface.pl} file. By the contract of model 
@@ -382,10 +423,12 @@ to the file indicated by the provided filename.
 \section{Input-Output API: \texttt{io}}
 \label{sec:io}
 
-In this module (\texttt{io.pl}), severals predicates are defined to
+In this module (\texttt{io.pl}), several predicates are defined to
 manipulate \texttt{*.seq} files~:
 \begin{itemize}
-\item loading information from files that extracts from a file data information used as input of models (sequence annotation for example);
+\item loading information from files that extracts from a file data
+  information used as input of models (sequence annotation for
+  example);
 \item saving information into a file;
 \item and maybe more. 
 \end{itemize}
