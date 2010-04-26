@@ -90,6 +90,18 @@ match_tail(Match,[],Match).
 match_tail([H|T],[H|Hr],Match) :- match_tail(T,Hr,Match).
 
 
+
+% not_member(++Elt,++List)
+% true is Elt is not a member of List
+% Note: well-behaved for Elt and List ground
+
+not_member(Elt,List) :-
+        member(Elt,List),
+        !,
+        false.
+
+not_member(_Elt,_List).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Term manipulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
