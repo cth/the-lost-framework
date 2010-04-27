@@ -43,9 +43,7 @@
 %          - range(Min,Max): extract a range of data
 %          - ranges(List_Ranges): extract a list of data given a list of Range
 %%%%%%%%%%%%%%%%%%%%%
-:- use_module(library(lists)).   % Debugging SICStus
-:- ['../lost.pl'].
-:- lost_include_api(misc_utils).
+%:- use_module(library(lists)).   % Debugging SICStus
 
 get_data_from_file(File,Options,Data) :-
         not_member('consult',Options),
@@ -53,8 +51,8 @@ get_data_from_file(File,Options,Data) :-
         terms_from_file(File,Terms),
         % Technically not necessary since they will be sorted if this
 	% interface is used
-        %sort('=<',Terms,SortedTerms),
-        get_data_from_terms(Terms,Options,Data).
+        sort('=<',Terms,SortedTerms),
+        get_data_from_terms(SortedTerms,Options,Data).
 
 
 % Option consult
