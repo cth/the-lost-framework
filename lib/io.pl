@@ -11,8 +11,9 @@
 %      Manipulation of files: loading information from file, saving file from information
 % 
 % HISTORIC:
-%  09/03: creation of file         MP
-%
+%  09/03: creation of file                                   MP
+%  26/04: modification of the load_annotation_from_file
+%         predicate name options modfied. Old version kept   MP
 % REMARKS: any problem, contact {cth,otl,petit}@(without advertissement)ruc.dk
 %
 % MODULS USED: misc_utils.pl
@@ -20,7 +21,406 @@
 % NOTE TO THE USER : 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%---------------
+% get data or annotation from a file
+%----------------
+
+%%%%%%%%%%%%%%%%%%%%%%
+% get_data_from_file(++File,++Options,--Data)
+% Description: given of file composed of prolog facts,
+% this predicate generates a list of data given some options
+% By default, data predicate is in the form:
+% Functor(Key,LeftPosition,RightPosition,Data,...)
+% Type of Data is a list
+%%%%%%%%%%%%%%%%%%%%%%
+% Options: - data_position(Pos) specified in which Pos Data is
+%          - left_position(Left) specified in which Pos Leftposition is
+%          - right_position(Righ) specified in which Pos Rightposition is
+%          - left_position(none) = no left position in the term
+%          - right_position(none) = no right position in the term
+%          - consult: consult data file instead reading the terms
+%          - range(Min,Max): extract a range of data
+%          - ranges(List_Ranges): extract a list of data given a list of Range
+%%%%%%%%%%%%%%%%%%%%%
+:- use_module(library(lists)).   % Debugging SICStus
+:- ['../lost.pl'].
+:- lost_include_api(misc_utils).
+
+get_data_from_file(File,Options,Data) :-
+        not_member('consult',Options),
+        !,
+        terms_from_file(File,Terms),
+        % Technically not necessary since they will be sorted if this
+	% interface is used
+        %sort('=<',Terms,SortedTerms),
+        get_data_from_terms(Terms,Options,Data).
+
+
+% Option consult
+get_data_from_file(File,Options,Data) :-
+        member('consult',Options),
+        !,
+        consult(File),
+        get_data_from_facts(Options,Data).
+
+
+%%%%%%%
+% get_data_from_terms(++Terms,++Options,--Data)
+%%%%%%%
+
+
+get_data_from_terms([],_,[]) :-
+        !.
+
+% Complete computation of data
+get_data_from_terms([Term|Rest_Terms],Options,Data) :-
+        not_member(range(_,_),Options),
+        not_member(ranges(_),Options),
+        !,
+        Term =.. [_Functor|Parameters],
+        (member(data_position(Pos),Options) ->
+            nth1(Pos,Parameters,Sequence_Data)
+        ;
+            nth1(4,Parameters,Sequence_Data)  % Default position
+        ),
+        get_data_from_terms(Rest_Terms,Options,Rest_Data),
+        append(Sequence_Data,Rest_Data,Data).
+
+
+% Range Management
+get_data_from_terms(Terms,Options,Data) :-
+        member(range(Min,Max),Options),
+        !,
+        Sequence_Data = [],
+        Ranges = [[Min,Max]],
+        Current_Position = 1,
+        Current_Data = [],
+        %Term =.. [_Functor|Parameters],
+        (member(data_position(Pos),Options) ->
+            true
+        ;
+            Pos = 4
+        ),
+        range_info_position(Options,Range_Info_Position),
+        (Range_Info_Position = 'none' ->
+            get_data_from_terms_rec(Sequence_Data,Ranges,Terms,Current_Position,Current_Data,Pos,Data) % Could be dangerous called with one parameter removed Range_Info_Position
+        ;
+            get_data_from_terms_rec(Sequence_Data,Ranges,Terms,Current_Position,Current_Data,Pos,Range_Info_Position,Data)
+        ).
+
+
+
+% Ranges Management
+get_data_from_terms(Terms,Options,Data) :-
+        member(ranges(Ranges),Options),
+        Sequence_Data = [],
+        Current_Position = 1,
+        Current_Data = [],
+        (member(data_position(Pos),Options) ->
+            true
+        ;
+            Pos = 4
+        ),
+        range_info_position(Options,Range_Info_Position),
+        (Range_Info_Position = 'none' ->
+            get_data_from_terms_rec(Sequence_Data,Ranges,Terms,Current_Position,Current_Data,Pos,Data) % Could be dangerous called with one parameter removed Range_Info_Position
+        ;
+            get_data_from_terms_rec(Sequence_Data,Ranges,Terms,Current_Position,Current_Data,Pos,Range_Info_Position,Data)
+        ).
+
+
+
+
+%%%%
+% get_data_from_terms_rec(++Sequence_Data,++Ranges,++Terms,++Current_Position,++Current_Data,++Pos,++Range_Info_Position,--Data)
+% Description: this predicated built the wanted data given all the parameters
+%%%%
+
+% Termination case: Sequence Data = [] and Terms = []
+get_data_from_terms_rec([],_Ranges,[],_Current_Position,Current_Data,_Pos,_Range_Info_Position,[]) :-
+        empty_lists(Current_Data),
+        !.
+
+
+% Termination case: Ranges = empty
+get_data_from_terms_rec(_Sequence_Data,[],_Terms,_Current_Position,Current_Data,_Pos,_Range_Info_Position,[]) :-
+        empty_lists(Current_Data),
+        !.
+
+% Case: Sequence data empty => we look for a new one 
+get_data_from_terms_rec([],[[Min,Max]|Ranges],[Term|Rest_Terms],Current_Position,Current_Data,Pos,(_Left,Right),Data) :-
+        !,
+        Term =.. [_Functor|Parameters],
+        nth1(Right,Parameters,RightPos),
+        (RightPos < Min ->      % Test to skip the term
+            Current_Position2 is RightPos+1,
+            get_data_from_terms_rec([],[[Min,Max]|Ranges],Rest_Terms,Current_Position2,Current_Data,Pos,(_Left,Right),Data)
+        ;
+            Current_Position = Current_Position2,
+            nth1(Pos,Parameters,Sequence_Data),
+            get_data_from_terms_rec(Sequence_Data,[[Min,Max]|Ranges],Rest_Terms,Current_Position2,Current_Data,Pos,(_Left,Right),Data)
+        ).
+
+
+
+% Case: Current Position < Minimal bound of the first Range
+get_data_from_terms_rec([_Val|Rest_Sequence],[[Min,Max]|Ranges],Terms,Current_Position,Current_Data,Pos,Range_Info_Position,Data) :-
+       Current_Position < Min,
+       !,
+       Current_Position1 is Current_Position+1,
+       get_data_from_terms_rec(Rest_Sequence,[[Min,Max]|Ranges],Terms,Current_Position1,Current_Data,Pos,Range_Info_Position,Data).
+
+
+
+% Case: Minimal bound = Current_Position => Start Data building.
+% Inv: Current_Data is empty as the first Range of Ranges has Min as minimal bound.
+get_data_from_terms_rec([Val|Rest_Sequence],[[Min,Max]|Ranges],Terms,Current_Position,[],Pos,Range_Info_Position,[[Val|Rest_Range_Data]|Rest_Data]) :-
+       Current_Position = Min,
+       !,
+       Current_Data = [Rest_Range_Data],
+       Current_Position1 is Current_Position+1,
+       get_data_from_terms_rec(Rest_Sequence,[[Min,Max]|Ranges],Terms,Current_Position1,Current_Data,Pos,Range_Info_Position,Rest_Data).
+
+
+
+% Case: Minimal bound =< Current_Position =< Maximal Bound: update Current Data range and look for overlap
+get_data_from_terms_rec([Val|Rest_Sequence],[[Min,Max]|Ranges],Terms,Current_Position,Current_Data,Pos,Range_Info_Position,Data) :-
+       Min < Current_Position,
+       Current_Position < Max,
+       !,
+       Current_Position1 is Current_Position+1,
+       Current_Data = [T|Rest_Current_Data],
+       T = [Val|T_Rest],
+       check_ranges_and_update_data(Val,Ranges,Current_Position,T_Rest,Rest_Current_Data,Current_Data_Update,Data,Data_Update),
+       get_data_from_terms_rec(Rest_Sequence,[[Min,Max]|Ranges],Terms,Current_Position1,Current_Data_Update,Pos,Range_Info_Position,Data_Update).
+
+
+% Case: Maximal bound = Current_Position
+% End of Range data buiding
+get_data_from_terms_rec([Val|Rest_Sequence],[[_Min,Max]|Ranges],Terms,Current_Position,Current_Data,Pos,Range_Info_Position,Data) :-
+       Current_Position = Max,
+       !,
+       Current_Position1 is Current_Position+1,
+       Current_Data = [T|Rest_Current_Data],
+       T = [Val],
+       check_ranges_and_update_data(Val,Ranges,Current_Position,[],Rest_Current_Data,Current_Data_Update,Data,Data_Update),
+       get_data_from_terms_rec(Rest_Sequence,Ranges,Terms,Current_Position1,Current_Data_Update,Pos,Range_Info_Position,Data_Update).
+
+% Case: Data Collection finished but Range not yet removed (overlap inside between Range1 Range2 = Min1 < Min2 but Max2 =< Max1)
+
+
+get_data_from_terms_rec(Sequence_Data,[[_Min,Max]|Ranges],Terms,Current_Position,Current_Data,Pos,Range_Info_Position,Data) :-
+       Current_Position > Max,
+       !,
+       Current_Data = [[]|Rest_Current_Data],
+       get_data_from_terms_rec(Sequence_Data,Ranges,Terms,Current_Position,Rest_Current_Data,Pos,Range_Info_Position,Data).
+
+
+
+
+%%%%
+% get_data_from_terms_rec(++Sequence_Data,++Ranges,++Terms,++Current_Position,++Current_Data,++Pos,--Data)
+% Description: same predicate than below but without jump thanks to left_position or right_position
+%%%%
+
+
+% Termination case: Sequence Data = [] and Terms = []
+get_data_from_terms_rec([],_Ranges,[],_Current_Position,Current_Data,_Pos,[]) :-
+        empty_lists(Current_Data),
+        !.
+
+
+% Termination case: Ranges = empty
+get_data_from_terms_rec(_Sequence_Data,[],_Terms,_Current_Position,Current_Data,_Pos,[]) :-
+        empty_lists(Current_Data),
+        !.
+
+% Case: Sequence data empty => we look for a new one 
+get_data_from_terms_rec([],[[Min,Max]|Ranges],[Term|Rest_Terms],Current_Position,Current_Data,Pos,Data) :-
+        !,
+        Term =.. [_Functor|Parameters],
+        nth1(Pos,Parameters,Sequence_Data),
+        get_data_from_terms_rec(Sequence_Data,[[Min,Max]|Ranges],Rest_Terms,Current_Position,Current_Data,Pos,Data).
+
+
+
+% Case: Current Position < Minimal bound of the first Range
+get_data_from_terms_rec([_Val|Rest_Sequence],[[Min,Max]|Ranges],Terms,Current_Position,Current_Data,Pos,Data) :-
+       Current_Position < Min,
+       !,
+       Current_Position1 is Current_Position+1,
+       get_data_from_terms_rec(Rest_Sequence,[[Min,Max]|Ranges],Terms,Current_Position1,Current_Data,Pos,Data).
+
+
+
+% Case: Minimal bound = Current_Position => Start Data building.
+% Inv: Current_Data is empty as the first Range of Ranges has Min as minimal bound.
+get_data_from_terms_rec([Val|Rest_Sequence],[[Min,Max]|Ranges],Terms,Current_Position,[],Pos,[[Val|Rest_Range_Data]|Rest_Data]) :-
+       Current_Position = Min,
+       !,
+       Current_Data = [Rest_Range_Data],
+       Current_Position1 is Current_Position+1,
+       get_data_from_terms_rec(Rest_Sequence,[[Min,Max]|Ranges],Terms,Current_Position1,Current_Data,Pos,Rest_Data).
+
+
+
+% Case: Minimal bound =< Current_Position =< Maximal Bound: update Current Data range and look for overlap
+get_data_from_terms_rec([Val|Rest_Sequence],[[Min,Max]|Ranges],Terms,Current_Position,Current_Data,Pos,Data) :-
+       Min < Current_Position,
+       Current_Position < Max,
+       !,
+       Current_Position1 is Current_Position+1,
+       Current_Data = [T|Rest_Current_Data],
+       T = [Val|T_Rest],
+       check_ranges_and_update_data(Val,Ranges,Current_Position,T_Rest,Rest_Current_Data,Current_Data_Update,Data,Data_Update),
+       get_data_from_terms_rec(Rest_Sequence,[[Min,Max]|Ranges],Terms,Current_Position1,Current_Data_Update,Pos,Data_Update).
+
+
+% Case: Maximal bound = Current_Position
+% End of Range data buiding
+get_data_from_terms_rec([Val|Rest_Sequence],[[_Min,Max]|Ranges],Terms,Current_Position,Current_Data,Pos,Data) :-
+       Current_Position = Max,
+       !,
+       Current_Position1 is Current_Position+1,
+       Current_Data = [T|Rest_Current_Data],
+       T = [Val],
+       check_ranges_and_update_data(Val,Ranges,Current_Position,[],Rest_Current_Data,Current_Data_Update,Data,Data_Update),
+       get_data_from_terms_rec(Rest_Sequence,Ranges,Terms,Current_Position1,Current_Data_Update,Pos,Data_Update).
+
+% Case: Data Collection finished but Range not yet removed (overlap inside between Range1 Range2 = Min1 < Min2 but Max2 =< Max1)
+
+
+get_data_from_terms_rec(Sequence_Data,[[_Min,Max]|Ranges],Terms,Current_Position,Current_Data,Pos,Data) :-
+       Current_Position > Max,
+       !,
+       Current_Data = [[]|Rest_Current_Data],
+       get_data_from_terms_rec(Sequence_Data,Ranges,Terms,Current_Position,Rest_Current_Data,Pos,Data).
+
+
+
+%%%
+% utils get_data_from_terms_rec
+%%%
+
+empty_lists([]) :-
+        !.
+
+empty_lists([A|Rest]) :-
+        A = [],
+        empty_lists(Rest).
+
+
+
+% range_info_position(++Options,--Range_info_Position)
+
+range_info_position(Options,Range_Position) :-
+        member(left_position(Left),Options),
+        Left = 'none',
+        !,
+        Range_Position = 'none'.
+
+range_info_position(Options,Range_Position) :-
+        member(right_position(Right),Options),
+        Right = 'none',
+        !,
+        Range_Position = 'none'.
+
+
+range_info_position(Options,Range_Position) :-
+        member(left_position(Left),Options),
+        member(right_position(Right),Options),
+        Left \= 'none',
+        Right \= 'none',
+        !,
+        Range_Position = (Left,Right).
+
+
+range_info_position(Options,Range_Position) :-
+        not_member(left_position(_Left),Options),
+        not_member(right_position(_Right),Options),
+        !,
+        Range_Position = (2,3).
+
+range_info_position(Options,Range_Position) :-
+        not_member(left_position(_Left),Options),
+        member(right_position(Right),Options),
+        Right \= 'none',
+        !,
+        Range_Position = (2,Right).
+
+range_info_position(Options,Range_Position) :-
+        member(left_position(Left),Options),
+        not_member(right_position(_Right),Options),
+        Left \= 'none',
+        !,
+        Range_Position = (Left,3).
+
+
+
+% check_ranges_and_update_data(++Val,++Ranges,++Current_Position,++T_Rest,++Current_Data,--Current_Data_Update,++Data,--Data_Update)
+
+% Case: no more range, data range under construction
+check_ranges_and_update_data(_Val,[],_Current_Position,T_Rest,_Current_Data,Current_Data_Update,Data,Data) :-
+        var(T_Rest),
+        !,
+        Current_Data_Update = [T_Rest].
+
+% Case: no more range, data range under construction finished
+check_ranges_and_update_data(_Val,[],_Current_Position,[],_Current_Data,Current_Data_Update,Data,Data) :-
+        !,
+        Current_Data_Update = [].
+
+% Case: Ranges avalaible, Data range under construction
+check_ranges_and_update_data(Val,Ranges,Current_Position,T_Rest,Current_Data,[T_Rest|Current_Data_Update],Data,Data_Update) :-
+        var(T_Rest),
+        !,
+        check_ranges_and_update_data_rec(Val,Ranges,Current_Position,Current_Data,Current_Data_Update,Data,Data_Update).
+
+% Case: Ranges avalaible, Data range finished
+check_ranges_and_update_data(Val,Ranges,Current_Position,[],Current_Data,Current_Data_Update,Data,Data_Update) :-
+        !,
+        check_ranges_and_update_data_rec(Val,Ranges,Current_Position,Current_Data,Current_Data_Update,Data,Data_Update).
+
+
+% Recurisve call
+% No more Range = end iteration
+check_ranges_and_update_data_rec(_Val,[],_Current_Position,[],[],Data,Data).
+
+
+
+% Case: Current Data empty + no new start of data
+check_ranges_and_update_data_rec(_Val,[[Min,_Max]|_Rest_Ranges],Current_Position,[],[],Data,Data) :-
+        Current_Position < Min,
+        !.
+        
+
+% Case: Current Data empty + new start of data range
+check_ranges_and_update_data_rec(Val,[[Min,_Max]|_Rest_Ranges],Current_Position,[],[Rest_Range],[[Val|Rest_Range]|Data_Update],Data_Update) :-
+        Current_Position = Min,
+        !.
+
+% Case: Current Data not empty + Current Position in Min Max => Update
+check_ranges_and_update_data_rec(Val,[[Min,Max]|Rest_Ranges],Current_Position,[Range_Data|Rest_Current_Data],Current_Data_Update,Data,Data_Update) :-
+        Min < Current_Position,
+        Current_Position =< Max,
+        !,
+        Range_Data = [Val|Range_Data2],
+        Current_Data_Update = [Range_Data2|Current_Data_Update2],
+        check_ranges_and_update_data_rec(Val,Rest_Ranges,Current_Position,Rest_Current_Data,Current_Data_Update2,Data,Data_Update).
+        
+
+% Case: overlap, Range data terminated and look for an other overlap
+check_ranges_and_update_data_rec(Val,[[_Min,Max]|Rest_Ranges],Current_Position,[Range_Data|Rest_Current_Data],Current_Data_Update,Data,Data_Update) :-
+        Current_Position > Max,
+        !,
+        Current_Data_Update = [Range_Data|Current_Data_Update2],
+        check_ranges_and_update_data_rec(Val,Rest_Ranges,Current_Position,Rest_Current_Data,Current_Data_Update2,Data,Data_Update).
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%
+% OLD VERSION
 % load_annotation_from_file(++Type_Info,++Options,++File,--Annotation)
 %
 % Description: given some Options, generate an Annotation from a set of terms contained into File
@@ -31,21 +431,13 @@
 % Annotation is a list
 % Options available: Options = [data_position(Position),
 %                               all_lists,range(Min,Max),
-%                               ranges(List_of_Ranges)]
+%                               range(Range)
+%                               consult]
+
 % all_lists does not support a range option
 %%%%%%%%%
 load_annotation_from_file(sequence,Options,File,Annotation) :-
-        terms_from_file(File,Terms),
-        % Technically not necessary since they will be sorted if this
-	% interface is used
-	sort('=<',Terms,SortedTerms), 
-        sequence_terms_to_annotations(Options,SortedTerms,Annotation).
-
-
-
-% Predicate used to compute only one time terms
-load_annotation_from_file(sequence,Options,File,Terms,Annotation) :-
-        var(Terms),
+        (\+ member(consult)),
         !,
         terms_from_file(File,Terms),
         % Technically not necessary since they will be sorted if this
@@ -54,11 +446,8 @@ load_annotation_from_file(sequence,Options,File,Terms,Annotation) :-
         sequence_terms_to_annotations(Options,SortedTerms,Annotation).
 
 
-load_annotation_from_file(sequence,Options,_File,Terms,Annotation) :-
-        % Technically not necessary since they will be sorted if this
-	% interface is used
-	sort('=<',Terms,SortedTerms), 
-        sequence_terms_to_annotations(Options,SortedTerms,Annotation).
+
+
 
 
 
@@ -188,11 +577,7 @@ sequence_terms_to_annotations_rec([Annot|Rest_Sequence_Data],range(Min,Max),Posi
 
 
 
-
-
-
-
-% Utils for load_annotation_from_file(sequence)
+% Utils for load_annotation_from_file(db)
 
 %%%
 % db_terms_annotations(++Options,++List_Terms,--Annotation)
@@ -365,6 +750,7 @@ update_position_jump(_Range_Min,(_Min,Max),New_Position) :-
 
 
 
+
 %--------------------------------
 % Saving information to file  %
 %--------------------------------
@@ -451,6 +837,21 @@ collect_stream_terms(Stream, Rules) :-
 		collect_stream_terms(Stream,Rest),
 		append([T],Rest,Rules)
 	).
+
+
+check_term(File,Term) :-
+        open(File,read,Stream),
+        ground(Stream),
+        read(Stream,T),
+        (T == end_of_file ->
+            throw("Empy File, no annotation to extract")
+            ;
+            T = Term
+        ).
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Utility for finding the functor in a text(prolog(_)) format
