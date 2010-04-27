@@ -158,10 +158,10 @@ wrong_genes(RefFunctor,PredFunctor,Start,End,WG) :-
 % Hard to find genes list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-gene_finding_difficulty_report(RefFunctor,PredictionFunctors,RangeMin,RangeMax,GenePredictionDifficultyList) :-
+gene_finding_difficulty_report(RefFunctor,PredictionFunctors,RangeMin,RangeMax,MatchCriteria,GenePredictionDifficultyList) :-
 	annotations_as_detailed_list(RefFunctor,RangeMin,RangeMax,ReferenceGenes),
 	map(annotations_as_detailed_list(input,RangeMin,RangeMax,output),PredictionFunctors,PredictionGenes),
-	gene_score_list_all(ReferenceGenes,PredictionGenes,GeneScoreLists),
+	gene_score_list_all(MatchCriteria,ReferenceGenes,PredictionGenes,GeneScoreLists),
 	rotate_list_vector(GeneScoreLists,OneListPerGeneScores),
 	combine_gene_scores(RefFunctor,ReferenceGenes,OneListPerGeneScores,GenePredictionDifficultyList).
 
@@ -177,6 +177,7 @@ combine_gene_scores(RefFunctor,
 	gene_difficulty_score(NumGeneFinders,NumFoundGene,CombinedScore),
 	combine_gene_scores(RefFunctor,RefGenesRest,GeneScoresRest,CombinedRest).
 
+
 gene_difficulty_score(NumGeneFinders, NumFoundGene, DifficultyScore) :-
 	NumFoundGene =< NumGeneFinders,
 	ScorePerGeneFinder is 1 / NumGeneFinders,
@@ -186,24 +187,36 @@ gene_difficulty_score(NumGeneFinders, NumFoundGene, DifficultyScore) :-
 % It would be better?? if the difficulty score could also be weighted by the false positive
 % percentage of each gene finder, which would give a more "accurate" score
 
-gene_score_list_all(_, [], []).
+gene_score_list_all(_,_,[],[]).
 
-gene_score_list_all(RefGenes, [PredSet|PredSetRest], [GeneScoreList1|GeneScoreListRest]) :-
-	gene_score_list(RefGenes,PredSet,GeneScoreList1),
-	gene_score_list_all(RefGenes,PredSetRest,GeneScoreListRest).
+gene_score_list_all(MatchCriteria,RefGenes, [PredSet|PredSetRest], [GeneScoreList1|GeneScoreListRest]) :-
+	gene_score_list(MatchCriteria,RefGenes,PredSet,GeneScoreList1),
+	gene_score_list_all(MatchCriteria,RefGenes,PredSetRest,GeneScoreListRest).
 
 % Given a list of all genes and a list of correctly predicted genes
 % produce a list which has a one if the gene is corrrectly predicted
 % zero otherwise
-gene_score_list([],_,[]).
 
-gene_score_list([Gene|GenesRest], PredictedGenes, [1|RestScores]) :-
-	member(Gene,PredictedGenes),
+gene_score_list(_,[],_,[]).
+
+gene_score_list(MatchCriteria, [Gene|GenesRest], PredictedGenes, [1|RestScores]) :-
+	((MatchCriteria == start_and_stop) -> % Match start and stop codon
+	 GeneMatcher = Gene
+	; % Match only stop codon
+	 Gene =.. [ coding, From, To, Strand, Frame ],
+	 ((Frame = '+') ->
+	  GeneMatcher =.. [ coding, _, From, Strand, Frame ]
+	 ;
+	  GeneMatcher =.. [ coding, To, _, Strand, Frame ]
+	  )
+	),
+	member(GeneMatcher,PredictedGenes),
+	subtract(PredictedGenes,[GeneMatcher],PredictedGenesRest),
 	!,
-	gene_score_list(GenesRest,PredictedGenes,RestScores).
+	gene_score_list(MatchCriteria,GenesRest,PredictedGenesRest,RestScores).
 
-gene_score_list([_|GenesRest], PredictedGenes, [0|RestScores]) :-
-	gene_score_list(GenesRest,PredictedGenes,RestScores).
+gene_score_list(MatchCriteria,[_|GenesRest], PredictedGenes, [0|RestScores]) :-
+	gene_score_list(MatchCriteria,GenesRest,PredictedGenes,RestScores).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Calculate nucleotide level accuracy counts

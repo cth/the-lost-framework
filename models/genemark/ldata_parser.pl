@@ -37,7 +37,7 @@ ldata_parser_rec(IS, Line) :-
 	!,
         parser_line(Line,LineTokens),
         ldata_line(Term,LineTokens,[]),
-        write(Term), write('.'), nl,
+        writeq(Term), write('.'), nl,
         ldata_parser(IS).
 
 
