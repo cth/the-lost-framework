@@ -23,11 +23,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 re_compile(RegexpAtom,Regexp) :-
-	atom_codes(RegexpAtom,RegexpAtomCodes),
-	match_groups(Regexp,RegexpAtomCodes,[]).
+	atom_codes(RegexpAtom,Codes1),
+	% Does the regular start with start-of-line character '^' ?
+	% Else add a little something match anything in the beginning of the string
+	atom_codes('.*',MatchAnyCodes),
+	Codes1 = [StartCode|RestCodes1],
+	((StartCode = 94) -> Codes2 = RestCodes1 ;  append(MatchAnyCodes,Codes1,Codes2)),
+	% Similarly, does the regular end with end-of-line character '$' ?
+	% Else add a little something match anything in the end of the string
+	reverse(Codes2,RevCodes2),
+	RevCodes2 = [EndCode|RevRestCodes2],
+	((EndCode = 36) -> reverse(RevRestCodes2,FinalCodes) ; append(Codes2,MatchAnyCodes,FinalCodes)),
+	match_groups(Regexp,FinalCodes,[]).
 
 control_character(C) :-
-	atom_codes('()|?*+[]\\.',ControlCharacters),
+	atom_codes('()|?*+[]\\.$^',ControlCharacters),
 	member(C,ControlCharacters).
 
 non_control_character(C) :-
