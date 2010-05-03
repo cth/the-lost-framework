@@ -12,8 +12,9 @@
 % Tries to match Atom with the regular expression Regex.
 %
 % The implementation supports basic regular expression
-% operators such as ?, +, *, | and match groups
-
+% operators such as ?, +, *, | and bracketed ranges and match groups
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Regular expression compilation
@@ -22,13 +23,17 @@
 % of the regular expression as an s-expression
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-re_compile(RegexpAtom,Regexp) :-
-	atom_codes(RegexpAtom,Codes1),
+re_compile(RegexAtom,Regexp) :-
+	atom(RegexAtom),
+	atom_codes(RegexAtom,RegexCodes),
+	re_compile(RegexCodes,Regexp).
+
+re_compile(RegexpCodes,Regexp) :-
 	% Does the regular start with start-of-line character '^' ?
 	% Else add a little something match anything in the beginning of the string
 	atom_codes('.*',MatchAnyCodes),
-	Codes1 = [StartCode|RestCodes1],
-	((StartCode = 94) -> Codes2 = RestCodes1 ;  append(MatchAnyCodes,Codes1,Codes2)),
+	RegexpCodes = [StartCode|RestCodes1],
+	((StartCode = 94) -> Codes2 = RestCodes1 ;  append(MatchAnyCodes,RegexpCodes,Codes2)),
 	% Similarly, does the regular end with end-of-line character '$' ?
 	% Else add a little something match anything in the end of the string
 	reverse(Codes2,RevCodes2),
@@ -65,7 +70,7 @@ repetition([concat, R, [star, R]]) --> repetition_primitive(R), plus.
 repetition([or,R,[]]) --> repetition_primitive(R), question_mark.
 
 repetition_primitive([concat, R, []]) --> symbol(R). % Note, single symbols are concatenated with empty list
-repetition_primitive(R) --> ranges_group(R).
+repetition_primitive(R) --> bracket_expression(R).
 repetition_primitive(R) --> lparen, concatenation(R), rparen.
 repetition_primitive(R) --> lparen, alternation(R), rparen.
 
@@ -75,19 +80,26 @@ concatenation([concat,R,[]]) --> concatenation_primitive(R).
 concatenation_primitive(R) --> symbol(R).
 concatenation_primitive(R) --> repetition(R).
 concatenation_primitive(R) --> lparen, alternation(R), rparen.
-concatenation_primitive(R) --> ranges_group(R).
+concatenation_primitive(R) --> bracket_expression(R).
 
-ranges_group(R) -->
+% A ranges group is something like [Xa-zA-F].
+bracket_expression(R) -->
 	[91], % '['
-	ranges(R),
+	bracket_expression_elements(R),
 	[93]. % ']'
 
-ranges(R) -->
+bracket_expression_elements(R) -->
+	bracket_expr_elem(R).
+
+bracket_expression_elements([or,R1,R2]) -->
+	bracket_expr_elem(R1),
+	bracket_expression_elements(R2).
+
+bracket_expr_elem(R) -->
 	single_range(R).
 
-ranges([or,R1,R2]) -->
-	single_range(R1),
-	ranges(R2).
+bracket_expr_elem(R) -->
+	alphanumeric_symbol(_,R).
 
 % Base case for single range - really just one symbol
 single_range(S) -->
@@ -150,11 +162,17 @@ character(upper_case_char,S) -->
 % Regular expression matching
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% re_match for input as atom
 re_match(Regex,String,MatchesAtoms) :-
 	atom(String),
 	atom_codes(String,StringCodes),
 	re_match(Regex,Matches,StringCodes,[]),
 	list_atom_codes(Matches,MatchesAtoms).
+
+% re_match for input as list of codes
+re_match(Regex,StringCodes,Matches) :-
+	is_list(StringCodes),
+	re_match(Regex,Matches,StringCodes,[]).
 
 list_atom_codes([],[]).
 list_atom_codes([CodeList|CodeListRest],[Atom|AtomsRest]) :-
