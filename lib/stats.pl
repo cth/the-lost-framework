@@ -22,7 +22,6 @@
 % List of AnimoAcids for Animo stats
 % List of Ranges for Length stats computation
 % Option = Order
-:- ['../lost'].
 :- lost_include_api(interface).
 
 
@@ -453,7 +452,7 @@ normalized2([],[]) :-
         !.
 
 normalized2([(Begin,Domain,Counters)|Rest],[(Begin,Domain,Distribution)|Rest_Result]) :-
-        lists:sumlist(Counters,Sum),
+        sum_list(Counters,Sum),
         normalized3(Sum,Counters,Distribution),
         normalized2(Rest,Rest_Result).
 
@@ -466,4 +465,17 @@ normalized3(Sum,[V|Rest],[Proba|Rest_Proba]) :-
         !,
         Proba is V/Sum,
         normalized3(Sum,Rest,Rest_Proba).
+
+
+
+
+sum_list([],0) :-
+        !.
+
+sum_list([T|Rest],Sum) :-
+        !,
+        sum_list(Rest,Sum1),
+        Sum is T+Sum1.
+
+
 
