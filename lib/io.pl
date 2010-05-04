@@ -38,6 +38,7 @@
 %          - left_position(Left) specified in which Pos Leftposition is
 %          - right_position(Righ) specified in which Pos Rightposition is
 %          - left_position(none) = no left position in the term
+
 %          - right_position(none) = no right position in the term
 
 %          - range(Min,Max): extract a range of data
@@ -791,6 +792,67 @@ data_elements_to_sequence_terms(Pos,[Data|R1],[elem(Pos,Data)|R2]) :-
 	NextPos is Pos + 1,
 	data_elements_to_sequence_terms(NextPos,R1,R2).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Loading a sequence into memory
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+load_sequence(SeqId, Filename) :-
+	terms_from_file(Filename,Terms),
+	Terms = [ FirstTerm | _ ],
+	FirstTerm =.. [_functor,_id,Begin,End,_],
+	BlockLen is (End - Begin) + 1,
+	length(Terms,NumBlocks),
+	assert(sequence_block_length(SeqId,BlockLen)),
+	assert(sequence_blocks(SeqId,NumBlocks)),
+	assert_sequence_terms(SeqId,Terms,0,NumBlocks).
+
+unload_sequence(SeqId) :-
+	retractall(sequence_block_length(SeqId,_)),
+	retractall(sequence_blocks(SeqId,_)),
+	retractall(sequence(SeqId,_,_)).
+
+assert_sequence_terms(_,[],NumBlocks,NumBlocks).
+assert_sequence_terms(Id, [Term|TRest], BlockNo, NumBlocks) :-
+	assert(sequence(Id,BlockNo,Term)),
+	NextBlockNo is BlockNo + 1,
+	assert_sequence_terms(Id,TRest,NextBlockNo,NumBlocks).
+
+get_sequence_range(SeqId, Min, Max, Data) :-
+	sequence_block_length(SeqId,BlockLen),
+	% The smallest block number in this sequence range:
+	MinBlockNumber is (Min-1) // BlockLen,
+	% The position at which the smallest block in this sequence range starts
+	MinBlockStart is MinBlockNumber*BlockLen+1,
+	% The relative position of Min in the first block 
+	StartInBlock is Min-MinBlockStart + 1,
+	% The number of block that includes Max:
+	MaxBlockNumber is (Max-1) // BlockLen,
+	((MinBlockNumber == MaxBlockNumber) -> % Min and Max are in same block
+	 EndInBlock is Max-MinBlockStart + 1,
+	 get_block_part(SeqId,MinBlockNumber,StartInBlock,EndInBlock,Data)
+	;
+	 get_block_part(SeqId,MinBlockNumber,StartInBlock,BlockLen,Part),
+	 NextMin is Min + (BlockLen-StartInBlock) + 1,
+	 get_sequence_range(SeqId,NextMin,Max,PartsRest),
+	 append(Part,PartsRest,Data)
+	).
+
+get_block_part(SeqId,BlockNumber,StartInBlock, EndInBlock, PartData) :-
+	sequence(SeqId,BlockNumber,Term),
+	Term =.. [ _functor, _id, _start, _end, BlockData ],
+	get_block_part_rec(BlockData,1,StartInBlock,EndInBlock,PartData).
+
+get_block_part_rec([DataItem|_],Pos,_, EndInBlock, [DataItem]) :-
+	Pos == EndInBlock.
+
+get_block_part_rec([_|BlockData],Pos,StartInBlock, EndInBlock, PartData) :-
+	Pos < StartInBlock,
+	NextPos is Pos + 1,
+	get_block_part_rec(BlockData,NextPos,StartInBlock,EndInBlock,PartData).
+
+get_block_part_rec([DataItem|BlockData],Pos,StartInBlock, EndInBlock, [DataItem|PartData]) :-
+	Pos >= StartInBlock,
+	NextPos is Pos + 1,
+	get_block_part_rec(BlockData,NextPos,StartInBlock,EndInBlock,PartData).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Basic reading/writing of terms to/from file
@@ -802,6 +864,12 @@ terms_from_file(File, Terms) :-
 	open(File, read, Stream),
 	ground(Stream),
 	collect_stream_terms(Stream,Terms),
+	close(Stream).
+
+terms_from_file_map(File,Goal) :-
+	open(File, read, Stream),
+	ground(Stream),
+	map_stream_terms(Stream,Goal),
 	close(Stream).
 
 % terms_to_file(++File,++Terms)
@@ -820,15 +888,14 @@ write_terms_to_stream(Stream,[Term|Rest]) :-
 	write_terms_to_stream(Stream,Rest).
 
 % Create list of Rules found in Stream
-collect_stream_terms(Stream, Rules) :-
+collect_stream_terms(Stream, Rules) :- 
 	read(Stream, T),
 	((T == end_of_file) ->
-		Rules = []
+	 Rules = []
 	;
-		collect_stream_terms(Stream,Rest),
-		append([T],Rest,Rules)
+	 collect_stream_terms(Stream,Rest),
+	append([T],Rest,Rules)
 	).
-
 
 check_term(File,Term) :-
         open(File,read,Stream),
@@ -839,10 +906,6 @@ check_term(File,Term) :-
             ;
             T = Term
         ).
-
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Utility for finding the functor in a text(prolog(_)) format
