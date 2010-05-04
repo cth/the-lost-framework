@@ -39,28 +39,19 @@
 %          - right_position(Righ) specified in which Pos Rightposition is
 %          - left_position(none) = no left position in the term
 %          - right_position(none) = no right position in the term
-%          - consult: consult data file instead reading the terms
+
 %          - range(Min,Max): extract a range of data
 %          - ranges(List_Ranges): extract a list of data given a list of Range
 %%%%%%%%%%%%%%%%%%%%%
 %:- use_module(library(lists)).   % Debugging SICStus
 
 get_data_from_file(File,Options,Data) :-
-        not_member('consult',Options),
-        !,
-        terms_from_file(File,Terms),
+        terms_from_file(File,Terms),  % An other way could be to consult the file (other option for later)
         % Technically not necessary since they will be sorted if this
 	% interface is used
         sort('=<',Terms,SortedTerms),
         get_data_from_terms(SortedTerms,Options,Data).
 
-
-% Option consult
-get_data_from_file(File,Options,Data) :-
-        member('consult',Options),
-        !,
-        consult(File),
-        get_data_from_facts(Options,Data).
 
 
 %%%%%%%
@@ -176,9 +167,9 @@ get_data_from_terms_rec([_Val|Rest_Sequence],[[Min,Max]|Ranges],Terms,Current_Po
 get_data_from_terms_rec([Val|Rest_Sequence],[[Min,Max]|Ranges],Terms,Current_Position,[],Pos,Range_Info_Position,[[Val|Rest_Range_Data]|Rest_Data]) :-
        Current_Position = Min,
        !,
-       Current_Data = [Rest_Range_Data],
+       check_ranges_and_update_data(Val,Ranges,Current_Position,Rest_Range_Data,[],Current_Data_Update,Rest_Data,Rest_Data_Update),
        Current_Position1 is Current_Position+1,
-       get_data_from_terms_rec(Rest_Sequence,[[Min,Max]|Ranges],Terms,Current_Position1,Current_Data,Pos,Range_Info_Position,Rest_Data).
+       get_data_from_terms_rec(Rest_Sequence,[[Min,Max]|Ranges],Terms,Current_Position1,Current_Data_Update,Pos,Range_Info_Position,Rest_Data_Update).
 
 
 
@@ -394,9 +385,11 @@ check_ranges_and_update_data_rec(_Val,[[Min,_Max]|_Rest_Ranges],Current_Position
         
 
 % Case: Current Data empty + new start of data range
-check_ranges_and_update_data_rec(Val,[[Min,_Max]|_Rest_Ranges],Current_Position,[],[Rest_Range],[[Val|Rest_Range]|Data_Update],Data_Update) :-
+check_ranges_and_update_data_rec(Val,[[Min,_Max]|Rest_Ranges],Current_Position,[],[Rest_Range|Rest_Data_Update],[[Val|Rest_Range]|Rest_Data],Data_Update) :-
         Current_Position = Min,
-        !.
+        !,
+        check_ranges_and_update_data_rec(Val,Rest_Ranges,Current_Position,[],Rest_Data_Update,Rest_Data,Data_Update).
+        
 
 % Case: Current Data not empty + Current Position in Min Max => Update
 check_ranges_and_update_data_rec(Val,[[Min,Max]|Rest_Ranges],Current_Position,[Range_Data|Rest_Current_Data],Current_Data_Update,Data,Data_Update) :-
