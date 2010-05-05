@@ -398,7 +398,7 @@ all annotation files will be placed in the \texttt{\$LOST/data/}
 directory and the \texttt{Filename} is construed according to the following convention:
 \begin{verbatim}
 {Modelname}_{Id}.gen
-\end{verbatim}
+\end{verbatim}x
 
 The first time a model \texttt{OutputFile} is generated, the file
 \texttt{annotation.idx} will be created in \texttt{\$LOST/data/}. This file
@@ -634,6 +634,68 @@ S = [([a],([a,c,g,t],[0,0,1,0])),
 \end{verbatim}
 
 
+\section{The regex API}
+
+The \texttt{regex} API provides POSIX-like regular expressions for
+matching Prolog strings and atoms. A regular expression is created
+using
+\begin{verbatim}
+re_compile(+Regex, -CompiledRegex)
+\end{verbatim}
+
+The input argument \texttt{Regex} is an atom or a list of symbols
+representing a particular regular expression. The output argument
+\texttt{CompiledRegex} is used in subsequent matching with this 
+regular expression.
+
+Matching with a regular expression is then done using
+\begin{verbatim}
+re_match(+CompiledRegex,+String,-Matches)
+\end{verbatim}
+
+The goal \texttt{re\_match/3} is true whenever the
+\texttt{CompiledRegex} matches the \texttt{String}. The \texttt{String} may be 
+an atom or a list of symbols. If the goal is true, then
+\texttt{Matches} is a list containing the matching parts of the \texttt{String} corresponding to
+particular match groups (paranthesized sub-expressions) of the regular expression. 
+
+Currently the regular expressions can be expressed using a
+significant subset of the well-known POSIX regular expression
+operators. The following operators are supported:
+
+\begin{itemize}
+\item \emph{Concatenation:} is expressed by the concatenation of two
+  sub expressions. For instance, the regular expression  \texttt{ab}
+  matches an \texttt{a} followed by a \texttt{b}.
+\item \emph{Alternation:} is expressed with the vertical bar (\texttt{|}). For
+  instance the expression \texttt{a|b} matches either \texttt{a} or \texttt{b}.
+\item \emph{Repetition:} Repetition operators indicate the number of
+  times a preceding regular expression may be matched. The following 
+repetition operators are supported:
+\begin{itemize}
+\item \texttt{*} representing the Kleene star, meaning that the
+  preceding expression is matched zero or more times.
+\item \texttt{+} the preceding expression one or more times.
+\item \texttt{?} The preceding expression zero times or one time.
+\end{itemize}
+
+Note that repetition binds stronger than alternation and alternation
+binds stronger than concatenation. To enforce a different binding
+order, enclosing sub-expressions in parentheses (which binds strongest)
+are used.
+
+Parenthesised sub-expressions can also be used to create \emph{match
+  groups.} 
+An outer-most paranthesized sub-expression,
+  where the paranthesis are superflouos is interpreted as a match
+  group. When an expression is matched, then the part of the string matched by the
+  paranthesized expression is extracted. 
+\end{itemize}
+
+Additionally, ranges are supported by the regular expression syntax.
+A range is expressed using square brackets. For instance,
+\texttt{[a-z0-9]} is range expression which matches a lower case
+alphanumeric character or a digit. 
 
 \chapter{Models}
 
