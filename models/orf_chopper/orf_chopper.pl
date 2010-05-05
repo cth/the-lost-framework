@@ -49,9 +49,9 @@
 * ORF-sequecnes and REST-sequences are defined in separate models below.
 ********************************************************************************/
 
-values(dna(start),	[orf, rst]).
-values(trans(orf),	[orf, rst, end]).
-values(trans(rst),	[end]).
+values(dna(start),[orf, rst]).
+values(trans(orf),[orf, rst, end]).
+values(trans(rst),[end]).
 
 
 /*******************************************************************************
@@ -62,11 +62,11 @@ values(trans(rst),	[end]).
 *
 ********************************************************************************/
 
-values(orf,										[preStart(orf),		start(orf)															 ]).
-values(trans(preStart(orf)),	[preStart(orf),		start(orf)]).
-values(trans(start(orf)),			[																preStop(orf), 		stop(orf)]).
-values(trans(preStop(orf)),		[																preStop(orf),			stop(orf)]).
-values(trans(stop(orf)),			[																																end]).
+values(orf,[preStart(orf),start(orf)]).
+values(trans(preStart(orf)),[preStart(orf),start(orf)]).
+values(trans(start(orf)),[preStop(orf),stop(orf)]).
+values(trans(preStop(orf)),[preStop(orf),stop(orf)]).
+values(trans(stop(orf)),[end]).
 
 /*******************************************************************************
 * transitions for sub-model 2 : rest-sequences
@@ -76,12 +76,12 @@ values(trans(stop(orf)),			[																																end]).
 *
 ********************************************************************************/
 
-values(rst,										[preStart(rst),	start(rst),	 										  n(2)						 ]).
-values(trans(preStart(rst)),	[preStart(rst),	start(rst), 											n(2), 				end]).
-values(trans(start(rst)),		[																preStop(rst),				n(2), 				end]).
-values(trans(preStop(rst)),	[																preStop(rst),				n(2),					end]).
-values(trans(n(2)),						[																													n(1),	end]).
-values(trans(n(1)),						[																																end]).
+values(rst,[preStart(rst),start(rst),n(2)]).
+values(trans(preStart(rst)),[preStart(rst),start(rst),n(2),end]).
+values(trans(start(rst)),[preStop(rst),n(2),end]).
+values(trans(preStop(rst)),[preStop(rst),n(2),end]).
+values(trans(n(2)),[n(1),end]).
+values(trans(n(1)),[end]).
 
 /*******************************************************************************
 * emissions for both sub-models : subsequnces-sequences
@@ -92,51 +92,45 @@ values(trans(n(1)),						[																																end]).
 * - stop(_):			emits any one stop triplet
 * - n(_):					emits one nucleotide
 ********************************************************************************/
-values(emit(preStart(_)),[	[t,t,t],[t,c,t],[t,a,t],[t,g,t],
-														[t,t,c],[t,c,c],[t,a,c],[t,g,c],
-														[t,t,a],[t,c,a],[t,a,a],[t,g,a],
-																		[t,c,g],[t,a,g],[t,g,g],
+values(emit(preStart(_)),[[t,t,t],[t,c,t],[t,a,t],[t,g,t],
+			  [t,t,c],[t,c,c],[t,a,c],[t,g,c],
+	   		  [t,t,a],[t,c,a],[t,a,a],[t,g,a],
+			  [t,c,g],[t,a,g],[t,g,g],
+                          [c,t,t],[c,c,t],[c,a,t],[c,g,t],
+   			  [c,t,c],[c,c,c],[c,a,c],[c,g,c],
+		  	  [c,t,a],[c,c,a],[c,a,a],[c,g,a],
+			  [c,c,g],[c,a,g],[c,g,g],
+                          [a,c,t],[a,a,t],[a,g,t],
+                          [a,c,c],[a,a,c],[a,g,c],
+			  [a,c,a],[a,a,a],[a,g,a],
+			  [a,c,g],[a,a,g],[a,g,g],
+                          [g,t,t],[g,c,t],[g,a,t],[g,g,t],
+		          [g,t,c],[g,c,c],[g,a,c],[g,g,c],
+			  [g,t,a],[g,c,a],[g,a,a],[g,g,a],
+	   		  [g,c,g],[g,a,g],[g,g,g]]).
 
-														[c,t,t],[c,c,t],[c,a,t],[c,g,t],
-														[c,t,c],[c,c,c],[c,a,c],[c,g,c],
-														[c,t,a],[c,c,a],[c,a,a],[c,g,a],
-																		[c,c,g],[c,a,g],[c,g,g],
+values(emit(start(_)),[[t,t,g],[c,t,g],[a,t,t],[a,t,c],[a,t,a],[a,t,g],[g,t,g]]).
 
-																		[a,c,t],[a,a,t],[a,g,t],
-																		[a,c,c],[a,a,c],[a,g,c],
-																		[a,c,a],[a,a,a],[a,g,a],
-																		[a,c,g],[a,a,g],[a,g,g],
+values(emit(preStop(_)),[[t,t,t],[t,c,t],[t,a,t],[t,g,t],
+                         [t,t,c],[t,c,c],[t,a,c],[t,g,c],
+			 [t,t,a],[t,c,a],
+                         [t,t,g],[t,c,g],[t,g,g],
+                         [c,t,t],[c,c,t],[c,a,t],[c,g,t],
+			 [c,t,c],[c,c,c],[c,a,c],[c,g,c],
+		         [c,t,a],[c,c,a],[c,a,a],[c,g,a],
+			 [c,t,g],[c,c,g],[c,a,g],[c,g,g],
+                         [a,t,t],[a,c,t],[a,a,t],[a,g,t],
+		         [a,t,c],[a,c,c],[a,a,c],[a,g,c],
+		         [a,t,a],[a,c,a],[a,a,a],[a,g,a],
+	                 [a,t,g],[a,c,g],[a,a,g],[a,g,g],
+                         [g,t,t],[g,c,t],[g,a,t],[g,g,t],
+		         [g,t,c],[g,c,c],[g,a,c],[g,g,c],
+		         [g,t,a],[g,c,a],[g,a,a],[g,g,a],
+	                 [g,t,g],[g,c,g],[g,a,g],[g,g,g]]).
 
-														[g,t,t],[g,c,t],[g,a,t],[g,g,t],
-														[g,t,c],[g,c,c],[g,a,c],[g,g,c],
-														[g,t,a],[g,c,a],[g,a,a],[g,g,a],
-																		[g,c,g],[g,a,g],[g,g,g]			]).
+values(emit(stop(_)),[[t,a,a],[t,g,a],[t,a,g]]).
 
-values(emit(start(_)),[			[t,t,g],[c,t,g],[a,t,t],[a,t,c],[a,t,a],[a,t,g],[g,t,g]]).
-
-values(emit(preStop(_)),[		[t,t,t],[t,c,t],[t,a,t],[t,g,t],
-														[t,t,c],[t,c,c],[t,a,c],[t,g,c],
-														[t,t,a],[t,c,a],
-														[t,t,g],[t,c,g],				[t,g,g],
-
-														[c,t,t],[c,c,t],[c,a,t],[c,g,t],
-														[c,t,c],[c,c,c],[c,a,c],[c,g,c],
-														[c,t,a],[c,c,a],[c,a,a],[c,g,a],
-														[c,t,g],[c,c,g],[c,a,g],[c,g,g],
-
-														[a,t,t],[a,c,t],[a,a,t],[a,g,t],
-														[a,t,c],[a,c,c],[a,a,c],[a,g,c],
-														[a,t,a],[a,c,a],[a,a,a],[a,g,a],
-														[a,t,g],[a,c,g],[a,a,g],[a,g,g],
-
-														[g,t,t],[g,c,t],[g,a,t],[g,g,t],
-														[g,t,c],[g,c,c],[g,a,c],[g,g,c],
-														[g,t,a],[g,c,a],[g,a,a],[g,g,a],
-														[g,t,g],[g,c,g],[g,a,g],[g,g,g]			]).
-
-values(emit(stop(_)),[			[t,a,a],[t,g,a],[t,a,g]]).
-
-values(emit(n(_)),					[a,c,t,g]).
+values(emit(n(_)),[a,c,t,g]).
 
 
 /*******************************************************************************
@@ -145,55 +139,67 @@ values(emit(n(_)),					[a,c,t,g]).
 */
 
 
-sub_parse(end,_Dir,S-S, 												P,	P,  B-B,   E-E).
+sub_parse(end,_Dir,S-S,P,P,B-B,E-E).
 %------------------------------------------------------------------------------
-sub_parse(preStart(T),Dir,[N1,N2,N3|S2]-S3,			P1,	P3, B2-B3, E2-E3):-
+sub_parse(preStart(T),Dir,[N1,N2,N3|S2]-S3,P1,P3,B2-B3,E2-E3):-
 	nonprob_msw(emit(preStart(T)),[N1,N2,N3]),
-																								P2 is P1+(3*Dir),
+        P2 is P1+(3*Dir),
 	nonprob_msw(trans(preStart(T)),Next),
-	sub_parse(Next,Dir,S2-S3,											P2, P3, B2-B3, E2-E3).
+	sub_parse(Next,Dir,S2-S3,P2,P3,B2-B3,E2-E3).
 %------------------------------------------------------------------------------
-sub_parse(preStop(T),Dir,[N1,N2,N3|S2]-S3, 			P1, P3, B1-B3, E2-E3):-
+sub_parse(preStop(T),Dir,[N1,N2,N3|S2]-S3,P1, P3, B1-B3, E2-E3):-
 	nonprob_msw(emit(preStop(T)),[N1,N2,N3]),
-																						(
-																						startcodon([N1,N2,N3])->
-																								(Dir = 1 -> P is P1+1	;	P is P1	),
-																								B1 = [P|B2]
-																						;
-																						  	B1 = B2
-																						),
-																						P2 is P1+(3*Dir),
+        (
+          startcodon([N1,N2,N3])->
+          (Dir = 1 ->
+              P is P1+1
+          ;
+              P is P1
+          ),
+          B1 = [P|B2]
+        ;
+          B1 = B2
+        ),
+        P2 is P1+(3*Dir),
 	nonprob_msw(trans(preStop(T)),Next),
-	sub_parse(Next,Dir,S2-S3,											P2, P3, B2-B3, E2-E3).
+	sub_parse(Next,Dir,S2-S3,P2,P3,B2-B3,E2-E3).
 %------------------------------------------------------------------------------
-sub_parse(start(T),Dir,[N1,N2,N3|S2]-S3,				P1,	P3, [P|B2]-B3, E2-E3):-
+sub_parse(start(T),Dir,[N1,N2,N3|S2]-S3,P1,P3,[P|B2]-B3,E2-E3):-
 	nonprob_msw(emit(start(T)),[N1,N2,N3]),
-																						 		P2 is P1+(3*Dir),
-																								(Dir = 1 -> P is P1+1	;	P is P1	),
+        P2 is P1+(3*Dir),
+        (Dir = 1 ->
+            P is P1+1
+        ;
+            P is P1
+        ),
 	nonprob_msw(trans(start(T)),Next),
-	sub_parse(Next,Dir,S2-S3,											P2, P3, B2-B3, E2-E3).
+	sub_parse(Next,Dir,S2-S3,P2,P3, B2-B3, E2-E3).
 %------------------------------------------------------------------------------
-sub_parse(stop(T),Dir,[N1,N2,N3|S2]-S3,					P1,	P3, B2-B3, [P|E2]-E3):-
-	nonprob_msw(emit(stop(T)),		[N1,N2,N3]),
-																								P2 is P1+(3*Dir),
-																								(Dir = 1 -> P is P1+1	;	P is P1	),
+sub_parse(stop(T),Dir,[N1,N2,N3|S2]-S3,P1,P3,B2-B3,[P|E2]-E3):-
+	nonprob_msw(emit(stop(T)),[N1,N2,N3]),
+        P2 is P1+(3*Dir),
+        (Dir = 1 ->
+            P is P1+1
+        ;
+            P is P1
+        ),
 	nonprob_msw(trans(stop(T)),Next),
-	sub_parse(Next,Dir,S2-S3,											P2, P3, B2-B3, E2-E3).
+	sub_parse(Next,Dir,S2-S3,P2, P3, B2-B3, E2-E3).
 %------------------------------------------------------------------------------
-sub_parse(n(Num),Dir,[N|S2]-S3,									P1,	P3, B2-B3, E2-E3):-
-	nonprob_msw(emit(n(Num)),	N),
-																								P2 is P1+(1*Dir),
+sub_parse(n(Num),Dir,[N|S2]-S3,P1,P3,B2-B3, E2-E3):-
+	nonprob_msw(emit(n(Num)),N),
+        P2 is P1+(1*Dir),
 	nonprob_msw(trans(n(Num)),Next),
-	sub_parse(Next,Dir,S2-S3,											P2, P3, B2-B3, E2-E3).
+	sub_parse(Next,Dir,S2-S3,P2, P3, B2-B3, E2-E3).
 %-----------------------------------------------------------------------------
-sub_parse(This, Dir,S1-S2, 											P1, P2, B1-B2, E2-E3):-
+sub_parse(This, Dir,S1-S2,P1, P2, B1-B2, E2-E3):-
 	subtype(This),
 	nonprob_msw(This,FirstState),
-	sub_parse(FirstState,Dir, S1-S2,							P1, P2, B1-B2, E2-E3).
+	sub_parse(FirstState,Dir, S1-S2,P1, P2, B1-B2, E2-E3).
 %-----------------------------------------------------------------------------
 startcodon(Cod):-
-				values(emit(start(_)),StartCodons),
-				member(Cod,StartCodons),!.
+        values(emit(start(_)),StartCodons),
+        member(Cod,StartCodons),!.
 
 subtype(orf).
 subtype(rst).
@@ -218,29 +224,33 @@ dna_chop_init(S,SeqStartPos,Dir,Frame, L,Id,ChunkFileOutStream):-
 	Pm3 is SeqStartPos mod 3,
 	init_frame(Pm3, Frame,Offset,S,S2),
 	ChunkStartPos = SeqStartPos + Offset,
-	( Dir = -1 ->
-		reverse_complement(S2,[],S3,ChunkStartPos,SeqEndPos),
-		Trailing is (SeqEndPos - ChunkStartPos)mod 3,
-		nFirst(Trailing,S3,_Firstfew,S4),								%cutoff(Trailing,_,S3,S4),
-		LeftPos is SeqEndPos - Trailing,
-		RightPos is ChunkStartPos
+	(Dir = -1 ->
+            reverse_complement(S2,[],S3,ChunkStartPos,SeqEndPos),
+            Trailing is (SeqEndPos - ChunkStartPos)mod 3,
+            nFirst(Trailing,S3,_Firstfew,S4), %cutoff(Trailing,_,S3,S4),
+            LeftPos is SeqEndPos - Trailing,
+            RightPos is ChunkStartPos
 	;
-		S4 = S2,
-		LeftPos is ChunkStartPos,
-		L = RightPos
+            S4 = S2,
+            LeftPos is ChunkStartPos,
+            L = RightPos
 	),
 	nonprob_msw(dna(start),FirstState),
-	dna_chop(FirstState,Dir,Frame,S4-[],				LeftPos, RightPos, Id,ChunkFileOutStream).
+	dna_chop(FirstState,Dir,Frame,S4-[],LeftPos, RightPos, Id,ChunkFileOutStream).
 
 
-dna_chop(end,_Dir,_Frm,S-S, 									P,	P, _Id,_Chunk).
-dna_chop(This,Dir,Frame,S1-S2,								P1, P2, Id,ChunkFileOutStream):-
+dna_chop(end,_Dir,_Frm,S-S,P,P,_Id,_Chunk).
+dna_chop(This,Dir,Frame,S1-S2,P1, P2, Id,ChunkFileOutStream):-
 	This \= end,
-	sub_parse(This,Dir,S1-S3,										P1, P3, Begins-[],Ends-[]),		% emit a sequence of type This
-	(Dir = 1 -> Dir_symbol = '+'; Dir_symbol = '-'),
+	sub_parse(This,Dir,S1-S3,P1, P3, Begins-[],Ends-[]), % emit a sequence of type This
+	(Dir = 1 ->
+            Dir_symbol = '+'
+        ;
+            Dir_symbol = '-'
+        ),
 	report(Id,P1,P3,S1,Dir_symbol,Frame,Begins,Ends,ChunkFileOutStream),
 	nonprob_msw(trans(This),Next),
-	dna_chop(Next,Dir,Frame,S3-S2,							P3, P2,Id,ChunkFileOutStream).
+	dna_chop(Next,Dir,Frame,S3-S2,P3,P2,Id,ChunkFileOutStream).
 
 %======================================================================================
 % Tools
@@ -307,18 +317,18 @@ nonprob_msw(S,V):-
 %
 report(Id,P1,P2,S1,Dir,Frame,Begins,Ends,ChunkFileOutStream):-
 	(Dir = '+' ->
-		N is P2-P1,	Left is P1 ,	Right is P2-1  % this was added /*+1*/
-		;
-		N is P1-P2,	Left is P2 , Right is P1-1 % this was added /*+1*/
+            N is P2-P1,	Left is P1 ,	Right is P2-1 % this was added /*+1*/
+        ;
+            N is P1-P2,	Left is P2 , Right is P1-1 % this was added /*+1*/
 	),
 	nFirst(N,S1,S,_),
 	(Dir = '+' ->
-		S2 = S
-		;
-		reverse_complement(S,[],S2,0,_)
+            S2 = S
+        ;
+            reverse_complement(S,[],S2,0,_)
 	),
 	Entry =.. [chunk,Id,Left,Right,S,Dir,Frame,Begins,Ends],
-	write(ChunkFileOutStream,Entry), writeln(ChunkFileOutStream,'.').
+	writeq(ChunkFileOutStream,Entry), writeln(ChunkFileOutStream,'.').
 
 
 
@@ -329,14 +339,18 @@ test(Dir,Frame):-
 	open('U00096-500.pl',read,InputStream,[alias(seqin)]),
 	open('testchunkfile',write,OutputStream,[alias(chunkout)]),
 	read(InputStream,data(Id,StartPos,_,S)),
-	% Term =.. [data(ID,StartPos,_,S),
-	(Dir = + -> DirFactor = 1 ; DirFactor = -1),
+         % Term =.. [data(ID,StartPos,_,S),
+	(Dir = + ->
+            DirFactor = 1
+        ;
+            DirFactor = -1
+        ),
 	% orf_chop_main(Term,DirFactor,Frame,InputStream,OutputStream),
 	dna_chop(S,StartPos,DirFactor,Frame,_,Id,OutputStream),
-	read(InputStream,_), % to close the file properly
+	read(InputStream,_),    % to close the file properly
 	close(seqin),
 	close(chunkout),
-  write('LoSt orf-chopper completed succesfully'),nl,!.
+        write('LoSt orf-chopper completed succesfully'),nl,!.
 
 
 /*
