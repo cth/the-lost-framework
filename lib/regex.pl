@@ -23,6 +23,10 @@
 % of the regular expression as an s-expression
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% We table re_compile/2 to avoid compiling the same regular expression
+% twice
+:- table re_compile/2.
+
 re_compile(RegexAtom,Regexp) :-
 	atom(RegexAtom),
 	atom_codes(RegexAtom,RegexCodes),
