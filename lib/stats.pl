@@ -19,15 +19,15 @@
 % stats(++Data_Type,++Options,++Data,++Input_Counting,--Past,??Result).
 % Assumption: Data format corresponds to the kind of statistics that you compute
 % List of nucleotids for nucleotids-codon stats
-% List of AnimoAcids for Animo stats
+% List of AminoAcids for Amino stats
 % List of Ranges for Length stats computation
 % Option = Order
 :- lost_include_api(interface).
 
 
-% Type nucleotide, codon, animo_acid
+% Type nucleotide, codon, amino_acid
 stats(Type,Options,Data,Input_Counting,Result) :-
-        member(Type,[nucleotide,codon,animo_acid]),
+        member(Type,[nucleotide,codon,amino_acid]),
         var(Input_Counting),
         !,
         (member(order(N),Options) ->
@@ -43,11 +43,11 @@ stats(Type,Options,Data,Input_Counting,Result) :-
                          )
         ),
         init_counting(Type,N,Init_Counting),
-        stats_rec(New_Data,Past,Init_Counting,Result).
+        stats_rec(New_Data,Past,Init_Counting ,Result).
         
         
 stats(Type,Options,Data,Input_Counting,Result) :-
-        member(Type,[nucleotide,codon,animo_acid]),
+        member(Type,[nucleotide,codon,amino_acid]),
         !,
         (member(order(N),Options) ->
             true
@@ -67,7 +67,7 @@ stats(Type,Options,Data,Input_Counting,Result) :-
 % Stats that records the past
 
 stats(Type,Options,Data,Input_Counting,Past_Final,Result) :-
-        member(Type,[nucleotide,codon,animo_acid]),
+        member(Type,[nucleotide,codon,amino_acid]),
         var(Input_Counting),
         !,
         (member(order(N),Options) ->
@@ -89,7 +89,7 @@ stats(Type,Options,Data,Input_Counting,Past_Final,Result) :-
 
 
 stats(Type,Options,Data,Input_Counting,Past_Final,Result) :-
-        member(Type,[nucleotide,codon,animo_acid]),
+        member(Type,[nucleotide,codon,amino_acid]),
         !,
         (member(order(N),Options) ->
             true
@@ -263,7 +263,7 @@ get_init(codon,[([a,a,a],0),([a,a,c],0),([a,a,g],0),([a,a,t],0),
         !.
 
 
-get_init(animo_acid,[(a,0),(c,0),(d,0),(e,0),
+get_init(amino_acid,[(a,0),(c,0),(d,0),(e,0),
                      (f,0),(g,0),(h,0),(i,0),
                      (k,0),(l,0),(m,0),(n,0),
                      (p,0),(q,0),(r,0),(s,0),
@@ -344,26 +344,26 @@ get(codon,[t,t,c]).
 get(codon,[t,t,g]).
 get(codon,[t,t,t]).
 
-get(animo_acid,a).
-get(animo_acid,c).
-get(animo_acid,d).
-get(animo_acid,e).
-get(animo_acid,f).
-get(animo_acid,g).
-get(animo_acid,h).
-get(animo_acid,i).
-get(animo_acid,k).
-get(animo_acid,l).
-get(animo_acid,m).
-get(animo_acid,n).
-get(animo_acid,p).
-get(animo_acid,q).
-get(animo_acid,r).
-get(animo_acid,s).
-get(animo_acid,t).
-get(animo_acid,v).
-get(animo_acid,w).
-get(animo_acid,y).
+get(amino_acid,a).
+get(amino_acid,c).
+get(amino_acid,d).
+get(amino_acid,e).
+get(amino_acid,f).
+get(amino_acid,g).
+get(amino_acid,h).
+get(amino_acid,i).
+get(amino_acid,k).
+get(amino_acid,l).
+get(amino_acid,m).
+get(amino_acid,n).
+get(amino_acid,p).
+get(amino_acid,q).
+get(amino_acid,r).
+get(amino_acid,s).
+get(amino_acid,t).
+get(amino_acid,v).
+get(amino_acid,w).
+get(amino_acid,y).
 
 
 
@@ -394,11 +394,11 @@ build_past(N,[Elt|Rest],Past1-Past2,Rest_Data) :-
 %--------
 
 normalize(Type,[],[]) :-
-        member(Type,[nucleotide,codon,animo_acid]),
+        member(Type,[nucleotide,codon,amino_acid]),
         !.
         
 normalize(Type,[(Past,Countings)|Rest],[(Past,(Domain,Distribution))|Rest_Normalized]) :-
-        member(Type,[nucleotide,codon,animo_acid]),
+        member(Type,[nucleotide,codon,amino_acid]),
         !,
         normalize2(Countings,0,0,_Length_Final,_Sum_Final,Domain,Distribution),
         normalize(Type,Rest,Rest_Normalized).
@@ -476,6 +476,29 @@ sum_list([T|Rest],Sum) :-
         !,
         sum_list(Rest,Sum1),
         Sum is T+Sum1.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% build_stat_facts(+Stats,-StatsFacts)
+% builds a list of facts, one for each statistic
+% e.g. 
+% build_stat_facts(
+%	[([a],[(a,0),(c,1),(g,0),(t,0)]),([c],[(a,0),(c,0),(g,0),(t,1)]),([g],[(a,0),(c,0),(g,1),(t,2)]),([t],[(a,1),(c,0),(g,2),(t,1)])],
+%	[stat([a,a],0),stat([a,c],1),stat([a,g],0),stat([a,t],0),stat([c,a],0),stat([c,c],0),stat([c,g],0),
+%	 stat([c,t],1),stat([g,a],0),stat([g,c],0),stat([g,g],1),stat([g,t],2),stat([t,a],1),stat([t,c],0),stat([t,g],2),stat([t,t],1)]
+%	)
+
+build_stat_facts([],[]).
+build_stat_facts([Stat|StatRest],Facts) :-
+	Stat = (PastList,CountsList),
+	build_stat_facts_single(PastList,CountsList,FactsList),
+	build_stat_facts(StatRest,FactsListRest),
+	append(FactsList,FactsListRest,Facts).
+
+build_stat_facts_single(_,[],[]).
+build_stat_facts_single(PastList,[(N,Count)|Rest], [stat(Full,Count)|FactsRest]) :-
+	append(PastList,[N],Full),
+	build_stat_facts_single(PastList,Rest,FactsRest).
 
 
 
