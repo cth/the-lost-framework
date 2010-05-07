@@ -634,7 +634,8 @@ S = [([a],([a,c,g,t],[0,0,1,0])),
 \end{verbatim}
 
 
-\section{The regex API}
+\section{The \texttt{regex} API}
+\label{sec:regex}
 
 The \texttt{regex} API provides POSIX-like regular expressions for
 matching Prolog strings and atoms. A regular expression is created
@@ -696,6 +697,48 @@ Additionally, ranges are supported by the regular expression syntax.
 A range is expressed using square brackets. For instance,
 \texttt{[a-z0-9]} is range expression which matches a lower case
 alphanumeric character or a digit. 
+
+\section{The \texttt{genecode} API}
+\label{sec:genecode}
+
+This API contains a set of genetic code tables. Each table defines
+a relation between codons and amino acids. The main predicate of the API
+is 
+\begin{verbatim}
+genecode(+Code, ?Codon, ?AminoAcid)
+\end{verbatim}
+
+\noindent
+The argument code is an integer specifying the genetic code to
+use. Currently, only genetic code \texttt{11} (bacterial) is
+supported. \texttt{Codon} is a list of of three nucleotides symbols
+from the alphabet \texttt{[a,g,c,t]}. The argument \texttt{AminoAcid}
+is a symbol from the alphabet
+\begin{verbatim}
+[a,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,y,*]
+\end{verbatim}
+
+\noindent
+Where all symbols except \texttt{*} represents an amino acid (the name
+of which starts which that letter). The special symbol \texttt{*}
+signifies a stop codon in the specified genetic code.
+
+Other predicates in the genecode API include
+\begin{verbatim}
+genecode_start_codons(+GeneCode,-StartCodons)
+\end{verbatim}
+
+\noindent
+The \texttt{genecode\_start\_codons/2} predicate unifies \texttt{StartCodons} with a list of all valid
+start codons for the given \texttt{GeneCode}.
+
+\begin{verbatim}
+genecode_stop_codons(+GeneCode,-StopCodons)
+\end{verbatim}
+
+\noindent
+The \texttt{genecode\_stop\_codons/2} predicate unifies \texttt{StopCodons} with a list of all valid
+stop codons for the given \texttt{GeneCode}.
 
 \chapter{Models}
 
@@ -920,6 +963,62 @@ The model only takes two option:
   The argument of the score functor (\texttt{0.75} in the example)
   should be a number or at least something comparable with the
   standard less-than-or-equal-to Prolog operators.
+\end{itemize}
+
+\subsection{\texttt{gene\_filter}}
+
+The \texttt{gene\_filter} model is a model that filters a set of genes
+based on various matching criteria. The input to the model is 
+a file in \texttt{text(prolog(ranges(gene)))} format containing the 
+list of genes to be filtered and a file in
+\texttt{text(prolog(sequence(dna)))} that includes the nucleotide
+sequence for the entire genome to which the genes belong.
+% FIXME: We should make the nucleotide sequence file optional.
+
+The model supports filtering based on a wide range of criteria,
+specified using the options given to the model. The model 
+is invoked using \texttt{get\_annotation\_file/4.}
+
+The options supported by the model are:
+\begin{itemize}
+\item \texttt{match\_frames}: A list of valid frames. Genes in other
+  frames will be filtered. The list must be a subset of the \emph{default
+    value}: \texttt{[1,2,3]}. 
+\item \texttt{match\_strands}: A list of valid strands. Genes occuring
+  an other strand will be filtered. The list must be a subset of the
+  \emph{default value}: \texttt{['+','-']}.
+\item \texttt{exact\_match\_extra\_fields}: A list of Prolog terms
+  terms each of which must unify with an element of 
+the \texttt{Extra} list of the gene terms. Genes which do not are filtered. 
+\item  \texttt{exact\_no\_match\_extra\_fields}: A list of Prolog
+  terms terms any of which \emph{may not} unify with any element of
+  the \texttt{Extra} list of the gene terms. Genes which do are
+  filtered.
+\item \texttt{regex\_match\_extra\_fields}: A list of regular field
+  names in the \texttt{Extra} list and regular expressions to match
+  those fields.  For example, a regular expression matcher for the
+  \texttt{name} field would be specified as \verb|name('^y.*$')|,
+  here matching genes with a name starting with the letter y.
+  The syntax of the regular expressions are as specified in section
+  \ref{sec:regex}.
+  Gene tems that do not match each of the specified regular
+  expressions are filtered. 
+\item \texttt{regex\_no\_match\_extra\_fields}: A list of field names
+  in the extra and regular expressions to match those fields. If a
+  gene is matched by any of these regular expression, it will be
+  filtered.
+\item \texttt{match\_protein\_coding}: Must be either \texttt{yes} or
+ \texttt{no}. Default is \texttt{no}. 
+If set to \texttt{yes}, this
+  will filter gene terms which do not have a valid start and stop
+  codon. The codon table to be used is specified using the the
+  \texttt{genecode} option.
+\item \texttt{genecode}: An integer specifying what genecode to use.
+  Default is \texttt{11}, which is the bacterial gene code.  See
+  \ref{sec:genecode} for a list of valid gene code tables. 
+\item \texttt{invert\_results}: Must be either \texttt{yes} or
+ \texttt{no}. Default is \texttt{no}. If set to \texttt{yes}, then
+ only the otherwise non-filtered results are filtered.
 \end{itemize}
 
 \section{Model that integrate other programs}
