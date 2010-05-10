@@ -14,6 +14,11 @@ atom_concat_list([Elem1,Elem2|Rest], CompositeAtom) :-
 	atom_concat(Elem1,Elem2,Elem3),
 	atom_concat_list([Elem3|Rest], CompositeAtom).
 
+% Assumes each atom to be exactly one character
+atom_list_code_list([],[]).
+atom_list_code_list([Atom|AtomsRest],[Code|CodesRest]) :-
+	atom_codes(Atom, [Code]),
+	atom_list_code_list(AtomsRest,CodesRest).
 
 inlists_nth0([], _, []).
 inlists_nth0([List|RestLists], N, [Elem|RestElems]) :-
