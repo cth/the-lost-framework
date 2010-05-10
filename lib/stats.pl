@@ -224,6 +224,7 @@ update_length(Length,[],[(Length,1)]) :-
         !.
 
 update_length(Length,[(Length,Count)|Rest],[(Length,New_Count)|Rest]) :-
+        !,
         New_Count is Count+1.
 
 update_length(Length,[(Length_Below,Count)|Rest],[(Length_Below,Count)|Rest_Update]) :-
