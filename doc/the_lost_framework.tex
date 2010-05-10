@@ -541,9 +541,9 @@ is based on a simple counting method given a simple input data.
 Variable \texttt{Data\_Type} is used to specify the type of the input data:
 Data type available are:
 \begin{itemize}
-\item \texttt{nucleotid} where input data are composed of letter from $\{a,c,g,t\}$;
+\item \texttt{nucleotide} where input data are composed of letter from $\{a,c,g,t\}$;
 \item \texttt{codon} where a codon is represented by a list of three letters from $\{a,c,g,t\}$;
-\item \texttt{animo\_acid} where input data are composed of letter from $\{a,c,d,e,f,g,h,$\\
+\item \texttt{amino\_acid} where input data are composed of letter from $\{a,c,d,e,f,g,h,$\\
 $i,k,l,m,n,p,q,r,s,t,v,w,y\}$;
 \item \texttt{length}. This type is used to compute frequencies and statistics about length of specific region of a genome. 
 \end{itemize} 
@@ -552,14 +552,14 @@ Here is the description of main predicates of \texttt{stats.pl}
 \begin{itemize}
 \item stats(++Data\_Type,++Options,++Data,++Input\_Counting,--Result)\index{stats$\slash 5$} \\
 \texttt{Data\_Type} setting define on which counting procedure is initialized. User must take care then
-to give the right \texttt{Data}. For \{\texttt{nucleotid,codon,animo\_acid}\} data type, 
+to give the right \texttt{Data}. For \{\texttt{nucleotide,codon,amino\_acid}\} data type, 
 \texttt{Data} must be a Prolog list with the right element, For \texttt{length} data type,
 \texttt{Data} must be a list of ranges represented by a list of two integer values ([Min,Max]).
 Two options are available:
 \begin{itemize}
 \item \texttt{order(Num)} defines the size of the past stored to perform the counting
 \item \texttt{past(List)} allows to give as input of the computation a previous past. This option is
-useful to make connexion between two counting computations.
+useful to make connection between two counting computations.
 \end{itemize}
 \texttt{Input\_Counting} is used as well to perform a counting computation on an input data divided
 into a set of lists. By default, counting computation is initialized when is a variable \texttt{Input\_Counting}.
@@ -577,15 +577,15 @@ data('U00096',6,10,[c,c,c,c,c]).
 \end{verbatim}
 Here is the result of this following request
 \begin{verbatim}
-| ?- stats(nucleotid,[],[a,g,c,t,t],_,R).
+| ?- stats(nucleotide,[],[a,g,c,t,t],_,R).
 R = [([],[(a,1),(c,1),(g,1),(t,2)])] ?
-| ?- stats(nucleotid,[order(1)],[a,g,c,t,t],_,R).
+| ?- stats(nucleotide,[order(1)],[a,g,c,t,t],_,R).
 R = [([a],[(a,0),(c,0),(g,1),(t,0)]),
      ([c],[(a,0),(c,0),(g,0),(t,1)]),
      ([g],[(a,0),(c,1),(g,0),(t,0)]),
      ([t],[(a,0),(c,0),(g,0),(t,1)])]?
-| ?- stats(nucleotid,[order(2)],[a,g,c,t,t],_,R1),
-     stats(nucleotid,[order(2),past([t,t])],[c,c,c,c,c],R1,R).
+| ?- stats(nucleotide,[order(2)],[a,g,c,t,t],_,R1),
+     stats(nucleotide,[order(2),past([t,t])],[c,c,c,c,c],R1,R).
 R = [([a,a],[(a,0),(c,0),(g,0),(t,0)]),
      ([a,c],[(a,0),(c,0),(g,0),(t,1)]),
      ([a,g],[(a,0),(c,1),(g,0),(t,0)]),
@@ -609,8 +609,8 @@ R = [([a,a],[(a,0),(c,0),(g,0),(t,0)]),
 into \texttt{Past} the last past of the computing. This predicate is usefull to compute 
 statistics on a series of data input. For example, this following request
 \begin{verbatim}
-| ? - stats(nucleotid,[order(2)],[a,g,c,t,t],_,Past,R1),
-      stats(nucleotid,[order(2),past(Past)],[c,c,c,c,c],R1,Past2,R).
+| ? - stats(nucleotide,[order(2)],[a,g,c,t,t],_,Past,R1),
+      stats(nucleotide,[order(2),past(Past)],[c,c,c,c,c],R1,Past2,R).
 Past = [t,t],
 Past2 = [c,c],
 R = ... ?
@@ -622,17 +622,29 @@ to compute domains and probabilities distributions.
 \end{itemize} 
 For example, here is the result of several requests:
 \begin{verbatim}
-| ?- stats(nucleotid,[],[a,g,c,t,t],_,R),
-     normalize(nucleotid,R,S).
+| ?- stats(nucleotide,[],[a,g,c,t,t],_,R),
+     normalize(nucleotide,R,S).
 S = [([],([a,c,g,t],[0.2,0.2,0.2,0.4]))]
-| ?- stats(nucleotid,[order(1)],[a,g,c,t,t],_,R),
-     normalize(nucleotid,R,S).
+| ?- stats(nucleotide,[order(1)],[a,g,c,t,t],_,R),
+     normalize(nucleotide,R,S).
 S = [([a],([a,c,g,t],[0,0,1,0])),
      ([c],([a,c,g,t],[0,0,0,1])),
      ([g],([a,c,g,t],[0,1,0,0])),
      ([t],([a,c,g,t],[0,0,0,1]))] ?
 \end{verbatim}
 
+To get a representation of the statistics where each count is represented
+as a single fact, the predicate
+\begin{verbatim}
+build_stat_facts(+Stats,-StatsFacts)
+\end{verbatim}
+\noindent 
+can be useful. For instance,
+\begin{verbatim}
+| ?- stats(nucleotide,[],[a,g,c,t,t],_,R), build_stat_facts(R,F).
+R = [([],[(a,1),(c,1),(g,1),(t,2)])]
+F = [stat([a],1),stat([c],1),stat([g],1),stat([t],2)] ?	
+\end{verbatim}
 
 \section{The \texttt{regex} API}
 \label{sec:regex}
@@ -701,7 +713,87 @@ alphanumeric character or a digit.
 \section{The \texttt{genecode} API}
 \label{sec:genecode}
 
-Document...
+This API contains a set of genetic code tables. Each table defines
+a relation between codons and amino acids. The main predicate of the API
+is 
+\begin{verbatim}
+genecode(+Code, ?Codon, ?AminoAcid)
+\end{verbatim}
+
+\noindent
+The argument code is an integer specifying the genetic code to
+use. Currently, only genetic code \texttt{11} (bacterial) is
+supported. \texttt{Codon} is a list of of three nucleotides symbols
+from the alphabet \texttt{[a,g,c,t]}. The argument \texttt{AminoAcid}
+is a symbol from the alphabet
+\begin{verbatim}
+[a,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,y,*]
+\end{verbatim}
+
+\noindent
+Where all symbols except \texttt{*} represents an amino acid (the name
+of which starts which that letter). The special symbol \texttt{*}
+signifies a stop codon in the specified genetic code.
+
+Other predicates in the genecode API include
+\begin{verbatim}
+genecode_start_codons(+GeneCode,-StartCodons)
+\end{verbatim}
+
+\noindent
+The \texttt{genecode\_start\_codons/2} predicate unifies \texttt{StartCodons} with a list of all valid
+start codons for the given \texttt{GeneCode}.
+
+\begin{verbatim}
+genecode_stop_codons(+GeneCode,-StopCodons)
+\end{verbatim}
+
+\noindent
+The \texttt{genecode\_stop\_codons/2} predicate unifies \texttt{StopCodons} with a list of all valid
+stop codons for the given \texttt{GeneCode}.
+
+\section{The sequence API: \texttt{sequence}}
+
+The \texttt{sequence} API is library containing predicates for 
+doing common tasks with biological sequences.
+
+\subsection{Complementing DNA sequences}
+
+A complementary dna sequence can be achieved using the predicate
+
+\begin{verbatim}
+dna_seq_complement(+NucleotideSeq,-ComplNucleotideSeq)
+\end{verbatim}
+
+\noindent
+When given the input sequence \texttt{NucleotideSeq} is a list of symbols from the alphabet
+\texttt{[a,g,c,t]}, then \texttt{ComplNucleotideSeq} is unified to a list of complementary
+symbols, e.g.
+
+\begin{verbatim}
+| ?- dna_seq_complement([a,g,a,c,t,a],X).
+X = [t,c,t,g,a,t] ?
+yes	
+\end{verbatim}
+
+Typically, when complementing a DNA sequence, we are actually interested in the \emph{reverse}
+complement. To achieve this, use the built-in predicate \texttt{reverse/2} before \texttt{dna\_seq\_complement/2}.
+
+\subsection{Translating a DNA sequence to amino acids}
+
+The predicate, 
+
+\begin{verbatim}
+dna_amino_acid(+Genecode, ?DNA_Sequence,?AminoAcids)
+\end{verbatim}
+
+Translates a DNA sequence to a sequence of amino acids or vice versa; produces all possible DNA sequences for
+a given amino acids sequence. \texttt{Genecode} is an integer for the genetic code to be used in the translation.
+\texttt{DNA\_Sequence} is a list of symbols from the alphabet \texttt{[a,g,c,t]} and length of the list is expected
+to be divisible by three. \texttt{AminoAcids} is a list of symbols from the alphabet,
+\begin{verbatim}
+[a,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,y,*].
+\end{verbatim}
 
 \chapter{Models}
 
