@@ -503,8 +503,68 @@ R = [1,1,1,0,1] ?
 | ?- load_annotation_from_file(db,[in_db(c),out_db(nc),range(8,16)],'toto.seq',R).
 R =  [c,c,c,nc,nc,nc,nc,nc]?
 \end{verbatim}
+%
+\index{get\_sequence\_from\_file$\slash$ 3}
+\item \texttt{get\_sequence\_from\_file(++File,++Options,--Sequence)}:
+Generate from \texttt{File} of data a sequence (read: a list) of data \texttt{Sequence}. This predicate is a more efficient implementation
+of \verb+load_annotation_from_file\4+ with the type option \verb+sequence+ when several ranges of data have to be computed (option \verb+ranges+)
 
-
+We assumed that data facts of \texttt{File} are composed of facts with the format: 
+\begin{verbatim}
+Term =.. [_Data_Functor,_Key,Range_Min,Range_Max,Data]
+\end{verbatim} 
+%
+File Example \texttt{toto.seq}:
+\begin{verbatim}
+data(toto,1,10,[1,2,3,4,5,6,7,8,9,10]).
+data(toto,11,20,[11,12,13,14,15,16,17,18,19,20]).
+data(toto,21,30,[21,22,23,24,25,26,27,28,29,30]).
+\end{verbatim}
+Result of the request is:
+\begin{verbatim}
+| ?- get_data_from_file('toto.seq',[],R).
+R = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,
+                          21,22,23,24,25,26,27,28,29,30] ?
+\end{verbatim}
+%
+Different options are available to specify the format of the data term:
+\begin{itemize}
+\item \verb+data_position(Pos)+ to specify an other position for the data; 
+\item \verb+left_position(Left)+ to specify an other position for the left bound of the range that specifies the position of
+           the data into the data file. When this left bound is not available, the keyword \verb+none+ for \verb+Pos+ can be used;
+\item \verb+right_position(Right)+ to specify an other position for the right bound of the range that specifies the position of
+           the data into the data file. When this right bound is not available, the keyword \verb+none+ for \verb+Pos+ can be used.
+\end{itemize} 
+%
+File Example \texttt{toto2.seq}:
+\begin{verbatim}
+data(1,10,[1,2,3,4,5,6,7,8,9,10]).
+data(11,20,[11,12,13,14,15,16,17,18,19,20]).
+data(21,30,[21,22,23,24,25,26,27,28,29,30]).
+\end{verbatim}
+Result of the request is:
+\begin{verbatim}
+| ?- get_data_from_file('toto2.seq',
+                       [left_position(1),
+                        right_position(2),
+                        data_position(3)],R).
+R = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,
+                          21,22,23,24,25,26,27,28,29,30] ?
+\end{verbatim}
+%
+To ask for specific ranges of data, two options are available:
+\begin{itemize}
+\item \verb+range(Min,Max)+ computes the sequence of data between \verb+Min+ and \verb+Max+; 
+\item \verb+ranges(List_Ranges)+ computes sequences of data for a list of ranges with a format \verb+[[Min1,Max1],[Min2,Max2],...]+.
+Note that the ranges should be ordered, i.e \verb+Min1+ $\leq$ \verb+Min2+ must be satisfied.
+\end{itemize}           
+Result of the request is:
+\begin{verbatim}
+| ?- get_data_from_file('toto.seq',[range(5,10)],R).
+R = [5,6,7,8,9,10] ?
+| ?- get_data_from_file('toto.seq',[ranges([5,10],[5,8],[9,15])],R).
+R = [[5,6,7,8,9,10],[5,6,7,8],[9,10,11,12,13,14,15]] ?
+\end{verbatim}
 \end{itemize}
 
 \subsection{Saving information to files}
@@ -543,7 +603,7 @@ Data type available are:
 \begin{itemize}
 \item \texttt{nucleotide} where input data are composed of letter from $\{a,c,g,t\}$;
 \item \texttt{codon} where a codon is represented by a list of three letters from $\{a,c,g,t\}$;
-\item \texttt{amino\_acid} where input data are composed of letter from $\{a,c,d,e,f,g,h,$\\
+\item \texttt{amino\_acid} where input data are composed of letter from $\{a,c,d,e,f,g,h,$
 $i,k,l,m,n,p,q,r,s,t,v,w,y\}$;
 \item \texttt{length}. This type is used to compute frequencies and statistics about length of specific region of a genome. 
 \end{itemize} 
