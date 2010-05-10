@@ -489,17 +489,48 @@ sum_list([T|Rest],Sum) :-
 %	 stat([c,t],1),stat([g,a],0),stat([g,c],0),stat([g,g],1),stat([g,t],2),stat([t,a],1),stat([t,c],0),stat([t,g],2),stat([t,t],1)]
 %	)
 
+
+% Version for counts:
 build_stat_facts([],[]).
-build_stat_facts([Stat|StatRest],Facts) :-
-	Stat = (PastList,CountsList),
+build_stat_facts([(PastList,CountsList)|StatRest],Facts) :-
 	build_stat_facts_single(PastList,CountsList,FactsList),
 	build_stat_facts(StatRest,FactsListRest),
 	append(FactsList,FactsListRest,Facts).
 
+% Version for normalized stats:
+build_stat_facts([(Past,(Present,Counts))|StatRest],Facts) :-
+        build_stat_facts_combine_lists(Present,Counts,Combined),
+        build_stat_facts([(Past,Combined)|StatRest],Facts).
+
 build_stat_facts_single(_,[],[]).
+
 build_stat_facts_single(PastList,[(N,Count)|Rest], [stat(Full,Count)|FactsRest]) :-
 	append(PastList,[N],Full),
 	build_stat_facts_single(PastList,Rest,FactsRest).
 
+build_stat_facts_combine_lists([],[],[]).
+build_stat_facts_combine_lists([A|Ar], [B|Br], [(A,B)|Cr]) :-
+        build_stat_facts_combine_lists(Ar,Br,Cr).
+        
 
+
+% Normalize stat facts
+
+normalize_stat_facts(Facts,NormalizedFacts) :-
+        count_all(Facts,TotalCount),
+        ((TotalCount == 0) ->
+                NormalizedFacts = Facts
+                ;
+                normalize_stat_facts(Facts,TotalCount,NormalizedFacts)).
+
+
+normalize_stat_facts([],_,[]).
+normalize_stat_facts([stat(NGram,Count)|Rest],TotalCount,[stat(NGram,Norm)|NormRest]) :-
+        Norm is Count / TotalCount,
+        normalize_stat_facts(Rest,TotalCount,NormRest).
+
+count_all([],0).
+count_all([stat(_,Count)|Rest],TotalCount) :-
+        count_all(Rest,CountRest),
+        TotalCount is Count + CountRest.
 

@@ -10,28 +10,49 @@ parser_ptt(PTT_File,ParsedPTTFile) :-
         write(ParsedPTTFile),
 	nl.
 
-filter_genes(ParsedPTT,RawGenome,Filtered) :-
-	get_annotation_file(gene_filter,
-	[ParsedPTT,RawGenome],
-	[	
+% Helper predictate 
+filter_genes(ParsedPTT,RawGenome,Options,Filtered) :-
+	get_annotation_file(gene_filter,[ParsedPTT,RawGenome], Options,Filtered).
 
-	],
-%		match_extra_fields([gene_name('^z.*$')])			    
-	Filtered).
-
-t :-
-%	lost_sequence_file('short',RawGenome),
-%        lost_sequence_file('short_ptt',PTT_File),
-
-	lost_sequence_file('U00096',RawGenome),
-        lost_sequence_file('U00096_ptt',PTT_File),
-	
-	parser_ptt(PTT_File,ParsedPTT),
-	filter_genes(ParsedPTT,RawGenome,Filtered),
+filter_y_genes(Genes,Sequence,Filtered) :-
+	Options = [ regex_no_match_extra_fields([ gene_name('^y.*$') ]) ]
+	filter_genes(Genes,Sequence,Options,Filtered),
 	write('output is :'),
 	write(Filtered),
-	nl.
+        nl.
 
-	
+filter_non_y_genes(Genes,Sequence,Filtered) :-
+	Options = [ regex_match_extra_fields([ gene_name('^y.*$') ]) ]
+	filter_genes(Genes,Sequence,Options,Filtered),
+	write('output is :'),
+	write(Filtered),
+        nl.
+
+% Exclude 'predicted/hypothetical/putative' etc genes
+% The list of word is taken from easygene paper
+filter_uncertain_genes(Genes,Genome,ExtraOptions,Filtered) :-
+	Options = [
+	        regex_no_match_extra_fields([
+			product("^.*(predicted|putative|unknown|possible|hypothetical|probable|bacteriophage|transposon|insertion|reverse transcriptase).*$")
+	        ])
+	],
+	filter_genes(Genes,Sequence,Options,Filtered),
+	write('output is :'),
+	write(Filtered),
+        nl.
 
 
+run_ecoli_filters :-
+	lost_sequence_file('U00096',Genome),
+        lost_sequence_file('U00096_ptt',PTT),
+	parser_ptt(PTT,Genes),
+
+        % Filter uncertain genes
+        write('Filtering genes which from the description seem uncertain:'),nl,
+        filter_uncertain_genes(Genes,Genome,Certain),
+        write('Results written to file: '), write(Certain), nl,
+
+        % Filter y-genes
+        write('Filtering genes which from the description seem uncertain:'),nl,
+        filter_uncertain_genes(Genes,Genome,Certain),
+        write('Results written to file: '), write(Certain), nl.
