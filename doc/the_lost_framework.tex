@@ -20,8 +20,8 @@
 
 \chapter{An introduction to the lost framework}
 
-\section{The lost framework
-}
+\section{The lost framework}
+
 The lost framework is a collection of utilities and models for
 working with biological sequences written in PRISM/B-Prolog. 
 The framework tries to unify all these bits and pieces and to
@@ -398,7 +398,7 @@ all annotation files will be placed in the \texttt{\$LOST/data/}
 directory and the \texttt{Filename} is construed according to the following convention:
 \begin{verbatim}
 {Modelname}_{Id}.gen
-\end{verbatim}
+\end{verbatim}x
 
 The first time a model \texttt{OutputFile} is generated, the file
 \texttt{annotation.idx} will be created in \texttt{\$LOST/data/}. This file
@@ -541,9 +541,9 @@ is based on a simple counting method given a simple input data.
 Variable \texttt{Data\_Type} is used to specify the type of the input data:
 Data type available are:
 \begin{itemize}
-\item \texttt{nucleotid} where input data are composed of letter from $\{a,c,g,t\}$;
+\item \texttt{nucleotide} where input data are composed of letter from $\{a,c,g,t\}$;
 \item \texttt{codon} where a codon is represented by a list of three letters from $\{a,c,g,t\}$;
-\item \texttt{animo\_acid} where input data are composed of letter from $\{a,c,d,e,f,g,h,$\\
+\item \texttt{amino\_acid} where input data are composed of letter from $\{a,c,d,e,f,g,h,$\\
 $i,k,l,m,n,p,q,r,s,t,v,w,y\}$;
 \item \texttt{length}. This type is used to compute frequencies and statistics about length of specific region of a genome. 
 \end{itemize} 
@@ -552,14 +552,14 @@ Here is the description of main predicates of \texttt{stats.pl}
 \begin{itemize}
 \item stats(++Data\_Type,++Options,++Data,++Input\_Counting,--Result)\index{stats$\slash 5$} \\
 \texttt{Data\_Type} setting define on which counting procedure is initialized. User must take care then
-to give the right \texttt{Data}. For \{\texttt{nucleotid,codon,animo\_acid}\} data type, 
+to give the right \texttt{Data}. For \{\texttt{nucleotide,codon,amino\_acid}\} data type, 
 \texttt{Data} must be a Prolog list with the right element, For \texttt{length} data type,
 \texttt{Data} must be a list of ranges represented by a list of two integer values ([Min,Max]).
 Two options are available:
 \begin{itemize}
 \item \texttt{order(Num)} defines the size of the past stored to perform the counting
 \item \texttt{past(List)} allows to give as input of the computation a previous past. This option is
-useful to make connexion between two counting computations.
+useful to make connection between two counting computations.
 \end{itemize}
 \texttt{Input\_Counting} is used as well to perform a counting computation on an input data divided
 into a set of lists. By default, counting computation is initialized when is a variable \texttt{Input\_Counting}.
@@ -577,15 +577,15 @@ data('U00096',6,10,[c,c,c,c,c]).
 \end{verbatim}
 Here is the result of this following request
 \begin{verbatim}
-| ?- stats(nucleotid,[],[a,g,c,t,t],_,R).
+| ?- stats(nucleotide,[],[a,g,c,t,t],_,R).
 R = [([],[(a,1),(c,1),(g,1),(t,2)])] ?
-| ?- stats(nucleotid,[order(1)],[a,g,c,t,t],_,R).
+| ?- stats(nucleotide,[order(1)],[a,g,c,t,t],_,R).
 R = [([a],[(a,0),(c,0),(g,1),(t,0)]),
      ([c],[(a,0),(c,0),(g,0),(t,1)]),
      ([g],[(a,0),(c,1),(g,0),(t,0)]),
      ([t],[(a,0),(c,0),(g,0),(t,1)])]?
-| ?- stats(nucleotid,[order(2)],[a,g,c,t,t],_,R1),
-     stats(nucleotid,[order(2),past([t,t])],[c,c,c,c,c],R1,R).
+| ?- stats(nucleotide,[order(2)],[a,g,c,t,t],_,R1),
+     stats(nucleotide,[order(2),past([t,t])],[c,c,c,c,c],R1,R).
 R = [([a,a],[(a,0),(c,0),(g,0),(t,0)]),
      ([a,c],[(a,0),(c,0),(g,0),(t,1)]),
      ([a,g],[(a,0),(c,1),(g,0),(t,0)]),
@@ -609,8 +609,8 @@ R = [([a,a],[(a,0),(c,0),(g,0),(t,0)]),
 into \texttt{Past} the last past of the computing. This predicate is usefull to compute 
 statistics on a series of data input. For example, this following request
 \begin{verbatim}
-| ? - stats(nucleotid,[order(2)],[a,g,c,t,t],_,Past,R1),
-      stats(nucleotid,[order(2),past(Past)],[c,c,c,c,c],R1,Past2,R).
+| ? - stats(nucleotide,[order(2)],[a,g,c,t,t],_,Past,R1),
+      stats(nucleotide,[order(2),past(Past)],[c,c,c,c,c],R1,Past2,R).
 Past = [t,t],
 Past2 = [c,c],
 R = ... ?
@@ -622,18 +622,178 @@ to compute domains and probabilities distributions.
 \end{itemize} 
 For example, here is the result of several requests:
 \begin{verbatim}
-| ?- stats(nucleotid,[],[a,g,c,t,t],_,R),
-     normalize(nucleotid,R,S).
+| ?- stats(nucleotide,[],[a,g,c,t,t],_,R),
+     normalize(nucleotide,R,S).
 S = [([],([a,c,g,t],[0.2,0.2,0.2,0.4]))]
-| ?- stats(nucleotid,[order(1)],[a,g,c,t,t],_,R),
-     normalize(nucleotid,R,S).
+| ?- stats(nucleotide,[order(1)],[a,g,c,t,t],_,R),
+     normalize(nucleotide,R,S).
 S = [([a],([a,c,g,t],[0,0,1,0])),
      ([c],([a,c,g,t],[0,0,0,1])),
      ([g],([a,c,g,t],[0,1,0,0])),
      ([t],([a,c,g,t],[0,0,0,1]))] ?
 \end{verbatim}
 
+To get a representation of the statistics where each count is represented
+as a single fact, the predicate
+\begin{verbatim}
+build_stat_facts(+Stats,-StatsFacts)
+\end{verbatim}
+\noindent 
+can be useful. For instance,
+\begin{verbatim}
+| ?- stats(nucleotide,[],[a,g,c,t,t],_,R), build_stat_facts(R,F).
+R = [([],[(a,1),(c,1),(g,1),(t,2)])]
+F = [stat([a],1),stat([c],1),stat([g],1),stat([t],2)] ?	
+\end{verbatim}
 
+\section{The \texttt{regex} API}
+\label{sec:regex}
+
+The \texttt{regex} API provides POSIX-like regular expressions for
+matching Prolog strings and atoms. A regular expression is created
+using
+\begin{verbatim}
+re_compile(+Regex, -CompiledRegex)
+\end{verbatim}
+
+The input argument \texttt{Regex} is an atom or a list of symbols
+representing a particular regular expression. The output argument
+\texttt{CompiledRegex} is used in subsequent matching with this 
+regular expression.
+
+Matching with a regular expression is then done using
+\begin{verbatim}
+re_match(+CompiledRegex,+String,-Matches)
+\end{verbatim}
+
+The goal \texttt{re\_match/3} is true whenever the
+\texttt{CompiledRegex} matches the \texttt{String}. The \texttt{String} may be 
+an atom or a list of symbols. If the goal is true, then
+\texttt{Matches} is a list containing the matching parts of the \texttt{String} corresponding to
+particular match groups (paranthesized sub-expressions) of the regular expression. 
+
+Currently the regular expressions can be expressed using a
+significant subset of the well-known POSIX regular expression
+operators. The following operators are supported:
+
+\begin{itemize}
+\item \emph{Concatenation:} is expressed by the concatenation of two
+  sub expressions. For instance, the regular expression  \texttt{ab}
+  matches an \texttt{a} followed by a \texttt{b}.
+\item \emph{Alternation:} is expressed with the vertical bar (\texttt{|}). For
+  instance the expression \texttt{a|b} matches either \texttt{a} or \texttt{b}.
+\item \emph{Repetition:} Repetition operators indicate the number of
+  times a preceding regular expression may be matched. The following 
+repetition operators are supported:
+\begin{itemize}
+\item \texttt{*} representing the Kleene star, meaning that the
+  preceding expression is matched zero or more times.
+\item \texttt{+} the preceding expression one or more times.
+\item \texttt{?} The preceding expression zero times or one time.
+\end{itemize}
+
+Note that repetition binds stronger than alternation and alternation
+binds stronger than concatenation. To enforce a different binding
+order, enclosing sub-expressions in parentheses (which binds strongest)
+are used.
+
+Parenthesised sub-expressions can also be used to create \emph{match
+  groups.} 
+An outer-most paranthesized sub-expression,
+  where the paranthesis are superflouos is interpreted as a match
+  group. When an expression is matched, then the part of the string matched by the
+  paranthesized expression is extracted. 
+\end{itemize}
+
+Additionally, ranges are supported by the regular expression syntax.
+A range is expressed using square brackets. For instance,
+\texttt{[a-z0-9]} is range expression which matches a lower case
+alphanumeric character or a digit. 
+
+\section{The \texttt{genecode} API}
+\label{sec:genecode}
+
+This API contains a set of genetic code tables. Each table defines
+a relation between codons and amino acids. The main predicate of the API
+is 
+\begin{verbatim}
+genecode(+Code, ?Codon, ?AminoAcid)
+\end{verbatim}
+
+\noindent
+The argument code is an integer specifying the genetic code to
+use. Currently, only genetic code \texttt{11} (bacterial) is
+supported. \texttt{Codon} is a list of of three nucleotides symbols
+from the alphabet \texttt{[a,g,c,t]}. The argument \texttt{AminoAcid}
+is a symbol from the alphabet
+\begin{verbatim}
+[a,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,y,*]
+\end{verbatim}
+
+\noindent
+Where all symbols except \texttt{*} represents an amino acid (the name
+of which starts which that letter). The special symbol \texttt{*}
+signifies a stop codon in the specified genetic code.
+
+Other predicates in the genecode API include
+\begin{verbatim}
+genecode_start_codons(+GeneCode,-StartCodons)
+\end{verbatim}
+
+\noindent
+The \texttt{genecode\_start\_codons/2} predicate unifies \texttt{StartCodons} with a list of all valid
+start codons for the given \texttt{GeneCode}.
+
+\begin{verbatim}
+genecode_stop_codons(+GeneCode,-StopCodons)
+\end{verbatim}
+
+\noindent
+The \texttt{genecode\_stop\_codons/2} predicate unifies \texttt{StopCodons} with a list of all valid
+stop codons for the given \texttt{GeneCode}.
+
+\section{The sequence API: \texttt{sequence}}
+
+The \texttt{sequence} API is library containing predicates for 
+doing common tasks with biological sequences.
+
+\subsection{Complementing DNA sequences}
+
+A complementary dna sequence can be achieved using the predicate
+
+\begin{verbatim}
+dna_seq_complement(+NucleotideSeq,-ComplNucleotideSeq)
+\end{verbatim}
+
+\noindent
+When given the input sequence \texttt{NucleotideSeq} is a list of symbols from the alphabet
+\texttt{[a,g,c,t]}, then \texttt{ComplNucleotideSeq} is unified to a list of complementary
+symbols, e.g.
+
+\begin{verbatim}
+| ?- dna_seq_complement([a,g,a,c,t,a],X).
+X = [t,c,t,g,a,t] ?
+yes	
+\end{verbatim}
+
+Typically, when complementing a DNA sequence, we are actually interested in the \emph{reverse}
+complement. To achieve this, use the built-in predicate \texttt{reverse/2} before \texttt{dna\_seq\_complement/2}.
+
+\subsection{Translating a DNA sequence to amino acids}
+
+The predicate, 
+
+\begin{verbatim}
+dna_amino_acid(+Genecode, ?DNA_Sequence,?AminoAcids)
+\end{verbatim}
+
+Translates a DNA sequence to a sequence of amino acids or vice versa; produces all possible DNA sequences for
+a given amino acids sequence. \texttt{Genecode} is an integer for the genetic code to be used in the translation.
+\texttt{DNA\_Sequence} is a list of symbols from the alphabet \texttt{[a,g,c,t]} and length of the list is expected
+to be divisible by three. \texttt{AminoAcids} is a list of symbols from the alphabet,
+\begin{verbatim}
+[a,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,y,*].
+\end{verbatim}
 
 \chapter{Models}
 
@@ -684,14 +844,42 @@ data('U00096',281,560,[c,c,c,...]).
 
 \subsection{Parser\_ptt}
 
-*.ptt file of Genbank is composed of information about known or predicted
-genes in a genome. Parser\_ptt parses this *.ptt file from Genbank and generate
-list of terms. Two scripts are implemented:\\ 
+A PTT file is the NCBI format for representation of a \emph{protein table}.
+Typically, ptt files are composed of information about known or predicted
+protein coding genes in a genome. Each such gene is represented
+by a single line where tabulation separated fields represent various
+properties of the gene such as the position, length, name and protein
+product. The \texttt{parser\_ptt} model parses PTT files and generates
+a Prolog term in the output file for each gene in the input (ptt) file.
+We use the format identifier, \texttt{text(ptt)}, for PTT files, which
+is also the input format of \texttt{parser\_ptt}. The output format is
+\texttt{text(prolog(ranges(gene)))}. The model does not declare any options.
+
+\medskip
+\noindent
+Consider the following extract of a PTT file:
+\begin{verbatim}
+Location	Strand	Length	PID	Gene	Synonym	Code	COG	Product
+190..255	+	21	1786182	thrL	b0001	- - thr operon leader peptide
+\end{verbatim}
+
+The first line is just a header describing the names of the
+individual fields, but the second is an entry for a particular gene. 
+The corresponding Prolog term generated by the parser for this gene is
+then
+\begin{verbatim}
+gb(190,255,'+',1,[
+    gene_name(thrL),length(21),pid(1786182),
+    synonym(b0001),code('-'),cog('-'),
+    product('thr operon leader peptide')]
+).
+\end{verbatim}
+
+\noindent
+Additionaly, the file \texttt{\$SCRIPTS/script\_parser.pl} implements two helper
+predicates to make it easy to use this parser:\\ 
 \texttt{parser\_ptt(++Name\_PTT\_File)}\index{parser\_ptt$\slash$1} and \\
 \texttt{parser\_ptt(++Name\_PTT\_File,,--OutputFile)}\index{parser\_ptt$\slash$2}.
-
-Output format of the generated terms are:\\
-\texttt{gb(Genebank\_Key,Start,End)}.
 
 \subsection{Parser\_Easygene}
 
@@ -830,6 +1018,62 @@ The model only takes two option:
   The argument of the score functor (\texttt{0.75} in the example)
   should be a number or at least something comparable with the
   standard less-than-or-equal-to Prolog operators.
+\end{itemize}
+
+\subsection{\texttt{gene\_filter}}
+
+The \texttt{gene\_filter} model is a model that filters a set of genes
+based on various matching criteria. The input to the model is 
+a file in \texttt{text(prolog(ranges(gene)))} format containing the 
+list of genes to be filtered and a file in
+\texttt{text(prolog(sequence(dna)))} that includes the nucleotide
+sequence for the entire genome to which the genes belong.
+% FIXME: We should make the nucleotide sequence file optional.
+
+The model supports filtering based on a wide range of criteria,
+specified using the options given to the model. The model 
+is invoked using \texttt{get\_annotation\_file/4.}
+
+The options supported by the model are:
+\begin{itemize}
+\item \texttt{match\_frames}: A list of valid frames. Genes in other
+  frames will be filtered. The list must be a subset of the \emph{default
+    value}: \texttt{[1,2,3]}. 
+\item \texttt{match\_strands}: A list of valid strands. Genes occuring
+  an other strand will be filtered. The list must be a subset of the
+  \emph{default value}: \texttt{['+','-']}.
+\item \texttt{exact\_match\_extra\_fields}: A list of Prolog terms
+  terms each of which must unify with an element of 
+the \texttt{Extra} list of the gene terms. Genes which do not are filtered. 
+\item  \texttt{exact\_no\_match\_extra\_fields}: A list of Prolog
+  terms terms any of which \emph{may not} unify with any element of
+  the \texttt{Extra} list of the gene terms. Genes which do are
+  filtered.
+\item \texttt{regex\_match\_extra\_fields}: A list of regular field
+  names in the \texttt{Extra} list and regular expressions to match
+  those fields.  For example, a regular expression matcher for the
+  \texttt{name} field would be specified as \verb|name('^y.*$')|,
+  here matching genes with a name starting with the letter y.
+  The syntax of the regular expressions are as specified in section
+  \ref{sec:regex}.
+  Gene tems that do not match each of the specified regular
+  expressions are filtered. 
+\item \texttt{regex\_no\_match\_extra\_fields}: A list of field names
+  in the extra and regular expressions to match those fields. If a
+  gene is matched by any of these regular expression, it will be
+  filtered.
+\item \texttt{match\_protein\_coding}: Must be either \texttt{yes} or
+ \texttt{no}. Default is \texttt{no}. 
+If set to \texttt{yes}, this
+  will filter gene terms which do not have a valid start and stop
+  codon. The codon table to be used is specified using the the
+  \texttt{genecode} option.
+\item \texttt{genecode}: An integer specifying what genecode to use.
+  Default is \texttt{11}, which is the bacterial gene code.  See
+  \ref{sec:genecode} for a list of valid gene code tables. 
+\item \texttt{invert\_results}: Must be either \texttt{yes} or
+ \texttt{no}. Default is \texttt{no}. If set to \texttt{yes}, then
+ only the otherwise non-filtered results are filtered.
 \end{itemize}
 
 \section{Model that integrate other programs}
