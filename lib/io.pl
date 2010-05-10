@@ -854,6 +854,15 @@ get_block_part_rec([DataItem|BlockData],Pos,StartInBlock, EndInBlock, [DataItem|
 	NextPos is Pos + 1,
 	get_block_part_rec(BlockData,NextPos,StartInBlock,EndInBlock,PartData).
 
+
+% A CP approach to do that (small test) not finished, data file should be consulted.
+%test(Nb_Nuc,Range_Min,Range_Max,Result) :-
+%        lost_sequence_file('U00096',Sequence_File),
+%        open(Sequence_File,read,Stream),
+%        findall([Min,Max,Data],(data(_Key,Min,Nax,Data),)Min+Nb_Nuc #>=Range_Min,Min #=< Range_Max,Range_Min#=<Max,Max-Nb_Nuc#=<Range_Max),Result).
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Basic reading/writing of terms to/from file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
