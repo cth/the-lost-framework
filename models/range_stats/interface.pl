@@ -13,8 +13,12 @@
 
 
 lost_option(lost_best_annotation,max_nucleotide_order,1, 'Nucleotide stats will be build upto this order.').
-lost_option(lost_best_annotation,max_codon_order,1, 'Codon stats will be build upto this order.').
 lost_option(lost_best_annotation,max_amino_acid_order,0, 'Amino acid stats will be build upto this order.').
+
+lost_option(lost_best_annotation,amino_acid_stats,yes,'Whether to include amino acid statistics.').
+lost_option(lost_best_annotation,nucleotide_stats,yes,'Whether to include nucleotide statistics.').
+lost_option(lost_best_annotation,length_stats,yes,'Whether to include length statistics.').
+
 lost_option(lost_best_annotation,genecode,11,'The genetic code to use for translation').
 
 % The main model predicate:
@@ -48,6 +52,8 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], [GTStat|GTStatRest]) :-
         !,
 	GT =.. [ Functor, Start, End, Frame, Strand, ExtraList ],
 	write(GT),nl,
+
+	StatList1 = [], % List to collect computed statistics
 	
 	% Extract relevant part of genome
 	((Frame == '+') ->
@@ -59,26 +65,42 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], [GTStat|GTStatRest]) :-
 	),
 
 	% Calculate nucleotide stats
-	get_option(Options,max_nucleotide_order,MaxNucOrder),
-	downto(MaxNucOrder,0,NucleotideOrdersList),
-	calculate_multiple_stats(nucleotide,NucleotideOrdersList,Nucleotides,NucleotideStats),
-        !,
+	get_option(Options,nucleotide_stats,IncludeNucleotideStats),
+	((IncludeNucleotideStats == yes) ->
+	 get_option(Options,max_nucleotide_order,MaxNucOrder),
+	 downto(MaxNucOrder,0,NucleotideOrdersList),
+	 calculate_multiple_stats(nucleotide,NucleotideOrdersList,Nucleotides,NucleotideStats),
+	 StatList2 = [nucleotide_stats(NucleotideStats)|StatList1]
+	 ;
+	 StatList2 = StatList1
+	),!,
 
 	% Calculate amino acid stats
-	get_option(Options,max_amino_acid_order,AAOrder),
-	downto(AAOrder,0,AAOrdersList),
-        get_option(Options,genecode,GeneCode),
-	dna_translate(GeneCode,Nucleotides,AminoAcids),
-	calculate_multiple_stats(amino_acid,AAOrdersList,AminoAcids,AminoAcidStats),
-        !,
+	get_option(Options,amino_acid_stats,IncludeAminoAcidStats),
+	((IncludeAminoAcidStats == yes) -> 
+	 get_option(Options,max_amino_acid_order,AAOrder),
+	 downto(AAOrder,0,AAOrdersList),
+	 get_option(Options,genecode,GeneCode),
+	 dna_translate(GeneCode,Nucleotides,AminoAcids),
+	 calculate_multiple_stats(amino_acid,AAOrdersList,AminoAcids,AminoAcidStats),
+	 StatList3 = [amino_acid_stats(AminoAcidStats)|StatList2]
+	;
+	 StatList3 = StatList2
+	),!,
 
         % Add normalized gene length measure
-        gene_length(GT,GeneLength),
-        NormGeneLength is GeneLength / MaxGeneLength,
-       
-	GTStat =.. [ Functor, Start, End, Frame, Strand, 
-                     [ amino_acid_stats(AminoAcidStats), nucleotide_stats(NucleotideStats), normalized_gene_length(NormGeneLength) | ExtraList]],
-	%write('new: '), write(GTStat),nl,
+	get_option(Options,length_stats,IncludeLengthStats),
+	((IncludeLengthStats == yes) ->
+	 gene_length(GT,GeneLength),
+	 NormGeneLength is GeneLength / MaxGeneLength,
+	 StatList4 = [normalized_gene_length(NormGeneLength)|StatList3]
+	 ;
+	 StatList4 = StatList3
+	),!,
+
+	append(StatList4,ExtraList,NewExtraList),
+	
+	GTStat =.. [ Functor, Start, End, Frame, Strand, NewExtraList ],
 	add_gene_statistics(Options,MaxGeneLength,GTRest,GTStatRest).
 	
 calculate_multiple_stats(_,[],_,[]).
