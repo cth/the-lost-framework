@@ -34,48 +34,45 @@ lost_best_annotation([InputFile],Options,OutputFile) :-
         findall(Data,chunk(_Key,_,_,Data,_,_,_,_),List_ORF),
         findall([Min,Max],chunk(_Key,Min,Max,_,_,_,_,_),List_Ranges_ORF),
         % Computation of annotations
-        compute_annotations(List_ORF,Type_Gene,List_Annotations),
+        open(OutputFile,write,Stream_Out),
+        compute_and_save_annotations(Stream_Out,List_ORF,Type_Gene,List_Ranges_ORF,Dir,Frame).
         % Save the annotations in the right format
-        write(save_annotation(lost_prediction,List_Ranges_ORF,List_Annotations,Dir,Frame,OutputFile)),nl,
-        save_annotation(lost_prediction,List_Ranges_ORF,Dir,Frame,List_Annotations,OutputFile). % Måske, something more generic to include in io 
+        %write(save_annotation(lost_prediction,List_Ranges_ORF,List_Annotations,Dir,Frame,OutputFile)),nl,
+        %save_annotation(lost_prediction,List_Ranges_ORF,Dir,Frame,List_Annotations,OutputFile). % Måske, something more generic to include in io 
         %save_annotation_to_sequence_file(genemark_genefinder,70,Annotation,OutputFile).
 				
 
 
 
+% compute_and_save_annotations(++Stream,++ORF,++Type_Gene,++List_Ranges,++Dir,++Frame)
+% Compute the annotation and write into Stream when a coding region is found.
 
+compute_and_save_annotations(Stream_Out,[],_Type_Gene,[],_Dir,_Frame) :-
+        !,
+        close(Stream_Out).
 
-compute_annotations([],_Type_Gene,[]) :-
-        !.
-
-compute_annotations([ORF|Rest_ORF],Type_Gene,[Annotation|Rest_Annotations]) :-
+compute_and_save_annotations(Stream_Out,[ORF|Rest_ORF],Type_Gene,[Range|Rest_Ranges],Dir,Frame) :-
         check_or_fail(viterbiAnnot(hmm_lost_annot(ORF,Type_Gene,Annotation),_P),
                       error('Viterbi computation failed (Lost GeneFinder)')
                      ),
-        write(Annotation),nl,
-        compute_annotations(Rest_ORF,Type_Gene,Rest_Annotations).
+        build_term_for_annotation(lost_prediction,Range,Dir,Frame,Annotation,Term),
+        (var(Term) ->
+            true
+        ;
+            write(Stream_Out,Term),write(Stream_Out,'.'),nl(Stream_Out).
+        ).
+    
 
 
 
-save_annotation(lost_prediction,List_Ranges,Dir,Frame,List_Annotations,OutputFile) :-
-        build_terms_for_annotation(lost_prediction,List_Ranges,Dir,Frame,List_Annotations,Terms),
-        terms_to_file(OutputFile,Terms).
-
-
-% Test save_annotations
-%Annots = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-% Ranges = [[1,48],[49,114],[115,255],[256,2799]]
-
-build_terms_for_annotation(_Functor,[],_Dir,_Frame,[],[]) :-
-        !.
-
-build_terms_for_annotation(Functor,[[Left,Right]|Rest_Ranges],Dir,Frame,[Annotation|Rest_Annotations],[Term|Rest_Terms]) :-
+% build_term_for_annotation : Terms is a variable if the annotation is a list of 0, otherwise a term with a range for the coding region
+build_term_for_annotation(Functor,[Left,Right],Dir,Frame,Annotation,Term) :-
         first_coding(Left,1,Annotation,Start),
         !,
-        Term =..[Functor,Start,Right,Dir,Frame,Annotation],
-        build_terms_for_annotation(Functor,Rest_Ranges,Dir,Frame,Rest_Annotations,Rest_Terms).
+        Term =..[Functor,Start,Right,Dir,Frame,Annotation].
 
 
+build_term_for_annotation(_Functor,_Range,_Dir,_Frame,_Annotation,_Term).
 
 % first_coding(++Left,++Value,++Annotation,--Start)
 first_coding(_Left,_Value,[],_Start) :-
@@ -88,10 +85,6 @@ first_coding(Left,Value,[_Annotation|Rest_Annotations],Start) :-
         !,
         Left1 is Left+1,
         first_coding(Left1,Value,Rest_Annotations,Start).
-
-
-
-
 
 
 %%%%%%%%%%%%%%%
