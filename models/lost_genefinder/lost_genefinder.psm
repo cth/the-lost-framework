@@ -226,7 +226,7 @@ get_epsilon(0.000001).
 % Set parameters of the model: duration model is fixed
 
 set_params(Gene_Type) :-
-        compute_domain(Gene_Type,New_Stats),
+        compute_domain_smooth(Gene_Type,New_Stats),
         normalize(length,New_Stats,[([],(_Domain,Proba))]),
         fix_sw(duration(Gene_Type),Proba).
 
