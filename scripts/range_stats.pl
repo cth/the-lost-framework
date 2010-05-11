@@ -7,7 +7,7 @@ test :-
         lost_sequence_file('U00096',GenomeFile),
         lost_sequence_file('U00096_ptt',PTTFile),
         parser_ptt(PTTFile,GenesFile),
-	get_annotation_file(range_stats,[GenesFile,GenomeFile],[],WithStats),
+	get_annotation_file(range_stats,[GenesFile,GenomeFile],[amino_acid_stats(no),length_stats(no),max_nucleotide_order(5)],WithStats),
         write('file with stats written to: '),
         write(WithStats),
         nl.

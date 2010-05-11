@@ -6,23 +6,32 @@
 lost_input_formats(lost_best_annotation, [text(prolog(sequence(_)))]).
 lost_output_format(lost_best_annotation, _Options, text(prolog(ranges(gene)))).
 
+lost_option(lost_best_annotation,direction,''). %+ for forward strand and - for reverse strand').
+lost_option(lost_best_annotation,frame,'Reading frame: 1,2 or 3').
+
+lost_option_values(lost_best_annotation,direction,['+','-']).
+lost_option_values(lost_best_annotation,frame,[1,2,3]).
+
 % This is what is used to get the best annotation
 % requires direction (+/-) and frame (1,2,3)
 lost_best_annotation([Sequence_File],Options,Orf_Chunk_File) :-
 	write('LoSt orf chopper: '),nl,
-        lost_required_option(Options,direction,Dir),
-        lost_required_option(Options,frame,Frame),
+        get_option(Options,direction,Dir),
+        get_option(Options,frame,Frame),
 				% write(lost_best_annotation(ParamFile,[OrfFile,ConsFile],Options,OutputFile)),nl,
 				% lost_required_option(Options,parameter_file,ParamFile),
         cl('orf_chopper.pl'),   % Load the actual PRISM model
 				% write('parameters loaded'),nl,
         open(Sequence_File,read,InputStream,[alias(seqin)]),
+        read(seqin,data(Id,StartPos,_,_)),
+        read(InputStream,_),	% to close the file properly
+	close(InputStream),
+	
         open(Orf_Chunk_File,write,OutputStream,[alias(chunkout)]),
-        read(seqin,data(Id,StartPos,_,S)),
+	get_data_from_file(Sequence_File,[],S),
+
         (Dir = + -> DirFactor = 1 ; DirFactor = -1),
-        dna_chop_init(S,StartPos,DirFactor,Frame,_,Id,OutputStream),
-        read(InputStream,_),    % to close the file properly
-        close(InputStream),
+        dna_chop_init(S,1,DirFactor,Frame,_,Id,OutputStream),
         close(OutputStream),
         write('LoSt orf-chopper completed succesfully'),nl.
 
