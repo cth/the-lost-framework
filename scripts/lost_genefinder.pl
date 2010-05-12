@@ -113,7 +113,7 @@ generate_list_noncoding([_V|Rest_Data],[0|Rest_Annotation]) :-
 pick_a_given_number(0,_,[]) :-
         !.
 
-pick_a_given_number(Num,[],[]) :-
+pick_a_given_number(_Num,[],[]) :-
         !.
 
 pick_a_given_number(Num,[Elt|Rest],[Elt|Rest_Res]) :-
