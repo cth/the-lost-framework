@@ -738,7 +738,7 @@ operators. The following operators are supported:
 \begin{itemize}
 \item \emph{Concatenation:} is expressed by the concatenation of two
   sub expressions. For instance, the regular expression  \texttt{ab}
-  matches an \texttt{a} followed by a \texttt{b}.
+  matches an \texttt{a} followed by a\texttt{b}.
 \item \emph{Alternation:} is expressed with the vertical bar (\texttt{|}). For
   instance the expression \texttt{a|b} matches either \texttt{a} or \texttt{b}.
 \item \emph{Repetition:} Repetition operators indicate the number of
@@ -1309,33 +1309,45 @@ The format consists of Prolog facts, each of which contain an
 annotation for a particular range of some sequence
 
 \begin{verbatim}
-F =.. [ Functor, LeftEnd, RightEnd | _ ]
+F =.. [ Functor, SequenceId, LeftEnd, RightEnd | _ ]
 \end{verbatim}
 
 The functor may vary depending on the type of annotation but is
-expected to be same within a file. The first two arguments,
+expected to be same within a file. Similarly, \texttt{SequenceId} is an atom
+which serves as sequence identifier. The next two arguments,
 \texttt{LeftEnd} and \texttt{RightEnd} are positive integers which specifies 
-the range relative to the sequence. Both are inclusive.
+the range relative to the sequence. Both are inclusive.  It must be
+the case that $\texttt{LeftEnd} \le \texttt{RightEnd}$. 
 
 \subsubsection{\texttt{text(prolog(ranges(gene)))}} 
 
+This is a compatible subtype \texttt{text(prolog(ranges(\_)))}.
 The format consists of Prolog facts, each of which contain an
 gene annotation for a particular range of some DNA sequence
  (all facts refer to the same sequence).
 
 The facts are on the form, 
 \begin{verbatim}
-functor(LeftEnd,RightEnd,Strand,Frame,ExtraList).
+functor(SequenceId,LeftEnd,RightEnd,Strand,Frame,ExtraList).
 \end{verbatim}
 
 The functor may vary depending on the type of annotation but is
-expected to be same within a file. The first two arguments,
-\texttt{Start} and \texttt{End} are positive integers which specifies 
-the range of the annotation relative to the DNA sequence. The
-\texttt{Strand} argument is \texttt{+} for the forward strand
-or\texttt{-} for the reverse strand. The \texttt{Frame} argument
+expected to be same within a file. The first argument
+\texttt{SequenceId} is a sequence identifer. Is is recommended that 
+the Genbank accession id is used where possible.
+The next two arguments,
+\texttt{LeftEnd} and \texttt{RightEnd} are positive integers which specifies 
+the range of the annotation relative to the DNA sequence. 
+Both are inclusive.  It must be
+the case that $\texttt{LeftEnd} \le \texttt{RightEnd}$. 
+The
+\texttt{Strand} argument is \texttt{'+'} for the forward strand
+or\texttt{'-'} for the reverse strand. The \texttt{Frame} argument
 is one of \texttt{\{1,2,3\}}. The final argument, \texttt{ExtraList}
-is a list possibly containing extra information.
+is a list possibly containing extra information. Each element in the 
+\texttt{ExtraList} is on the form \texttt{F =.. [ Key, Value ]} where
+\texttt{Key} must be unique in the list. There are no restrictions on \texttt{Value}.
+
 
 \subsection{\texttt{text(prolog(prism\_switches))}}
 
