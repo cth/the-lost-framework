@@ -1,0 +1,93 @@
+:- set_prism_flag(scaling,log_exp).
+:- set_prism_flag(learn_mode,both).
+:- set_prism_flag(log_viterbi,on).
+
+coding_clusters(5).
+
+coding_clusters_list(L) :-
+        coding_clusters(N),
+        downto(N,1,L).
+
+downto(To,To,[To]).
+downto(From,To,[From|Rest]) :-
+	NextFrom is From - 1,
+	downto(NextFrom,To,Rest).
+
+coding_cluster_state_list(_,[],[]).
+coding_cluster_state_list(State, [ClusterId|R1], [ClusterState|R2]) :-
+        ClusterState =.. [ State, ClusterId ],
+        coding_cluster_state_list(State,R1,R2).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Transition probabilities 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+values(begin,[nc|StartStates]) :-
+       coding_clusters_list(CodingClusters),
+       coding_cluster_state_list(start,CodingClusters,StartStates).
+
+values(trans(nc), [nc,end|CodingClusters]) :-
+       coding_clusters_list(CodingClusters),
+       coding_cluster_state_list(start,CodingClusters,StartStates).
+
+values(trans(c(X)),[c(X),stop(X)]).
+        
+values(trans(start(X),[c(X)]).
+
+values(stop(X), [end]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Emission switches %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+values(emit(start(_)),[[t,t,g],[c,t,g],[a,t,t],[a,t,c],[a,t,a],[a,t,g],[g,t,g]]).
+
+values(emit(stop(_)),[[t,a,a],[t,g,a],[t,a,g]]).
+
+values(emit(c(X)),Codons_List) :-
+        get_list_codons(Codons_List).
+
+values(emit(nc), [a,g,c,t]).
+
+get_list_codons(L) :-
+        L = [ [a,a,a],[a,a,t],[a,a,c],[a,a,g],
+              [a,t,a],[a,t,t],[a,t,c],[a,t,g],
+              [a,c,a],[a,c,t],[a,c,c],[a,c,g],
+              [a,g,a],[a,g,t],[a,g,c],[a,g,g],
+                      [t,a,t],[t,a,c],
+              [t,t,a],[t,t,t],[t,t,c],[t,t,g],
+              [t,c,a],[t,c,t],[t,c,c],[t,c,g],
+                      [t,g,t],[t,g,c],[t,g,g],
+              [c,a,a],[c,a,t],[c,a,c],[c,a,g],
+              [c,t,a],[c,t,t],[c,t,c],[c,t,g],
+              [c,c,a],[c,c,t],[c,c,c],[c,c,g],
+              [c,g,a],[c,g,t],[c,g,c],[c,g,g],
+              [g,a,a],[g,a,t],[g,a,c],[g,a,g],
+              [g,t,a],[g,t,t],[g,t,c],[g,t,g],
+              [g,c,a],[g,c,t],[g,c,c],[g,c,g],
+              [g,g,a],[g,g,t],[g,g,c],[g,g,g]
+             ].
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% HMM structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+cluster_hmm(Seq,Annotation) :-
+        msw(begin,State),
+        cluster_hmm_rec(State,Seq,Annotation).
+
+% End State
+cluster_hmm_rec(end,[],[]).
+
+cluster_hmm_rec(nc,[N1|SequenceRest],[0|AnnotRest]) :-
+        msw(nc, N1),
+        msw(nc,NextState),
+        cluster_hmm_rec(NextState,SequenceRest,AnnotRest).
+
+cluster_hmm_rec(State,[N1,N2,N3|SequenceRest],[ClusterId,ClusterId,ClusterId|AnnotRest]) :-
+        State =.. [ State, ClusterId ],
+        State \= nc, 
+        msw(emit(State), [N1,N2,N3]),
+        msw(trans(State),NextState),
+        cluster_hmm_rec(NextState,SequenceRest,AnnotRest).
+
