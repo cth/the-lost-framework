@@ -10,142 +10,175 @@
 % 	mode =0 : entire chunk is translated
 %--------------------------------------------------------------------------------------------------
 
-chunk_translator(FileIn,Mode,AFastaOut):-
+chunk_translator(FileIn,Mode,GeneCode,AFastaOut):-
 	chunk_translator_init(FileIn,FileInStream,AFastaOut,AFastaStream),
 	read(FileInStream,Term),
-	chunk_translator_main(Term,Mode,FileInStream, AFastaStream),
+	chunk_translator_main(Term,Mode,GeneCode,FileInStream, AFastaStream),
 	chunk_translator_cleanup(FileInStream, AFastaStream).
 
-chunk_translator_main(end_of_file,_Mode,_FileIn,_FastaOut).
+
+% End of the file
+chunk_translator_main(end_of_file,_Mode,_GeneCode,_FileIn,_FastaOut) :-
+        !.
 
 % mode = 0 : entire chunk is translated
-chunk_translator_main(chunk(Id,Start,End,Seq,Dir,Frm,_Starts,_Stops),0,	FileInStream,	AFastaStream):-
-%write('0-0 raw              '),writeln(Seq),
-	(
-		Dir = '-' -> reverse_complement(Seq,[],SeqR,0,_Length)
-	;
-		SeqR = Seq
-	),
-%write('0-1 b4 translation '),writeln(SeqR),
-	translate(SeqR,Product),
-%write('0-2 af translation '),writeln(Product),
-	report_prod(AFastaStream,Id,Start,Start,End,Dir,Frm,_Length,Product),
+chunk_translator_main(chunk(Id,Left,Right,Dir,Frm,Extra_Infos),0,GeneCode,FileInStream,AFastaStream):-
+        member(sequence(Seq),Extra_Infos),
+        !,
+	translate(GeneCode,Seq,AA_Sequence),
+        (AA_Sequence = [] ->
+            true  % no report
+        ;
+            report_prod(AFastaStream,Id,Left,Right,Dir,Frm,AA_Sequence)
+        ),
 	read(FileInStream,Term),
-	chunk_translator_main(Term,0,FileInStream,AFastaStream)
-	.
+	chunk_translator_main(Term,0,GeneCode,FileInStream,AFastaStream).
 
 
-% mode =1 : only orfs are translated
-chunk_translator_main(chunk(Id,Start,End,Seq,Dir,Frm,Starts,Stops),1,	FileInStream,	AFastaStream):-
-%write('0-0 raw              '),writeln(Seq),
-	Stops \= [],
-	Starts = [OrfStart|_Starts],
-	(
-		Dir = '-' -> reverse_complement(Seq,[],SeqR,0,_Length)
-	;
-	 	SeqR = Seq
-	),
-%write('0-1 b4 segment      '),writeln(SeqR),
-	(
-		Dir = '+' ->
-			PreStartLength is OrfStart - Start -1 ,
-			Length is End - OrfStart -1
-	;
-			PreStartLength is End - OrfStart  + 1,
-			Length is End - Start +1
-	),
-	segment(PreStartLength,_PreStart,Orf,SeqR),
-%write('0-2 b4 translation  '),writeln(Orf),
-	translate(Orf,Product),
-%write('1-3 af translation  '),writeln(Product),
-	report_prod(AFastaStream,Id,Start,OrfStart,End,Dir,Frm, Length,Product),
+% mode = 1 : only orfs are translated
+chunk_translator_main(chunk(Id,Left,Right,Dir,Frm,Extra_Infos),1,GeneCode,FileInStream,AFastaStream):-
+        member(sequence(Seq),Extra_Infos),
+        member(stop(Stops),Extra_Infos),
+        member(starts([OrfStart|_]),Extra_Infos),
+        Stops \= [],
+        !,
+        (Dir = '+' ->
+            Prestart_Length is OrfStart-Left
+        ;
+            Prestart_Length is Right-OrfStart
+        ),
+        orf_computation(Prestart_Length,Seq,Orf),
+        translate(GeneCode,Orf,AA_Sequence),
+        (AA_Sequence = [] ->
+            true % no report
+        ;
+            report_prod(AFastaStream,Id,Left,Right,Dir,Frm,AA_Sequence,OrfStart)
+        ),
 	read(FileInStream,Term),
-	chunk_translator_main(Term,1,FileInStream,AFastaStream).
+	chunk_translator_main(Term,1,GeneCode,FileInStream,AFastaStream).
 
-chunk_translator_main(chunk(Id,Start,End,_Seq,Dir,Frm,_Starts,[]),1,	FileInStream,	AFastaStream):-
-	Product = [],
-	Length is 0,
-	report_prod(AFastaStream,Id,Start,End,End,Dir,Frm,Length,Product),
-	read(FileInStream,Term),
-	chunk_translator_main(Term,1,FileInStream,AFastaStream).
+% Last chunk that is not a right ORF
+chunk_translator_main(chunk(_Id,_Left,_Right,_Dir,_Frm,Extra_Infos),1,GeneCode,FileInStream,AFastaStream):-
+        member(stop([]),Extra_Infos),
+        !,  % No Report produced
+        read(FileInStream,Term),
+	chunk_translator_main(Term,1,GeneCode,FileInStream,AFastaStream).
 
 chunk_translator_init(FileIn,FileInStream,AFastaOut,AFastaStream):-
 	open(FileIn,read,FileInStream),
-	open(AFastaOut,write,AFastaStream),
-	set(report,on).
+	open(AFastaOut,write,AFastaStream).
+
 
 chunk_translator_cleanup(FileInStream,AFastaStream):-
 	close(FileInStream),
-	close(AFastaStream),
-	set(report,off).
+	close(AFastaStream).
 
-translate([],[]).
-translate([_],[]).
-translate([_,_],[]).
-translate([N1,N2,N3|RestOrf],[A|RestAs]):-
-	genecode([N1,N2,N3],A),
-	translate(RestOrf,RestAs).
 
-report_prod(AFastaStream,Id,Start,TranslationStart,End,Dir,Frm,_Length,Product):-
+
+%%%%%%
+% Utils chunk translator
+%%%%%%%
+% orf_computation(++Prestart_Length,++List,--Sublist)
+
+orf_computation(0,L,L) :-
+        !.
+
+orf_computation(Length,[_Elt|Rest],Result) :-
+        !,
+        Length1 is Length-1,
+        orf_computation(Length1,Rest,Result).
+
+%segment(PreStartLength,PreStart,Orf,Seq):-
+%	append(PreStart,Orf,Seq), length(PreStart,PreStartLength). Fun ;)
+
+
+% translate(++GeneCode,++List_Nucleotides,--List_AA)
+translate(_GeneCode,[],[]) :-
+        !.
+
+translate(_GeneCode,[_],[]) :-
+        !.
+
+translate(_GeneCode,[_,_],[]) :-
+        !.
+
+translate(GeneCode,[N1,N2,N3|RestOrf],[A|RestAs]):-
+	genecode(GeneCode,[N1,N2,N3],A),
+	translate(GeneCode,RestOrf,RestAs).
+
+% Write in the Fasta Format the translated sequence
+% In mode 0,
+report_prod(AFastaStream,Id,Left,Right,Dir,Frm,AA_Sequence):-
 	set_output(AFastaStream),
-	write('>'),
-		write(Id),		write('_'),
-		write(Start),write('/'),write(TranslationStart),	write('-'), 	write(End),		write('_'),
-		write(Dir),write(Frm), write('_'),write('AA'),
-		nl,
-	(
-	Product \= [] -> write_list(Product)
-	;
-	write('n/a')
-	),
+        % Headline
+        write('>'),write(Id),write(' '),write(Left),write(' '),write(Right),write(' '),write(Dir),write(Frm),
+        nl,
+        % Data 
+        write_list(AA_Sequence),
 	nl,nl,
 	set_output(user_output).
 
-segment(PreStartLength,PreStart,Orf,Seq):-
-	append(PreStart,Orf,Seq), length(PreStart,PreStartLength).
+% Write in the Fasta Format the translated sequence
+% In mode 1,
+report_prod(AFastaStream,Id,Left,Right,Dir,Frm,AA_Sequence,OrfStart):-
+	set_output(AFastaStream),
+        % Headline
+	write('>'),write(Id),write(' '),write(Left),write(' '),write(Right),write(' '),write(Dir),write(Frm),write(' '),write(OrfStart), 
+        nl,
+        % Data
+        write_list(AA_Sequence),
+	nl,nl,
+	set_output(user_output).
 
 
-/**************************************************************************
-*	flag for turning output on/off
-*/
+%%%/**************************************************************************
+%%%*	flag for turning output on/off
+%%%*/
 
-set(report,on):-
-	retractall(report(_)),
-	assert(report(on)).
+%%%set(report,on):-
+%%%	retractall(report(_)),
+%%%	assert(report(on)).
 
-set(report,off):-
-	retractall(report(_)).
+%%%set(report,off):-
+%%%	retractall(report(_)).
 
-write_list([]).
+
+% write_list(++List_AA)
+write_list([]) :-
+        !.
+
 write_list(['*'|Rest]):-
+        !,
 	write('*'),
 	write_list(Rest).
 
 write_list([X|Rest]):-
 	X \='*',
+        !,
 	char_code(X,C),
 	C2 is C -32,
 	char_code(X2,C2),
 	write(X2),
 	write_list(Rest).
-%========================================================
-reverse_complement([X|Y],Z,W,P1,L) :- 					% reverses and complements the sequence
-	P2 is P1+1,
-	complement(X,Xc),
-	reverse_complement(Y,[Xc|Z],W,P2,L).
 
-reverse_complement([],X,X,L,L).
+%%%%========================================================
+%%%reverse_complement([X|Y],Z,W,P1,L) :- 					% reverses and complements the sequence
+%%%	P2 is P1+1,
+%%%	complement(X,Xc),
+%%%	reverse_complement(Y,[Xc|Z],W,P2,L).
 
-complement(a,t).
-complement(t,a).
-complement(c,g).
-complement(g,c).
+%%%reverse_complement([],X,X,L,L).
 
-%=======================================================
-% testgoals
-%=======================================================
-testgoal1(Mode):-
-	chunk_translator('u00096-500_+1.gen',Mode,'u00096-500_+1-tx').
+%%%complement(a,t).
+%%%complement(t,a).
+%%%complement(c,g).
+%%%complement(g,c).
 
-testgoal2(Mode):-
-	chunk_translator('u00096-500_-1.gen',Mode,'u00096-500_-1-tx').
+%%%%=======================================================
+%%%% testgoals
+%%%%=======================================================
+%%%testgoal1(Mode):-
+%%%	chunk_translator('u00096-500_+1.gen',Mode,'u00096-500_+1-tx').
+
+%%%testgoal2(Mode):-
+%%%	chunk_translator('u00096-500_-1.gen',Mode,'u00096-500_-1-tx').
