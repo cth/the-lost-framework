@@ -1,31 +1,23 @@
 /*******************************************************************************
 * orf_chopper.pl
-* version 003
+* version 1.0
 * Ole Torp Lassen
-* 18.03.10 : tested successfully on ecoli 100k and verfied with genebank
-*
+* 18.03.10: tested successfully on ecoli 100k and verfied with genebank OTL
+* 12.05.10: Update for Lost Framework: good output format. MP & OTL
+
 * 1 orf/chunk Chunking strategy for all frames in both directions
 *
-* Nonprobabilistic Main predicate : orfchop(Infile,Frame,Dir,ChunkOut,AnnOut,FastaOut).
-* - Infile expected to contain a file of one or more data instances:
-*		data(Id,StartPos,List).
-*		 where List is a list of nucleotides.
+* Call of the chopper is made with: dna_chop_init(Sequence,1,DirFactor,Frame,_Length,Id,OutputStream),
 *
 * - (NEW) This version is sensitive to frames and attempts to apply the
 *   chopping scheme to any of the 3 forward and 3 reverse reading frames.
-*		It has been tested sucessfully on the first 100000 bases of Ecoli, acc.nr: nc000913
+*		It has been tested sucessfully on full Ecoli, acc.nr: U000096
 *
 * - direction of frame must be as + (direct strand) or - reverse strand
 *
-* - ChunkOut will contain a prolog fact for each subsequences in the data:
-*		chunk(Id, Start, End, Dir, Frame, SubSequence, Type, StartCodons).
-*
-* - AnnOut will contain a prolog fact for each subsequences in the data:
-*		potorfs(Id, Start, End, Dir, Frame, Annotation).
-*
-*		 where Type is orf / rst, Annotation is a linear representation of the parse, StartCodons is a list of startcodons in the sub-sequence.
-*
-*	- FastaOut is a file contaning the same information as above in FASTA format.
+* - In OuptputStream,  a prolog fact for each subsequences in the data:
+*		chunk(Id, Left, Right, Dir, Frame, [sequence(SubSequence), start(StartCodons),stop(StopCodon)]).
+*   is reported.
 *
 *===============================================================================
 * The top-layer of a multilayered model for analysis of DNA-sequences.
@@ -151,12 +143,12 @@ sub_parse(preStop(T),Dir,[N1,N2,N3|S2]-S3,P1, P3, B1-B3, E2-E3):-
 	nonprob_msw(emit(preStop(T)),[N1,N2,N3]),
         (
           startcodon([N1,N2,N3])->
-          (Dir = 1 ->
-              P is P1+1
-          ;
-              P is P1
-          ),
-          B1 = [P|B2]
+       %   (Dir = 1 ->
+       %       P is P1+1
+       %   ;
+       %       P is P1
+       %   ),
+          B1 = [P1|B2]
         ;
           B1 = B2
         ),
@@ -164,25 +156,25 @@ sub_parse(preStop(T),Dir,[N1,N2,N3|S2]-S3,P1, P3, B1-B3, E2-E3):-
 	nonprob_msw(trans(preStop(T)),Next),
 	sub_parse(Next,Dir,S2-S3,P2,P3,B2-B3,E2-E3).
 %------------------------------------------------------------------------------
-sub_parse(start(T),Dir,[N1,N2,N3|S2]-S3,P1,P3,[P|B2]-B3,E2-E3):-
+sub_parse(start(T),Dir,[N1,N2,N3|S2]-S3,P1,P3,[P1|B2]-B3,E2-E3):-
 	nonprob_msw(emit(start(T)),[N1,N2,N3]),
         P2 is P1+(3*Dir),
-        (Dir = 1 ->
-            P is P1+1
-        ;
-            P is P1
-        ),
+      %  (Dir = 1 ->
+      %      P is P1+1
+      %  ;
+      %      P is P1
+      %  ),
 	nonprob_msw(trans(start(T)),Next),
 	sub_parse(Next,Dir,S2-S3,P2,P3, B2-B3, E2-E3).
 %------------------------------------------------------------------------------
-sub_parse(stop(T),Dir,[N1,N2,N3|S2]-S3,P1,P3,B2-B3,[P|E2]-E3):-
+sub_parse(stop(T),Dir,[N1,N2,N3|S2]-S3,P1,P3,B2-B3,[P1|E2]-E3):-
 	nonprob_msw(emit(stop(T)),[N1,N2,N3]),
         P2 is P1+(3*Dir),
-        (Dir = 1 ->
-            P is P1+1
-        ;
-            P is P1
-        ),
+%        (Dir = 1 ->
+%            P is P1+1
+%        ;
+%            P is P1
+%        ),
 	nonprob_msw(trans(stop(T)),Next),
 	sub_parse(Next,Dir,S2-S3,P2, P3, B2-B3, E2-E3).
 %------------------------------------------------------------------------------
@@ -220,7 +212,7 @@ subtype(rst).
 *===============================================================================
 */
 
-dna_chop_init(S,SeqStartPos,Dir,Frame, L,Id,ChunkFileOutStream):-
+dna_chop_init(S,SeqStartPos,Dir,Frame,Length,Id,ChunkFileOutStream):-
 	Pm3 is SeqStartPos mod 3,
 	init_frame(Pm3, Frame,Offset,S,S2),
 	ChunkStartPos = SeqStartPos + Offset,
@@ -228,12 +220,12 @@ dna_chop_init(S,SeqStartPos,Dir,Frame, L,Id,ChunkFileOutStream):-
             reverse_complement(S2,[],S3,ChunkStartPos,SeqEndPos),
             Trailing is (SeqEndPos - ChunkStartPos)mod 3,
             nFirst(Trailing,S3,_Firstfew,S4), %cutoff(Trailing,_,S3,S4),
-            LeftPos is SeqEndPos - Trailing,
-            RightPos is ChunkStartPos
+            LeftPos is SeqEndPos - Trailing -1,
+            RightPos is ChunkStartPos-1
 	;
             S4 = S2,
             LeftPos is ChunkStartPos,
-            L = RightPos
+            Length = RightPos
 	),
 	nonprob_msw(dna(start),FirstState),
 	dna_chop(FirstState,Dir,Frame,S4-[],LeftPos, RightPos, Id,ChunkFileOutStream).
@@ -311,23 +303,28 @@ nonprob_msw(S,V):-
 	member(V,Range).
 
 %--------------------------------------------------------------------------------------
-% report(Dir_symbol,Frame,S1,P1,P3,Begins,Stops,Id,ChunkFileOutStream),
+% report(++Id,++First_Pos,++Pos_After,++Sequence,++Dir,++Frame,++Starts_Positions,++Stop_Position,++OutStream),
 %--------------------------------------------------------------------------------------
 % Outputs current chunk to the output file
 %
-report(Id,P1,P2,S1,Dir,Frame,Begins,Ends,ChunkFileOutStream):-
+report(Id,First_Pos,Pos_After,S1,Dir,Frame,Starts_Positions,Stop_Position,ChunkFileOutStream) :-
 	(Dir = '+' ->
-            N is P2-P1,	Left is P1 ,	Right is P2-1 % this was added /*+1*/
+            N is Pos_After-First_Pos,
+            Left is First_Pos,
+            Right is Pos_After-1   
         ;
-            N is P1-P2,	Left is P2 , Right is P1-1 % this was added /*+1*/
+            N is First_Pos-Pos_After,
+            Left is Pos_After+1 ,
+            Right is First_Pos  
 	),
+        
 	nFirst(N,S1,S,_),
 	(Dir = '+' ->
             S2 = S
         ;
             reverse_complement(S,[],S2,0,_)
 	),
-	Entry =.. [chunk,Id,Left,Right,S,Dir,Frame,Begins,Ends],
+	Entry =.. [chunk,Id,Left,Right,Dir,Frame,[sequence(S),starts(Starts_Positions),stop(Stop_Position)]],
 	writeq(ChunkFileOutStream,Entry), writeln(ChunkFileOutStream,'.').
 
 
