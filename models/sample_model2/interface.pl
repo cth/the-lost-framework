@@ -20,8 +20,8 @@ lost_best_annotation([InputFile1,InputFile2,ParamFile],Options,OutputFile) :-
 	get_option(Options,use_parameter_file,UseParamFile),
 
 	% Load the input sequences
-	load_annotation_from_file(sequence,[data_position(4)],InputFile1,InputSeq1),
-	load_annotation_from_file(sequence,[data_position(4)],InputFile2,InputSeq2),
+	get_data_from_file(InputFile1,[data_position(4)],InputSeq1),
+	get_data_from_file(InputFile2,[data_position(4)],InputSeq2),
 	
 	% Load the actual PRISM model
 	prism(sample2),

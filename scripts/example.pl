@@ -6,6 +6,7 @@
 % Prolog files in the shared directory can be consulted
 % like this from anywhere..
 :- lost_include_api(interface).
+:- lost_include_api(io).
 
 run_model1(ResultFile) :-
 	lost_sequence_file(tinytest,TinySequence),
@@ -28,7 +29,7 @@ test_run :-
 	run_model2(AnnotFile),
 	write('Resulting annotation sequence file:'),nl,
 	write(AnnotFile),nl,
-	load_annotation_from_file(sequence,[data_position(4)],AnnotFile,AnnotSeq),
+	get_data_from_file(AnnotFile,[data_position(4)],AnnotSeq),
 	write('Resulting annotation sequence:'),nl,
 	write(AnnotSeq),nl.
 
