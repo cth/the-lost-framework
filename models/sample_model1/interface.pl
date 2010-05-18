@@ -19,7 +19,7 @@ lost_best_annotation([InputFile,ParamFile],Options,OutputFile) :-
 	 true ;
 	 write(restore_sw(ParamFile)),nl,restore_sw(ParamFile)
 	),
-	load_annotation_from_file(sequence,[data_position(4)],InputFile,InputSequence),
+	get_data_from_file(InputFile,[data_position(4)],InputSequence),
         % Derive an annotation somehow
         write(viterbig(sample1(InputSequence,OutputSequence))),nl,
 	check_or_fail(viterbig(sample1(InputSequence,OutputSequence)),
