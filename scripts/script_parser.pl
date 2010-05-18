@@ -104,29 +104,21 @@ parser_genemark(Report_Name,OutputFile) :-
 
 
 % Parser Blast output 2 Ole 
-parser_blast(XML_File,[Query_Id|List_Ids2],FirstPos,PosAfter,All_alignments) :-
+parser_blast(XML_File,List_Ids2,All_alignments) :-
         remove_2_lines(XML_File,XML_File2),
         get_annotation_file(parser_blastxml,
                             [XML_File2],
                             [],
                             Outputfile),
         consult(Outputfile),
-        blast(Query_Id,_,Data),
+        blast(_Query_Id,_,Data),
         (Data = [] ->  % No Hits Founds
             List_Ids2 = [],
-            FirstPos = 0,
-            PosAfter = 0,
-           All_alignments = []
+            All_alignments = []
         ;
             findall(Id,blast(_,Id,_),List_Ids),
             remove_dups(List_Ids,List_Ids2),
-            member('Hsp_query-from'(FirstPos),Data),
-            member('Hsp_query-to'(PosAfter),Data),
-            PosAfter1 is PosAfter+1,
-            member('Hsp_qseq'(QuerySeq),Data),
-            Tuplet_Query = (Query_Id,FirstPos,PosAfter1,QuerySeq),
-            build_uplets(Rest_tuplet),
-            All_alignments = [Tuplet_Query|Rest_tuplet]
+            build_uplets(All_alignments)
         ).
 
 
@@ -136,8 +128,8 @@ parser_blast(XML_File,[Query_Id|List_Ids2],FirstPos,PosAfter,All_alignments) :-
 
 build_uplets(Uplets) :-
         findall(Id,blast(_,Id,_),List_Ids),
-        findall(Firstpos,(blast(_,_,Data),member('Hsp_hit-from'(Firstpos),Data)),List_First),
-        findall(Posafter,(blast(_,_,Data),member('Hsp_hit-to'(Posafter),Data)),List_After),
+        findall(Firstpos,(blast(_,_,Data),member('Hsp_query-from'(Firstpos),Data)),List_First),
+        findall(Posafter,(blast(_,_,Data),member('Hsp_query-to'(Posafter),Data)),List_After),
         findall(Allignment,(blast(_,_,Data),member('Hsp_hseq'(Allignment),Data)),List_Allignements),
         build_uplets_rec(List_Ids,List_First,List_After,List_Allignements,Uplets).
 

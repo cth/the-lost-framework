@@ -118,6 +118,11 @@ report_prod(AFastaStream,Id,Left,Right,Dir,Frm,AA_Sequence):-
 	nl,nl,
 	set_output(user_output).
 
+% Example of Headline in mode 0
+% >u00096 1 48 +1
+% SFSF*LQRAICLCVD*
+
+
 % Write in the Fasta Format the translated sequence
 % In mode 1,
 report_prod(AFastaStream,Id,Left,Right,Dir,Frm,AA_Sequence,OrfStart):-
@@ -129,6 +134,12 @@ report_prod(AFastaStream,Id,Left,Right,Dir,Frm,AA_Sequence,OrfStart):-
         write_list(AA_Sequence),
 	nl,nl,
 	set_output(user_output).
+
+
+
+% Example of Headline in mode 1
+% >u00096 1 48 +1 16
+% LQRAICLCVD*
 
 
 %%%/**************************************************************************

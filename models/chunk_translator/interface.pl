@@ -5,7 +5,7 @@
 :- lost_include_api(genecode).
 
 lost_input_formats(lost_best_annotation, [text(prolog(ranges(gene)))]).
-lost_output_format(lost_best_annotation, _Options, text(fasta(_))).
+lost_output_format(lost_best_annotation, _Options, text(fasta(ffa))).
 
 lost_option(lost_best_annotation,mode,0,'Mode of translation of the chunk'). 
 lost_option(lost_best_annotation,genecode,11,'Genecode table'). 
