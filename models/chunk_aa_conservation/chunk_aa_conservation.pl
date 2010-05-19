@@ -58,9 +58,12 @@ conservation(Chunk_Stream,Counter,Dir,Frame,Aln_Stream,Cons_Stream):-
             true
 	;
             cons_init(Chunk_Stream,QId,Left,Right,Start_ORF,Query,DBIDs,All_alignments,ChunkTerminated,Status),
+	     write(cons_init(Chunk_Stream,QId,Left,Right,Start_ORF,Query,DBIDs,All_alignments,ChunkTerminated,Status)),nl,	
             %cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
             (Status == 0 ->
-                cons_main(Query,DBIDs,All_alignments,Aln_Stream,Cons,Avg_Cons)
+                write(test),nl,
+                cons_main(Query,DBIDs,All_alignments,Aln_Stream,Cons,Avg_Cons),
+		  write(cons_main(Query,DBIDs,All_alignments,Aln_Stream,Cons,Avg_Cons)),nl
             ;
                 Cons = [],
                 Avg_Cons is 0
@@ -97,14 +100,18 @@ cons_main(Query,_DBID,All_alignments,_Aln_Stream,Cons,Avg_Cons) :-
         All_alignments \= [],
         All_alignments \= ['n/a','n/a'],
         !,
+        write(test2),nl,
         determine_best_alns(All_alignments,Best_alignments),
+        write(test3),nl,
        % TODO Do something to manage the option output_alignments /TODO
        % (output_alignments(yes)->
        %     report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
        % ;
        %     true
        % ),
-        compute_conservation(Query,Best_alignments,Cons,Avg_Cons).
+        write(compute_conservation(Query,Best_alignments,Cons,Avg_Cons)),nl,
+        compute_conservation(Query,Best_alignments,Cons,Avg_Cons),
+        write(test4),nl.
 
 
 cons_main(_Query,_DBID,_All_alignments,_Aln_Stream,Cons,Avg_Cons) :-
@@ -281,7 +288,7 @@ determine_best_alns([(ID,P11,P12,M)|Rest1],[(ID,P31,P32,M3)|Rest3]):-
             P32 = P22,
             M3	= M2
 	),
-	score_alns(Rest2,Rest3).
+	determine_best_alns(Rest2,Rest3).
 
 % best_of_rest(++All_Allignments,--Id_Best,--Pos_Left_Best,--Pos_Right_Best,--Rest_All_Allignments,--Score_Best)
 best_of_rest(Rest1,ID,P31,P32,M3,Rest3,Score3):-
@@ -343,11 +350,12 @@ score([X|L1],[Y|L2],Saw_a_stop,Score):-
 % Conservation_List is a list of length equal to Query of integres 0-n, reflecting for each position ion the query the number of DB-sequences having a match at this position
 % Conservation/position : (divide by # DBseqs (8) to get avg-conservation as a percentage).
 %=========================
-compute_conservation(Query,[(_Qid,_StartQ,_StopQ,Qseq)|DB_Aligns], Cons, AvgCons):-
-	length(Qseq,AlignmentLength),
+compute_conservation(Query,DB_Aligns, Cons, AvgCons):-
+        length(Query,AlignmentLength),
 	query_vs_dbs(Query,DB_Aligns,1,Cons,SummedCons),
 	AvgCons is SummedCons / AlignmentLength.
 
+ 
 
 
 % query_vs_dbs(++QuerySeq,++DB_Best_Hits,??Position,--Cons_Annot,--Acumulated_Score)
@@ -355,7 +363,7 @@ query_vs_dbs([],_DB_Best_Hits,_Position,[],0) :-
         !.
 
 query_vs_dbs([Qhead|Qtail],DB,Position,[Chead|Ctail],SummedCons):-
-	qhead_vs_dbheads(Qhead,DB,DBtails,Chead),
+	qhead_vs_dbheads(Qhead,DB,Position,DBtails,Chead),
         Position1 is Position+1,
 	query_vs_dbs(Qtail,DBtails,Position1,Ctail,CtailSum),
 	SummedCons is Chead + CtailSum. % Before adding: divide Chead by # dbseqs to get percentage-meassure
@@ -382,31 +390,31 @@ qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],Position,[(DB
 
 
 % Case Perfect Match with the first DB
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
         !,                  
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest), 
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest), 
 	CountQ is 1 + CountQRest. % increment match count
 
 % Case: Mismatch a space in DB
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[32|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[32|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-
         !,
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest).
 
 % Case: Mismatch a - in DB
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[45|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[45|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-
 	!,
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest).
 
 % Case: Mismatch in DB, but 1 either 0 is added given the option mismatch_score
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[_DBhead|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[_DBhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
         !,
-       	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest),
+       	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest),
 	nongap_mismatch_score(MMS), % Option mismatch_score of the model
-	CountQ is MMS + CountQRest.
+        CountQ is MMS + CountQRest.
 
 % Case: no DB Left
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[])|RestDBs],[(DBID,Start,Stop,[])|RestTails],CountQRest):-  
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[])|RestDBs],Position,[(DBID,Start,Stop,[])|RestTails],CountQRest):-  
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest).
 
 
 

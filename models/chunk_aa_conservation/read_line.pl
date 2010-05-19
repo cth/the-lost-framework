@@ -107,3 +107,113 @@ read_n_spaces(File,N):-
 	get_code(File,32),
 	M is N-1,
 	read_n_spaces(File,M).
+
+
+
+%%%%%%%
+% parser_line(++List_Codes,--List_Tokens)
+% Description: Translate a list of ASCII code into a list of tokens. Parsing is based on the
+% grammar: Tokens ::= Token | Token Ignore_Characters Tokens
+% Default: Ignore Caracters = [9,32] (space and tab)
+% parser_line(++List_Codes,++Ignore_Character,--List_Tokens)
+%%%%%%%
+
+
+% Default: parser_line/2 
+
+parser_line([],[]) :-
+        !.
+
+parser_line(Entry_Codes,Entry_Token) :-
+        var(Token),
+        parser_line_rec(Entry_Codes,Token-Token,[9,32],Entry_Token).
+        
+
+
+% Definition of the characters to ignore parser_line/3
+
+parser_line([],_Ignored_Chars,[]) :-
+        !.
+
+parser_line(Entry_Codes,Ignored_Chars,Entry_Token) :-
+        var(Token),
+        parser_line_rec(Entry_Codes,Token-Token,Ignored_Chars,Entry_Token).
+
+% End of the line
+parser_line_rec([],[]-[],_Ignored_Chars,[]) :- !.
+
+parser_line_rec([],Token-[],_Ignored_Chars,[Token_Res]) :-
+        !,
+        (is_number(Token) ->
+            number_codes(Token_Res,Token)
+        ;
+            atom_codes(Token_Res,Token)
+        ).
+
+% Before Token
+parser_line_rec([Code|Rest_Codes],Token-Token,Ignored_Chars,List_Tokens) :-
+        member(Code,Ignored_Chars),
+        var(Token),
+        !,
+        parser_line_rec(Rest_Codes,Token-Token,Ignored_Chars,List_Tokens).
+
+
+% End of a token
+parser_line_rec([Code|Rest_Codes],Token-[],Ignored_Chars,[Token_Res|Rest_Tokens]) :-
+        member(Code,Ignored_Chars),
+        nonvar(Token),
+        !,
+        (is_number(Token) ->
+            number_codes(Token_Res,Token)
+        ;
+            atom_codes(Token_Res,Token)
+        ),
+        var(Token1),
+        parser_line_rec(Rest_Codes,Token1-Token1,Ignored_Chars,Rest_Tokens).
+
+% Inside a Token
+parser_line_rec([Code|Rest_Codes],Token1-Token2,Ignored_Chars,List_Tokens) :-
+        Token2 = [Code|Token3],
+        parser_line_rec(Rest_Codes,Token1-Token3,Ignored_Chars,List_Tokens).
+
+
+%%%%%%%
+% is_number(++List_Codes)
+%%%%%%
+% Description: predicate is true iff List_Codes can be parsed by the following grammar
+% Numbers :== Number | Number . Rest Numbers | Number Numbers 
+% Rest Numbers :== Number | Number Rest Numbers
+% Number :== 0|1|2|3|4|5|6|7|8|9 (Ascci 48..57) 
+%%%%%%
+
+% Parse of Numbers
+
+is_number([Code]) :-
+        47 < Code,
+        58 > Code,
+        !.
+% 46 = .
+is_number([Code,46|Rest_Number]) :-
+        47 < Code,
+        58 > Code,
+        !,
+        rest_number(Rest_Number).
+
+is_number([Code|Rest]) :-
+        47 < Code,
+        58 > Code,
+        is_number(Rest).
+
+
+% Parse of rest number
+rest_number([Code]) :-
+        47 < Code,
+        58 > Code,
+        !.
+
+rest_number([Code|Rest_Number]) :-
+        47 < Code,
+        58 > Code,
+        rest_number(Rest_Number).
+
+
