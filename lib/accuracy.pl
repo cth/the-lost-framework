@@ -419,6 +419,10 @@ annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
 	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
 	catch(call(Goal),_,fail).
 
+annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
+	Goal =.. [ Type,_, From, To, Strand, ReadingFrame, Extra ],
+	catch(call(Goal),_,fail).
+
 annotations_in_range(Type, From, To, Strand, ReadingFrame, Name, RangeMin, RangeMax) :-
 	annotation(Type,From,To,Strand,ReadingFrame,Name),
 	From >= RangeMin,
