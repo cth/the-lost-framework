@@ -21,5 +21,5 @@ sc(86,4).  sc(118,2).     % sc(V,4).  sc(v,2).
 sc(70,6).  sc(102,3).     % sc(F,6).  sc(f,3).
 sc(89,7).  sc(121,3.5).   % sc(Y,7).  sc(y,3.5).
 sc(87,11). sc(119,5.5).	  % sc(W,11). sc(w,5.5).
-sc(32,0).  sc(45,0).
+sc(32,0).  sc(45,0).      % See space, means score nothing
 

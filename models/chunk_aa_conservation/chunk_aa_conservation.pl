@@ -1,183 +1,320 @@
 %============================================================================
 % chunk_aa_conservation.pl
-% 24.03.2010
-% Ole Torp Lassen
+% History:
+%         24.03.2010 Inclusion into Lost Framework OTL
+%         12.05.2010 Something OTL & MP
 %============================================================================
-% conservation/2,
+% conservation/6
 % in: file of fasta-formatted AA sequences:
-% out: a file of terms indicating the conservation of each seqeunce in a given database (here enterobateriales.nt)
+% out: a file of terms indicating the conservation of each sequence in a given database (here enterobateriales.nt)
 % ---------------------------------------------------------------------------
-%	first line of AA-sequences must be of the form:
-%
-% 																	>#1_#2/#3-#4_AA ...
-%	where:
-%				 	#1 is a seq-ID i.e.: ecoli_100k
-%					#2 is the nucleotide starting position for chunk
-%					#3 is the nucleotide starting position for translation
-%					#4 is the nucleotide ending postion for chunk
-%					AA can be left out but the (>,_,/,-,_)'s are neccesary
-%
-% second line of AA-seqeunces must be one unbroken sequence of single letter aminoacid symbols in lower case.
+% In: Fasta headline = > #Key #Left #Right #Dir#Frame (#ORF_Start)
+%          data line of AA-seqeunces must be one unbroken sequence of single letter aminoacid symbols in upper case.
 %----------------------------------------------------------------------------
-% Output terms are in the form:
-%					conservation(#1,#2,#4,Consevation_List).
+% Output File is type: text(prolog(ranges(gene)))
+%   conservation(Key,Left,Right,Dir,Strand,[annotation(Annotation),conservation_score(Score),translation_start(Position),translation_terminated(yes/no)])
 % where:
-%					Conservation_list is a list of sequence length of digits 0-8 indicating
-%					number of databases seqeunces that conserve the query symbol at the respective position
-%					as reported by a tblastn analysis of the query against the database.
+%			Annotation is a list of sequence length of digits 0-8 indicating
+%			number of database sequences that conserve the query symbol at the respective position
+%			as reported by a tblastn analysis of the query against the database.
 %
-%					If no conservation was reported by tblastn  the conservation List wil be empty ([]).
-%					If #2 is different from #3 the difererence is represented by spaces, ' '.
-%					The final three postion of a nonempty conservations list is always 3 spaces [' ',' ',' ']
-%					corresponding to the stopcodon that is not translated.
+%                       Conservation Score is the average of conservation by position
+%
+%	                If no conservation was reported by tblastn  the conservation List will be empty ([]).
 %============================================================================
-%----------------------------------------------------------------------------
-% Declarations
-%----------------------------------------------------------------------------
-% :- [blast_parser].
-:- [read_line].
 :- [blosum62scores].
+:- [read_line].
 %output_alignments(yes).
 %nongap_mismatch_score(1).
+
+%%%%%%
+% Blast Command Building
+%%%%%%
+
 blast_database('/opt/db/blast/EnteroBacterialesGB/EnteroBacterialesGB.nt').
+
+
 blast_command(Cmd) :-
         blast_database(Database),
         atom_concat('tblastn -db ', Database, FirstPart),
         atom_concat(FirstPart, ' -outfmt 5 -db_gencode 11 -use_sw_tback',Cmd).
-blast_output_file('tblastn.aln').
-blast_input_file('tblastn.fst').
-%----------------------------------------------------------------------------
-conservation(Chunk_Stream,Counter, Dir, Frame,Aln_Stream,Cons_Stream):-
+
+blast_output_file(Blast_Output_File) :-
+        lost_tmp_directory(Tmp),
+        atom_concat(Tmp,'tblastn.aln',Blast_Output_File).
+
+blast_input_file(Blast_Input_File) :-
+        lost_tmp_directory(Tmp),
+        atom_concat(Tmp,'tblastn.faa',Blast_Input_File).
+
+
+%------
+% conservation(++Chunk_Stream,++Counter,++Dir,++Frame,++Aln_Stream,++Cons_Stream)
+% Main predicate, computation
+%------
+
+conservation(Chunk_Stream,Counter,Dir,Frame,Aln_Stream,Cons_Stream):-
 	(at_end_of_stream(Chunk_Stream) ->
             true
 	;
-            cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
-            writeq(cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status)),
-            nl,
+            cons_init(Chunk_Stream,QId,Left,Right,Start_ORF,Query,DBIDs,All_alignments,ChunkTerminated,Status),
+	     write(cons_init(Chunk_Stream,QId,Left,Right,Start_ORF,Query,DBIDs,All_alignments,ChunkTerminated,Status)),nl,	
+            %cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
             (Status == 0 ->
-                write('test'),nl,
-                cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
-                writeq(cons_main([QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons)),
-                nl
+                write(test),nl,
+                cons_main(Query,DBIDs,All_alignments,Aln_Stream,Cons,Avg_Cons),
+		  write(cons_main(Query,DBIDs,All_alignments,Aln_Stream,Cons,Avg_Cons)),nl
             ;
-                Cons = [],Avg_Cons is 0
+                Cons = [],
+                Avg_Cons is 0
             ),
-            write(report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength,Cons,Avg_Cons)),nl,
-            report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength,Cons,Avg_Cons),
-            write(report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength,Cons,Avg_Cons)),nl,
+            report_cons(Cons_Stream,QId,Left,Right,Dir,Frame,Start_ORF,ChunkTerminated,Cons,Avg_Cons),
             Counter2 is Counter+1,
             conservation(Chunk_Stream,Counter2,Dir,Frame,Aln_Stream,Cons_Stream)
 	).
 
+% cons_init(++Chunk_Stream,--QId,--Left,--Right,--Start_ORF,--Query,--All_Alignment,--ChunkTerminated,--Status)
+% From the stream of the FASTA file, this predicate picks one query sequence, blast this sequence with several genomes and compute the different hits
+% from the result of the blast report.
 
-
-cons_init(Chunk_File,IDs,Length, First_Pos, Last_Pos, All_alignments,ChunkTerminated,Status):-
-%writeln('preblast '),
-	blast_next_chunk(Chunk_File,Blast_File,QId,ChunkTerminated,Status),
-%writeln('postblast '),
-%(ChunkTerminated == 'no' -> writeln('ok1');true),
-	(
-	Status == 0 ->
-%writeln('pre blast parse init '),	writeq(parse_blast_init(Blast_Stream,Length,IDs)),
-		lost_config(lost_base_directory,Lost_Directory),
-		atom_concat(Lost_Directory,'models/chunk_aa_conservation/',Directory),
-		atom_concat(Directory,Blast_File,Abs_Blast_File),
-		parser_blast(Abs_Blast_File, IDs, First_Pos, Pos_After, All_alignments),
-		Length is Pos_After - First_Pos,
-		Last_Pos is Pos_After -1
-		% parse_blast_init(Blast_Stream,Length,IDs)
+cons_init(Chunk_Stream,QId,Left,Right,Start_ORF,Query,IDs,All_alignments,ChunkTerminated,Status):-
+        blast_next_chunk(Chunk_Stream,Headline_Chunk,Query,XML_Blast_File,ChunkTerminated,Status),
+	(Status == 0 ->
+            parser_headline_fasta(Headline_Chunk,QId,Left,Right,Start_ORF),
+            parser_blast(XML_Blast_File, IDs, All_alignments)
 	;
-		IDs = [QId],
-		Length = 0,
-		All_alignments = [],
-		First_Pos = 0,
-		Last_Pos  = 0
-	)
-%,writeln('post blast parse init ')
-	.
-
-
-
-% her kan alignment listerne (Alns) gemmes i separat fil hvis nødvendigt.
-% --->  i SÅ fald Sæt "output_alignmnets(yes) i linje 35"
-% must return also start and end of alignment, both in [1..QueryLength].
-%
-%cons_main_new(Blast_Stream,[QId|DBIDS],AFirst,		ALast,Cons),
-%cons_main(Blast_Stream,[QId|DBIDS],AFirst,ALast,All_alignments,Aln_Stream,Cons,Avg_Cons),
-cons_main(_IDs,FirstPos,LastPos,All_alignments,Aln_Stream,Cons,AvgCons):-
-        (
-          All_alignments \= [], All_alignments \= ['n/a','n/a'] ->
-          determine_best_alns(All_alignments,Best_alignments),
-          (
-            output_alignments(yes)->
-            report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
-          ;
-            true
-          ),
-          write(compute_conservation(Best_alignments,Cons,AvgCons)),nl,
-          compute_conservation(Best_alignments,Cons,AvgCons),
-          write(compute_conservation(Best_alignments,Cons,AvgCons)),nl
-        ;
-          Cons = [], AvgCons is 0
-        ).
-
-
-determine_best_alns([Q|All_alignments],[Q|Best_alignments]):-
-	score_alns(All_alignments,Best_alignments).
-
-% score_alns(L1+, L1-).
-%-----------------------------------------------------------------------------------
-% scores a list of alignments (from tBlastn)and keeps the highest scoring for each unique DB-ID
-% args: L1+: list of unscoresd allignments each of which have the form (ID,P1,P2,M),where:
-%						 ID is a databse ID
-%						 P1 and P2 are start- and end position of the alignment in the resepective genome
-%						 M is the alignment sequence (of amino acids)
-%				L2-: list of highest scoring members of L1 for each unique ID.
-%===================================================================================
-score_alns([],[]).
-score_alns([(ID,P11,P12,M)|Rest1],[(ID,P31,P32,M3)|Rest3]):-
-        score(M,M1,_,Score1),
-        best_of_rest(Rest1,ID,P21,P22,M2,Rest2,Score2),
-      	(
-	Score1 > Score2 ->
-		P31 = P11,
-		P32 = P12,
-		M3  = M1
-	;
-		P31 = P21,
-		P32 = P22,
-		M3	= M2
-	),
-	score_alns(Rest2,Rest3).
-
-best_of_rest(Rest1,ID,P31,P32,M3,Rest3,Score3):-
-	(
-		select((ID,P11,P12,M),Rest1,Rest2)->
-		score(M,M1,_,Score1),
-		best_of_rest(Rest2,ID,P21,P22,M2,Rest3,Score2),
-		(
-			Score1 > Score2 ->
-			P31 = P11,
-			P32 = P12,
-			M3 	= M1,
-			Score3 is Score1
-		;
-			P31 = P21,
-			P32 = P22,
-			M3 	= M2,
-			Score3 is Score2
-		)
-	;
-		P31 		= 'n/a',
-		P32 		= 'n/a',
-		M3 			= 'n/a',
-		Score3 	= 0,
-		Rest3 	= Rest1
+            % TODO something but I don't know what /TODO
+            IDs = [],
+            All_alignments = [],
+            Left=0,
+            Right=0
 	).
 
 
+% Here the calculated alignments may be written to Aln_Stream if desired.
+% ---> in that case toggle "output_alignmnets(yes)" 
+% must return also start and end of alignment, both in [1..QueryLength].
+%
+%cons_main(++Query,++DBIDs,++All_alignments,++Aln_Stream,--Cons,--Avg_Cons),
+cons_main(Query,_DBID,All_alignments,_Aln_Stream,Cons,Avg_Cons) :-
+        All_alignments \= [],
+        All_alignments \= ['n/a','n/a'],
+        !,
+        write(test2),nl,
+        determine_best_alns(All_alignments,Best_alignments),
+        write(test3),nl,
+       % TODO Do something to manage the option output_alignments /TODO
+       % (output_alignments(yes)->
+       %     report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
+       % ;
+       %     true
+       % ),
+        write(compute_conservation(Query,Best_alignments,Cons,Avg_Cons)),nl,
+        compute_conservation(Query,Best_alignments,Cons,Avg_Cons),
+        write(test4),nl.
 
-% score(L1+,L2-,Stops-,Score-)
+
+cons_main(_Query,_DBID,_All_alignments,_Aln_Stream,Cons,Avg_Cons) :-
+        Cons = [],
+        Avg_Cons is 0.
+
+
+
+% report_cons(++Cons_Stream,++QId,++Left,++Right,++Dir,++Frame,++Start_ORf,++ChunkTerminated,++Cons,++Avg_Cons)
+
+report_cons(Cons_Stream,QId,Left,Right,Dir,Frame,Start_ORF,ChunkTerminated,Cons,Avg_Cons) :-
+        Term =.. [conservation,QId,Left,Right,Dir,Frame,Rest_Infos],
+        Rest_Infos = [cons_annotation(Cons),cons_score(Avg_Cons),stop(ChunkTerminated)|Rest_Infos2],
+        (var(Start_ORF) ->
+            Rest_Infos2 = []
+        ;
+            Rest_Infos2 = [start_ORF(Start_ORF)]
+        ),
+        write(Cons_Stream,Term),
+        write(Cons_Stream,'.'),
+        nl(Cons_Stream).
+
+
+%%%% report_cons(++Cons_Stream,++Dir,++Frame,++Counter,++QId,++ChunkTerminated,++Status,
+%%%%                                                   ++Afirst,++ALast,++Qlength,++Cons_Annot,++Cons_Score)
+%%%% Produce the right term that is write into the Cons Stream
+
+%%%report_cons(Cons_Stream,Dir,Frame,Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength, ConsRev,Avg_Cons):-	
+%%%	(ConsRev \= [] ->
+%%%            PreAdjust is AFirst - 1,
+%%%            makelist(PreAdjust,0,PreList), % change 0/*
+%%%            PostAdjust is QLength - ALast,
+%%%            makelist(PostAdjust,0,PostList), % change 0/*
+%%%            append(ConsRev,PostList,Cons1Rev),
+%%%            append(PreList,Cons1Rev,Cons2Rev)
+%%%	;
+%%%            Cons2Rev = ConsRev
+%%%	),
+%%%        write(extract(QId,Dir,QName,Left,Right,Pfx)),nl,
+%%%	extract(QId,Dir,QName,Left,Right,Pfx), % change -/* Prefix is calculated wrongly in the reverse strand (trans mode 1)
+%%%        write(extract(QId,Dir,QName,Left,Right,Pfx)),nl,
+%%%	Len is Right - Left + 1,
+%%%	(Dir = '-' ->
+%%%            reverse(Cons2Rev,Cons)
+%%%	;
+%%%            write(test3),nl,
+%%%            Cons = Cons2Rev
+%%%	),
+%%%        (
+%%%	Cons == [] ->									% if no conservation, make len-long list of 0's
+%%%          makelist(Len,0,Chunk_Cons) % 				change 0/+
+%%%	;
+%%%          makelist(Pfx,0,Prefix), % change 0/*
+%%%          times_3(Cons,BaseCons),
+%%%          (
+%%%            Dir == '+' ->
+%%%            (
+%%%              ChunkTerminated == 'yes' -> % if original chunk ended with a stop codon/* it needs terminating triple, else not
+%%%              append(BaseCons,[0,0,0],BaseConsTerm) % originally annotated as '-','-','-'
+%%%            ;
+%%%              Trailing is Len mod 3,
+%%%              makelist(Trailing,0,Zeros),
+%%%              append(BaseCons,Zeros,BaseConsTerm)
+%%%                                % BaseConsTerm = BaseCons
+%%%            ),
+%%%            append(Prefix,BaseConsTerm,Chunk_Cons)
+%%%          ;
+%%%            append(BaseCons,Prefix,BaseConsTerm),
+%%%            (
+%%%              ChunkTerminated == 'yes' -> % if original chunk ended with a stop codon/* it needs terminating triple, else not
+%%%              Chunk_Cons = [0,0,0|BaseConsTerm] % originally annotated as '-','-','-'
+%%%             ;
+%%%              Trailing is Len mod 3,
+%%%              makelist(Trailing,0,Zeros),
+%%%              append(Zeros,BaseConsTerm,Chunk_Cons)
+%%%                                % Chunk_Cons = BaseConsTerm
+%%%            )
+%%%          )
+%%%	),
+%%%        Entry =.. [conservation,QName,Left,Right,Dir,Frame,[cons_annot(Chunk_Cons),cons_score(Avg_Cons)],
+%%%        write(Entry),nl,
+%%%	write(Cons_Stream,Entry),writeln(Cons_Stream,'.'),
+%%%	Dot is Counter mod 10,
+%%%	Line is Counter mod 200,
+%%%	(Dot = 0 -> write(user_output,'.'); true),
+%%%	(Line = 0 -> nl(user_output); true).
+
+
+%---------
+% Utils cons_init
+%---------
+
+
+% blast_next_chunk(++Chunk_Stream,--Headline_Chunk,--XML_Blast_File,--ChunkTerminated,--Status),
+% Get information on one chunk (Headline and Query) and generate the blast XML report
+
+blast_next_chunk(Chunk_Stream,Headline_Chunk,Query,XML_Blast_File,ChunkTerminated,Status):-
+	blast_command(Blast_Command),
+	blast_input_file(Blast_Input),
+	blast_output_file(XML_Blast_File),
+	copy_fasta(Chunk_Stream,Blast_Input,Headline_Chunk,Query,ChunkTerminated,CopyFasta_OK),
+	(CopyFasta_OK = 'yes' ->
+            atom_concat(' -query ',Blast_Input, Arg1),
+            atom_concat(' -out ',XML_Blast_File, Arg2),
+            atom_concat(Arg1,Arg2,Args),
+            atom_concat(Blast_Command,Args,Command),
+            writeq(Command),
+            system(Command,Status)
+	;
+            Status = 2
+	).
+
+% copy_fasta(++Infile,--OutFile,--Headline_Chunk,--ChunkTerminated,CopyFasta_OK)
+copy_fasta(Infile,OutFile,Headline_Chunk,Seq_codes,ChunkTerminated,OK):-
+	read_line(Infile,[62|Headline_Chunk]),
+	read_line(Infile,Seq_codes),
+	read_line(Infile,_),
+	atom_codes(Title_Line,[62|Headline_Chunk]),
+	atom_codes(Seq_Line,Seq_codes),
+	(append(_,[42],Seq_codes) ->
+            ChunkTerminated = 'yes'
+        ;
+            ChunkTerminated = 'no'), % check for ChunkTerminated to adjust trailing annotaions
+	(Seq_Line \= 'n/a' ->
+            open(OutFile,write,Output),
+            writeln(Output,Title_Line),
+            writeln(Output,Seq_Line),
+            close(Output),
+            OK = 'yes'
+	;
+            OK = 'no'
+	).
+
+% parser_headline_fasta(++Headline_Chunk,--QId,--Left,--Right,--Start_ORF)
+parser_headline_fasta(Headline_Chunk,QId,Left,Right,Start_ORF) :-
+        parser_line(Headline_Chunk,Entry_Token), % Token = [Qid,Left,Right,DirFrame,(ORF_Start)]
+        (length(Entry_Token,5) ->
+            Entry_Token = [QId,Left,Right,_,Start_ORF]
+        ;
+            Entry_Token = [QId,Left,Right,_]
+        ).
+        
+
+
+%----------
+% Utils cons_main
+%----------
+
+% determine_best_alns(++All_alignments,--Best_alignments)
+% Computes the best hit for each database genome among all allignments 
+% No more used
+%determine_best_alns([Q|All_alignments],[Q|Best_alignments]):-
+%	score_alns(All_alignments,Best_alignments).
+
+% determine_best_alns(++All_alignments,--Best_alignments).
+%-----------------------------------------------------------------------------------
+% scores a list of alignments (from tBlastn)and keeps the highest scoring for each unique DB-ID
+% args: All_alignments: list of unscored allignments each of which have the form (ID,P1,P2,M),where:
+%			ID is a database ID
+%			P1 and P2 are start- and end position of the alignment in the resepective genome
+%			 M is the alignment sequence (of amino acids)
+%	Best_alignments: list of highest scoring members of All_alignments for each unique ID.
+%===================================================================================
+determine_best_alns([],[]).
+determine_best_alns([(ID,P11,P12,M)|Rest1],[(ID,P31,P32,M3)|Rest3]):-
+        score(M,M1,_,Score1),
+        best_of_rest(Rest1,ID,P21,P22,M2,Rest2,Score2),
+      	(Score1 > Score2 ->
+            P31 = P11,
+            P32 = P12,
+            M3  = M1
+	;
+            P31 = P21,
+            P32 = P22,
+            M3	= M2
+	),
+	determine_best_alns(Rest2,Rest3).
+
+% best_of_rest(++All_Allignments,--Id_Best,--Pos_Left_Best,--Pos_Right_Best,--Rest_All_Allignments,--Score_Best)
+best_of_rest(Rest1,ID,P31,P32,M3,Rest3,Score3):-
+	(select((ID,P11,P12,M),Rest1,Rest2)->
+            score(M,M1,_,Score1),
+            best_of_rest(Rest2,ID,P21,P22,M2,Rest3,Score2),
+            (Score1 > Score2 ->
+                P31 = P11,
+                P32 = P12,
+                M3 	= M1,
+                Score3 is Score1
+            ;
+                P31 = P21,
+                P32 = P22,
+                M3 	= M2,
+                Score3 is Score2
+            )
+	;
+            P31 = 'n/a',
+            P32 = 'n/a',
+            M3 = 'n/a',
+            Score3 = 0,
+            Rest3 = Rest1
+	).
+
+% score(++Match,--Match_Modified,--Saw_a_Stop,--Score)
 % replaces terminated subseqs in L1 with a seq of blanks in L2, and copies the rest of L1 to L2,
 % computes a score for the adjusted matches and keeps the best for each unique DBID
 %=============================================================================================
@@ -189,115 +326,101 @@ score([42],[],0,0) :-
 
 score([X|L1],[Y|L2],Saw_a_stop,Score):-
 	score(L1,L2,Saw_a_stop_in_rest,ScoreRest),
-	(
-	X \= 42, Saw_a_stop_in_rest = 0 ->
-		Y = X, Saw_a_stop = 0										% copies X to Y and reports "no stops" if X is not a '*' AND "no stops" in rest
+	( X \= 42, Saw_a_stop_in_rest = 0 ->
+            Y = X,
+            Saw_a_stop = 0 % copies X to Y and reports "no stops" if X is not a '*' AND "no stops" in rest
 	;
-		Y = 32,Saw_a_stop = 1										% replaces X by ' ' and reports "stop(s) seen" oherwise
+            Y = 32,
+            Saw_a_stop = 1 % replaces X by ' ' and reports "stop(s) seen" oherwise
 	),
 	sc(Y,ScoreY),
 	Score is ScoreRest + ScoreY.
 
 
-blast_next_chunk(Chunk_file,Blast_Output,QId,ChunkTerminated,Status):-
-	blast_command(Blast_Command),
-	blast_input_file(Blast_Input),
-	blast_output_file(Blast_Output),
-%writeln('pre copy fasta'),
-	copy_fasta(Chunk_file,Blast_Input,QId,ChunkTerminated,CopyFasta_OK),
-%writeln('post copy fasta'),
-	(
-	CopyFasta_OK = 'yes' ->
-		atom_concat(' -query ',Blast_Input, Arg1),
-		atom_concat(' -out ',Blast_Output, Arg2),
-		atom_concat(Arg1,Arg2,Args),
-		atom_concat(Blast_Command,Args,Command),
-		writeq(Command),
-		system(Command,Status)
-	;
-		Status = 2
-	).
+% compute_conservation(++Query,++Best_Alignments,--Cons_Annot,--Cons_Score
+% Arguments:
+%   Arg1, Query format list of Ascii code
+%   Arg2, Alignments
+%   Arg3, Conservation_List
+%   Arg4, normalised average conservation pr position
+%=========================
+% Alignments, is a list DB_Alignments, where
+% 		DB_Alignments is a list of DB_Alignments each of which has the form (DBId, Start, Stop, DB_Sequence)
+%
+% Conservation_List is a list of length equal to Query of integres 0-n, reflecting for each position ion the query the number of DB-sequences having a match at this position
+% Conservation/position : (divide by # DBseqs (8) to get avg-conservation as a percentage).
+%=========================
+compute_conservation(Query,DB_Aligns, Cons, AvgCons):-
+        length(Query,AlignmentLength),
+	query_vs_dbs(Query,DB_Aligns,1,Cons,SummedCons),
+	AvgCons is SummedCons / AlignmentLength.
+
+ 
 
 
-copy_fasta(Infile,OutFile,QId,ChunkTerminated,OK):-
-%writeq(read_line(Infile,[62|QId])),nl,
-	read_line(Infile,[62|QId]),
-	read_line(Infile,Seq_codes),
-	read_line(Infile,_),
-	atom_codes(Title_Line,[62|QId]),
-	atom_codes(Seq_Line,Seq_codes),
-	(append(_,[42],Seq_codes) -> ChunkTerminated = 'yes'; ChunkTerminated = 'no'),		% check for ChunkTerminated to adjust trailing annotaions
-	( Seq_Line \= 'n/a' ->
-	open(OutFile,write,Output),
-	writeln(Output,Title_Line),
-	writeln(Output,Seq_Line),
-	close(Output),
-	OK = 'yes'
-	;
-	OK = 'no'
-	).
+% query_vs_dbs(++QuerySeq,++DB_Best_Hits,??Position,--Cons_Annot,--Acumulated_Score)
+query_vs_dbs([],_DB_Best_Hits,_Position,[],0) :-
+        !.
+
+query_vs_dbs([Qhead|Qtail],DB,Position,[Chead|Ctail],SummedCons):-
+	qhead_vs_dbheads(Qhead,DB,Position,DBtails,Chead),
+        Position1 is Position+1,
+	query_vs_dbs(Qtail,DBtails,Position1,Ctail,CtailSum),
+	SummedCons is Chead + CtailSum. % Before adding: divide Chead by # dbseqs to get percentage-meassure
 
 
-report_cons(Cons_Stream, Dir, Frame, Counter,QId,ChunkTerminated,Status,AFirst,ALast,QLength, ConsRev,Avg_Cons):-						% QId pattern : ec100k_115/142-255_AA
-	(ConsRev \= [] ->
-            PreAdjust is AFirst - 1,
-            makelist(PreAdjust,0,PreList), % change 0/*
-            PostAdjust is QLength - ALast,
-            makelist(PostAdjust,0,PostList), % change 0/*
-            append(ConsRev,PostList,Cons1Rev),
-            append(PreList,Cons1Rev,Cons2Rev)
-	;
-            Cons2Rev = ConsRev
-	),
-        write(extract(QId,Dir,QName,Left,Right,Pfx)),nl,
-	extract(QId,Dir,QName,Left,Right,Pfx), % change -/* Prefix is calculated wrongly in the reverse strand (trans mode 1)
-        write(extract(QId,Dir,QName,Left,Right,Pfx)),nl,
-	Len is Right - Left + 1,
-	(Dir = '-' ->
-            reverse(Cons2Rev,Cons)
-	;
-            write(test3),nl,
-            Cons = Cons2Rev
-	),
-        (
-	Cons == [] ->									% if no conservation, make len-long list of 0's
-          makelist(Len,0,Chunk_Cons) % 				change 0/+
-	;
-          makelist(Pfx,0,Prefix), % change 0/*
-          times_3(Cons,BaseCons),
-          (
-            Dir == '+' ->
-            (
-              ChunkTerminated == 'yes' -> % if original chunk ended with a stop codon/* it needs terminating triple, else not
-              append(BaseCons,[0,0,0],BaseConsTerm) % originally annotated as '-','-','-'
-            ;
-              Trailing is Len mod 3,
-              makelist(Trailing,0,Zeros),
-              append(BaseCons,Zeros,BaseConsTerm)
-                                % BaseConsTerm = BaseCons
-            ),
-            append(Prefix,BaseConsTerm,Chunk_Cons)
-          ;
-            append(BaseCons,Prefix,BaseConsTerm),
-            (
-              ChunkTerminated == 'yes' -> % if original chunk ended with a stop codon/* it needs terminating triple, else not
-              Chunk_Cons = [0,0,0|BaseConsTerm] % originally annotated as '-','-','-'
-             ;
-              Trailing is Len mod 3,
-              makelist(Trailing,0,Zeros),
-              append(Zeros,BaseConsTerm,Chunk_Cons)
-                                % Chunk_Cons = BaseConsTerm
-            )
-          )
-	),
-        Entry =.. [conservation,QName,Left,Right,Dir,Frame,Chunk_Cons,Avg_Cons,Status],
-        write(Entry),nl,
-	write(Cons_Stream,Entry),writeln(Cons_Stream,'.'),
-	Dot is Counter mod 10,
-	Line is Counter mod 200,
-	(Dot = 0 -> write(user_output,'.'); true),
-	(Line = 0 -> nl(user_output); true).
+% query_vs_dbheads(++Query_Symbol,++DB_List,--DB_List_Tails,--Symbol_Matchs)
 
+% end of DBs
+qhead_vs_dbheads(_Qhead,[],_Position,[],0) :-
+        !.                    
+
+% Case: Qhead has not been aligned with DB
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+        Position < Start,
+        !,                  
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQ).
+
+
+% Case: Qhead has not been aligned with DB
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+        Stop < Position,
+        !,                  
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQ).
+
+
+% Case Perfect Match with the first DB
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+        !,                  
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest), 
+	CountQ is 1 + CountQRest. % increment match count
+
+% Case: Mismatch a space in DB
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[32|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-
+        !,
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest).
+
+% Case: Mismatch a - in DB
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[45|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-
+	!,
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest).
+
+% Case: Mismatch in DB, but 1 either 0 is added given the option mismatch_score
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[_DBhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+        !,
+       	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest),
+	nongap_mismatch_score(MMS), % Option mismatch_score of the model
+        CountQ is MMS + CountQRest.
+
+% Case: no DB Left
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[])|RestDBs],Position,[(DBID,Start,Stop,[])|RestTails],CountQRest):-  
+	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest).
+
+
+
+
+
+% Options Report alignment: Report into a file the best alignments find into cons_main
 % : report_alns(Aln_Stream,FirstPos,LastPos,Alns,Alns2)
 report_alns(Aln_Stream,AFirst,ALast,Alns,Alns2):-
 	% write(user_output,'before '),writeln(user_output,Alns),
@@ -305,106 +428,55 @@ report_alns(Aln_Stream,AFirst,ALast,Alns,Alns2):-
 	% write(user_output,'after '),writeln(user_output,Alns2),
 	% writeln(user_output,'=============================================='),
 	set_output(Aln_Stream),
-	write(AFirst),			write(','),
-	write(ALast),				write(','),
-	nl
-	,
+	write(AFirst),write(','),
+	write(ALast),write(','),
+	nl,
 	write(' Full Alignments:'), nl,
 	write(' ----------------'), nl,
-			% writeln(user_output,'report alns1'),
+	% writeln(user_output,'report alns1'),
 	( Alns \= 'n/a' ->
-		report_aln(Alns);
-		writeln('n/a')
+            report_aln(Alns)
+        ;
+            writeln('n/a')
 	),
-	% writeln(user_output,'report alns2 ok'),
+        % writeln(user_output,'report alns2 ok'),
 	write(' Alignments with removed terminated prefixes:'), nl,
 	write(' --------------------------------------------------------------------'), nl,
 	( Alns2 \= 'n/a' ->
-		report_aln(Alns2);
-		writeln('n/a')
+            report_aln(Alns2)
+        ;
+            writeln('n/a')
 	),
 	% writeln(user_output,'report alns3 ok'),
 	nl,
 	set_output(user_output)
 	.
 
-report_aln([(_,_,_,QSeq)|DBs]):-												% Aln = [Query|DBs]
-  (
-  QSeq \= 'n/a' ->
-  	atom_codes(QuerySequence,QSeq),
-  	write('Query    ,'),write(QuerySequence),nl,				% Query = (QueryID,QuerySequence)
-		report_DBs(DBs)
-	;
-		write('Query    ,'),write('n/a'),nl
-	)	,																										% DBs = [DB|DBsRest]
-  nl.																										% DB = (DBID,DBSequence)
+report_aln([(_,_,_,QSeq)|DBs]):- % Aln = [Query|DBs]
+        (QSeq \= 'n/a' ->
+            atom_codes(QuerySequence,QSeq),
+            write('Query    ,'),write(QuerySequence),nl, % Query = (QueryID,QuerySequence)
+            report_DBs(DBs)
+        ;
+            write('Query    ,'),write('n/a'),nl
+        ), % DBs = [DB|DBsRest]
+        nl. % DB = (DBID,DBSequence)
 
 report_DBs([]).
 report_DBs([(DBId,_,_,DBSeq)|DBsRest]):-
-
 	atom_codes(DBIdAtom,DBId),
-	(
-	DBSeq \= 'n/a' ->
-		atom_codes(DBAtom,DBSeq),
-		write(DBIdAtom),write(','),write(DBAtom),nl
+	(DBSeq \= 'n/a' ->
+            atom_codes(DBAtom,DBSeq),
+            write(DBIdAtom),write(','),write(DBAtom),nl
 	;
-		write(DBIdAtom),write(','),write('n/a'),nl
+            write(DBIdAtom),write(','),write('n/a'),nl
 	),
-	report_DBs(DBsRest)
-	.
-
-% compute_conservation/2
-% Arguments:
-% 	Arg1, +, Alignments
-%   Arg2, -, Conservation_List
-%   Arg3, -, normalised average conservation pr position
-%=========================
-% Alignments, is a list [Q|DB_Alignments], where
-% 		Q is a query (QId, Start,Stop, Query_Sequence)
-%			DB_Alignments is a list of DB_Alignments each of which has the form (DBId, Start, Stop, DB_Sequence)
-% 		both Query_Seqeunce and DB_Sequences are lists of charcodes, all DB_seqeunces have same length as Query sequences.
-%
-% Conservation_List is a list of length equal to Query of integres 0-n, reflecting for each position ion the query the number of DB-sequences having a match at this position
-% Conservation/position : (divide by # DBseqs (8) to get avg-conservation as a percentage).
-%=========================
-compute_conservation([(_Qid,_StartQ,_StopQ,Qseq)|DB_Aligns], Cons, AvgCons):-
-	length(Qseq,AlignmentLength),
-	query_vs_dbs(Qseq,DB_Aligns,Cons,SummedCons),
-	AvgCons is SummedCons / AlignmentLength.
+	report_DBs(DBsRest).
 
 
-query_vs_dbs([],_,[],0).
-
-query_vs_dbs([Qhead|Qtail],DB,[Chead|Ctail],SummedCons):-
-	qhead_vs_dbheads(Qhead,DB,DBtails,Chead),
-	query_vs_dbs(Qtail,DBtails,Ctail,CtailSum),
-	SummedCons is Chead + CtailSum. 				 % Before adding: divide Chead by # dbseqs to get percentage-meassure
-
-
-qhead_vs_dbheads(_Qhead,[],[],0).																																													% end of DBs
-
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-				% Match_case  Scores declared in start of module
-	!,																																																											% Match qhead to heads in rest of DBs
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest),																																		% add (DBID,Start,Stop,DBtail) to rest of dbtails
-	CountQ is 1 + CountQRest.	% increment match count
-
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[32|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-  			% mismatch: gap(space) in  DBhead
-	!,
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
-
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[45|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-  			% mismatch: gap(hyphen) in  DBhead
-	!,
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
-
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[_DBhead|TailDB1])|RestDBs],[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-  		% mismatch: different nongap DBhead
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest),
-	nongap_mismatch_score(NMS),																																															% NMS is 0 or 1, depending on how to count nonperfect matches.
-	CountQ is NMS + CountQRest																																															% declared in line 37
-	.
-
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[])|RestDBs],[(DBID,Start,Stop,[])|RestTails],CountQRest):-  										% mismatch: no DBhead
-	qhead_vs_dbheads(Qhead,RestDBs,RestTails,CountQRest).
-
+%---
+% Diverse utils (no more used ??)
+%---
 
 makelist(0,_,[]).
 makelist(N,X,[X|Rest]):-
@@ -412,7 +484,7 @@ makelist(N,X,[X|Rest]):-
 	M is N-1,
 	makelist(M,X,Rest).
 
-extract(QId,Dir,QName,P1,P3,Pfx):-																	% QId pattern : ec100k_115/142-255_AA
+extract(QId,Dir,QName,P1,P3,Pfx):-  % QId pattern : ec100k_115/142-255_AA
         atom_codes(QId,List_QId),
 	append(QId_codes,[95|Body1],List_QId),
         append(P1_codes,[47|Body2],Body1),
@@ -422,19 +494,18 @@ extract(QId,Dir,QName,P1,P3,Pfx):-																	% QId pattern : ec100k_115/14
 	number_codes(P1,P1_codes),
 	number_codes(P2,P2_codes),
 	number_codes(P3,P3_codes),
-	(
-	Dir = '+' ->
-		(P2 = P1 -> Pfx is 0
-		;
+	( Dir = '+' ->
+            (P2 = P1 -> Pfx is 0
+            ;
 		Pfx is P2 - P1 -1 % -1 added
-		)
+            )
 	;
-		(
-		P1 = P2 -> Pfx is 0
-		;
-		Pfx is P3 - P2 + 1 					% orignal +1 added
+            (
+              P1 = P2 -> Pfx is 0
+            ;
+              Pfx is P3 - P2 + 1 % orignal +1 added
 
-		)
+            )
 	).
 
 times_3([],[]).
@@ -468,16 +539,16 @@ testYidD3:-	conservation('YidD_chunk_+2_test_tx1.fst',+,2,'testYidDalns3','testY
 test2:- conservation('test2-AA','test2-cons').
 
 
-%cons_main_new(       Input_Stream,IDs,FirstPos,LastPos,Aln_Stream,Cons)
+%cons_main_new(Input_Stream,IDs,FirstPos,LastPos,Aln_Stream,Cons)
 test3:- open(tblastn_test,read,Blast_Stream,[alias(blast_in)]),
-				open(alntest_out,write,AlnOut_Stream,[alias(aln_out)]) ,
-				parse_blast_init(Blast_Stream,_,IDs),
-				cons_main_new(Blast_Stream,IDs,FirstPos,LastPos,AlnOut_Stream,Cons),
-				write('FirstPos :'), writeln(FirstPos),
-				write('LastPos'),writeln(LastPos),
-				close(blast_in),
-				close(aln_out),
-				writeln(user_output,Cons).
+        open(alntest_out,write,AlnOut_Stream,[alias(aln_out)]) ,
+        parse_blast_init(Blast_Stream,_,IDs),
+        cons_main_new(Blast_Stream,IDs,FirstPos,LastPos,AlnOut_Stream,Cons),
+        write('FirstPos :'), writeln(FirstPos),
+        write('LastPos'),writeln(LastPos),
+        close(blast_in),
+        close(aln_out),
+        writeln(user_output,Cons).
 
 
 testgoal:-run_chunk_conservation('u00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).
