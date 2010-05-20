@@ -35,7 +35,7 @@ lost_best_annotation([InputFile],Options,OutputFile) :-
         findall([Min,Max],chunk(_Key,Min,Max,_,_,_,_,_),List_Ranges_ORF),
         % Computation of annotations
         open(OutputFile,write,Stream_Out),
-        compute_and_save_annotations(Stream_Out,List_ORF,Type_Gene,List_Ranges_ORF,Dir,Frame).
+        compute_and_save_annotations(Stream_Out,1,List_ORF,Type_Gene,List_Ranges_ORF,Dir,Frame).
         % Save the annotations in the right format
         %write(save_annotation(lost_prediction,List_Ranges_ORF,List_Annotations,Dir,Frame,OutputFile)),nl,
         %save_annotation(lost_prediction,List_Ranges_ORF,Dir,Frame,List_Annotations,OutputFile). % Måske, something more generic to include in io 
@@ -47,11 +47,11 @@ lost_best_annotation([InputFile],Options,OutputFile) :-
 % compute_and_save_annotations(++Stream,++ORF,++Type_Gene,++List_Ranges,++Dir,++Frame)
 % Compute the annotation and write into Stream when a coding region is found.
 
-compute_and_save_annotations(Stream_Out,[],_Type_Gene,[],_Dir,_Frame) :-
+compute_and_save_annotations(Stream_Out,_Nb_Iterations,[],_Type_Gene,[],_Dir,_Frame) :-
         !,
         close(Stream_Out).
 
-compute_and_save_annotations(Stream_Out,[ORF|Rest_ORF],Type_Gene,[Range|Rest_Ranges],Dir,Frame) :-
+compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],Type_Gene,[Range|Rest_Ranges],Dir,Frame) :-
         check_or_fail(viterbiAnnot(hmm_lost_annot(ORF,Type_Gene,Annotation),_P),
                       error('Viterbi computation failed (Lost GeneFinder)')
                      ),
@@ -59,8 +59,12 @@ compute_and_save_annotations(Stream_Out,[ORF|Rest_ORF],Type_Gene,[Range|Rest_Ran
         (var(Term) ->
             true
         ;
-            write(Stream_Out,Term),write(Stream_Out,'.'),nl(Stream_Out).
-        ).
+            write(Stream_Out,Term),write(Stream_Out,'.'),nl(Stream_Out)
+        ),
+        Number is Nb_Iterations mod 100,
+        (Number == 1 -> write(Nb_Iterations) ; write('.')),
+        Nb_Iterations1 is Nb_Iterations+1,
+        compute_and_save_annotations(Stream_Out,Nb_Iterations1,Rest_ORF,Type_Gene,Rest_Ranges,Dir,Frame) .
     
 
 

@@ -58,13 +58,10 @@ conservation(Chunk_Stream,Counter,Dir,Frame,Aln_Stream,Cons_Stream):-
             true
 	;
             cons_init(Chunk_Stream,QId,Left,Right,Start_ORF,Query,DBIDs,All_alignments,ChunkTerminated,Status),
-	     write(cons_init(Chunk_Stream,QId,Left,Right,Start_ORF,Query,DBIDs,All_alignments,ChunkTerminated,Status)),nl,	
-            %cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
+	    %cons_init(Chunk_Stream,[QId|DBIDS],QLength, AFirst, ALast, All_alignments,ChunkTerminated,Status),
             (Status == 0 ->
-                write(test),nl,
-                cons_main(Query,DBIDs,All_alignments,Aln_Stream,Cons,Avg_Cons),
-		  write(cons_main(Query,DBIDs,All_alignments,Aln_Stream,Cons,Avg_Cons)),nl
-            ;
+                cons_main(Query,DBIDs,All_alignments,Aln_Stream,Cons,Avg_Cons)
+                ;
                 Cons = [],
                 Avg_Cons is 0
             ),
@@ -100,19 +97,14 @@ cons_main(Query,_DBID,All_alignments,_Aln_Stream,Cons,Avg_Cons) :-
         All_alignments \= [],
         All_alignments \= ['n/a','n/a'],
         !,
-        write(test2),nl,
         determine_best_alns(All_alignments,Best_alignments),
-        write(test3),nl,
        % TODO Do something to manage the option output_alignments /TODO
        % (output_alignments(yes)->
        %     report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
        % ;
        %     true
        % ),
-        write(compute_conservation(Query,Best_alignments,Cons,Avg_Cons)),nl,
-        compute_conservation(Query,Best_alignments,Cons,Avg_Cons),
-        write(test4),nl.
-
+        compute_conservation(Query,Best_alignments,Cons,Avg_Cons).
 
 cons_main(_Query,_DBID,_All_alignments,_Aln_Stream,Cons,Avg_Cons) :-
         Cons = [],
@@ -124,7 +116,13 @@ cons_main(_Query,_DBID,_All_alignments,_Aln_Stream,Cons,Avg_Cons) :-
 
 report_cons(Cons_Stream,QId,Left,Right,Dir,Frame,Start_ORF,ChunkTerminated,Cons,Avg_Cons) :-
         Term =.. [conservation,QId,Left,Right,Dir,Frame,Rest_Infos],
-        Rest_Infos = [cons_annotation(Cons),cons_score(Avg_Cons),stop(ChunkTerminated)|Rest_Infos2],
+        ( Dir = '+' ->
+            Cons1 = Cons
+        ;
+            reverse(Cons,Cons1)
+        ),
+        times_3(Cons1,Cons_Final),
+        Rest_Infos = [cons_annotation(Cons_Final),cons_score(Avg_Cons),stop(ChunkTerminated)|Rest_Infos2],
         (var(Start_ORF) ->
             Rest_Infos2 = []
         ;
@@ -333,11 +331,11 @@ score([X|L1],[Y|L2],Saw_a_stop,Score):-
             Y = 32,
             Saw_a_stop = 1 % replaces X by ' ' and reports "stop(s) seen" oherwise
 	),
-	sc(Y,ScoreY),
+	sc(Y,ScoreY),   % predicate defined in blosum62scores
 	Score is ScoreRest + ScoreY.
 
 
-% compute_conservation(++Query,++Best_Alignments,--Cons_Annot,--Cons_Score
+% compute_conservation(++Query,++Best_Alignments,--Cons_Annot,--Cons_Score)
 % Arguments:
 %   Arg1, Query format list of Ascii code
 %   Arg2, Alignments
@@ -358,7 +356,7 @@ compute_conservation(Query,DB_Aligns, Cons, AvgCons):-
  
 
 
-% query_vs_dbs(++QuerySeq,++DB_Best_Hits,??Position,--Cons_Annot,--Acumulated_Score)
+% query_vs_dbs(++QuerySeq,++DB_Best_Hits,++Position,--Cons_Annot,--Acumulated_Score)
 query_vs_dbs([],_DB_Best_Hits,_Position,[],0) :-
         !.
 
