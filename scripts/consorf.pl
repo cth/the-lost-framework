@@ -4,12 +4,12 @@
 % While the genefinder itself does not at this point care about what chunks it predicts, the inout files must
 % reflect the same chunking of data. As usual, we take care of that by including the toplogy of prediction models in this script.
 
-%:- ['../lost.pl'].
+:- ['../lost.pl'].
 
 % Prolog files in the shared directory can be consulted
 % like this from anywhere..
-%:- lost_include_api(interface).
-%:- lost_include_api(utils_parser_report).
+:- lost_include_api(interface).
+:- lost_include_api(utils_parser_report).
 
 
 % topology 
@@ -69,6 +69,22 @@ run_chunk_conservation(Sequence_File,Options,Conservation_File) :-
 			    Options,
 			    Conservation_File).
 
+%-------------
+% Run orf annotator
+%-----------
+% From the sequence file, generation of the orf annotation from the result
+% of the orf chopper:
+%     orf_annotation(Key,Left,Right,Dir,Frame,[seq_annot([Annot])]
+% where Annot = [.,.,.,.,.,<,<,<,-,-,-,-,>,>,>]
+%-----------
+run_orf_annotator(Sequence_File,Options,Orf_annot_File) :-
+        run_orf_chopper(Sequence_File,Options,Chunk_File),
+        get_annotation_file(orf_annotator,
+                            [Chunk_File],
+                            [],
+                            Orf_annot_File).
+
+
 %--------------------------------------------------------------------------------------------------
 % driving run-predicate for testing and debugging
 %--------------------------------------------------------------------------------------------------
@@ -87,7 +103,7 @@ consorf(InputOrfFile,InputConsFile):-
 % driving run-predicate once required models have been ported to LoSt framework
 %--------------------------------------------------------------------------------------------------
 run_consorf(Sequence_File,Options,Prediction_File):-
-	run_orf_chopper(Sequence_File,Options,Input_Orf_File),
+        run_orf_annotater(Sequence_File,Options,Input_Orf_File),
 	run_chunk_conservation(Sequence_File,Options,Input_Cons_File),
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
 	get_annotation_file(consorf_genefinder,  					
@@ -102,3 +118,6 @@ run_consorf(Sequence_File,Options,Prediction_File):-
 % test predicate
 
 testgoal:-run_chunk_conservation('U00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).				
+
+
+
