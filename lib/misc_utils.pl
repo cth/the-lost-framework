@@ -33,10 +33,19 @@ flexible_append(A,B,C) :- atom(B), append(A,[B],C).
 % Merge list of lists into one long list, e.g.
 % flatten_once([[a,b],[c,d],[e,f]],E) => E = [a, b, c, d, e, f].
 flatten_once([],[]).
+flatten_once([[]|Rest],OutRest) :-
+        !,
+        flatten_once(Rest,OutRest). 
+flatten_once([A|Rest],[A|OutRest]) :-
+	atom(A),
+        !,
+	flatten_once(Rest,OutRest).
 flatten_once([E1|Rest],Out) :-
 	is_list(E1),
-	append(E1,FlatRest,Out),	
+	append(E1,FlatRest,Out),
+        !,
 	flatten_once(Rest,FlatRest).
+
 
 
 map(F,InList,OutList) :-
