@@ -12,12 +12,8 @@
 :- lost_include_api(misc_utils).
 
 % Overall report the accuracy statistics for a particular predictor.
-accuracy_stats(RefFunctor,PredFunctor,Start,End,Outputfile) :-
-	write(called(accuracy_stats(RefFunctor,PredFunctor,Start,End,Outputfile))),nl,
-	trace,
+accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
 	count_genes(PredFunctor,Start,End,NumberPredictedGenes),
-	write('got here'),nl,	
-	
 	count_genes(RefFunctor,Start,End,NumberActualGenes),
 	number_of_correct_genes(RefFunctor, PredFunctor,Start,End,NumberCorrect),
 	number_of_wrong_genes(RefFunctor, PredFunctor, Start, End, NumberWrong),
@@ -35,61 +31,78 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,Outputfile) :-
 	simple_matching_coefficient(TP,FP,TN,FN,SMC),
 	average_conditional_probability(TP,FP,TN,FN,ACP),
 	aproximate_correlation(TP,FP,TN,FN,AC),
-	write('got here'),nl,
-	tell(Outputfile),
-	write('--------------- Gene level stats -----------------'), nl,
-	write('Number of predicted genes: '), write(NumberPredictedGenes),nl,
-	write('Actual number of genes: '), write(NumberActualGenes), nl,
-	write('Number of correctly predicted genes: '), write(NumberCorrect), nl,
-	write('Number of wrongly predicted genes: '), write(NumberWrong), nl,
-	write('Sensitivity: '),
+	tell(OutputFile),
+	write('--------------- gene level stats -----------------'), nl,
+	write('number of predicted genes: '), write(NumberPredictedGenes),nl,
+	write('actual number of genes: '), write(NumberActualGenes), nl,
+	write('number of correctly predicted genes: '), write(NumberCorrect), nl,
+	write('number of wrongly predicted genes: '), write(NumberWrong), nl,
+	write('sensitivity: '),
 	write(GSN),nl,
-	write('Specificity: '),
+	write('specificity: '),
 	write(GSP),nl,
-	write('Wrong genes: '),
+	write('wrong genes: '),
 	write(Wrong),nl,
-	write('Missing genes: '),
+	write('missing genes: '),
 	write(Missing),nl,
-	write('--------------- Nucleotide level stats -----------------'), nl,
-	write('Sensitivity: '), 
+	write('--------------- nucleotide level stats -----------------'), nl,
+        write('true positives: '), write(TP),nl,
+        write('false positives: '), write(FP),nl,
+        write('true negatives: '), write(TN),nl,
+        write('false negatives: '), write(FP),nl,
+	write('sensitivity: '), 
 	write(SN),nl,
-	write('Specificity: '),
+	write('specificity: '),
 	write(SP),nl,
-	write('Specificity traditional: '),
+	write('specificity traditional: '),
 	write(SP2),nl,
-	write('Correlation coefficient: '), write(CC), nl,
-	write('Simple matching coefficient: '), write(SMC), nl,
-	write('Average conditional probability: '), write(ACP), nl,
-	write('Approximate correlation: '), write(AC), nl,
+	write('correlation coefficient: '), write(CC), nl,
+	write('simple matching coefficient: '), write(SMC), nl,
+	write('average conditional probability: '), write(ACP), nl,
+	write('approximate correlation: '), write(AC), nl,
 	told.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Accuracy measures
+% accuracy measures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
+sensivitity(0,0,undefined) :- !.
 sensitivity(TP, FN, SN) :-
 	SN is TP / (TP + FN).
 	
+specificity(0,0,undefined) :- !.
 specificity(TP,FP,SP) :-
 	SP is TP / (TP + FP).
 
+specificity_traditional(0,0,undefined) :- !.
 specificity_traditional(TN,FP,SP) :-
 	SP is TN / (TN + FP).
-	
-correlation_coefficient(TP,FP,TN,FN,CC) :-
-	Numerator is (TP*TN) - (FN*FP),
-	A is TP+FN, A > 0,
-	B is TN+FP, B > 0,
-	C is TP+FP, C > 0,
-	D is TN+FN, D > 0,
-	DenominatorSquared is A*B*C*D,
-	Denominator is sqrt(DenominatorSquared),
-%	sqrt(DenominatorSquared,Denominator),
-	CC is Numerator / Denominator.
 
+% Note: 0.0 is adddd to make numbers floats instead of ints. 
+% Ints are not allowed to be larger than 268435455 in bprolog which
+% would otherwise cause this predicate to overflow for realistic data sizes
+correlation_coefficient(TP,FP,TN,FN,CC) :-
+	Numerator is (TP*TN) - (FN*FP) + 0.0,
+	A is TP+FN+0.0, 
+	B is TN+FP+0.0, 
+	C is TP+FP+0.0, 
+	D is TN+FN+0.0,
+	DenominatorSquared is A*B*C*D,
+        ((DenominatorSquared > 0.0) ->
+	        Denominator is sqrt(DenominatorSquared),
+	        CC is Numerator / Denominator
+                ;
+                CC=undefined).
+
+simple_matching_coefficient(0,0,0,0,undefined) :- !.
 simple_matching_coefficient(TP,FP,TN,FN,SMC) :-
 	SMC is (TP + TN) / (TP + FN + FP + TN).
 	
+average_conditional_probability(0,_,_,0,undefined) :- !.
+average_conditional_probability(0,0,_,_,undefined) :- !.
+average_conditional_probability(_,0,0,_,undefined) :- !.
+average_conditional_probability(_,_,0,0,undefined) :- !.
+
 average_conditional_probability(TP,FP,TN,FN,ACP) :-
 	A is TP / (TP+FN),
 	B is TP / (TP+FP),
@@ -97,17 +110,21 @@ average_conditional_probability(TP,FP,TN,FN,ACP) :-
 	D is TN / (TN+FN),
 	ACP is (A+B+C+D)/4.
 	
+aproximate_correlation(TP,FP,TN,FN,undefined) :-
+	average_conditional_probability(TP,FP,TN,FN,undefined),
+        !.
 aproximate_correlation(TP,FP,TN,FN,AC) :-
 	average_conditional_probability(TP,FP,TN,FN,ACP),
 	AC is (ACP - 0.5) * 2.
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Calculate gene level accuracy counts
+% calculate gene level accuracy counts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
-	
-% FIXME: This might be buggy - check it.
+
 count_genes(Functor,Start,End,Count) :-
 	annotations_as_lists(Functor,Start,End,PredAnnot),
+        % predannot is a list of six lists. one for each reading frame
+        % flatten_once merges all these in one list.. 
 	flatten_once(PredAnnot,Flat),
 	length(Flat,Count).
 	
@@ -270,7 +287,7 @@ nucleotide_level_intervals([[[coding,noncoding],To,From]|Rest],TP,FP,TN,[[To,Fro
 nucleotide_level_intervals([[[noncoding,noncoding],To,From]|Rest],TP,FP,[[To,From]|TN],FN) :-
 	nucleotide_level_intervals(Rest,TP,FP,TN,FN).
 nucleotide_level_intervals([[[noncoding,coding],To,From]|Rest],TP, [[To,From]|FP],TN,FN) :-
-	nucleotide_level_intervals(Rest,TP,FP,TN,FN).	
+	nucleotide_level_intervals(Rest,TP,FP,TN,FN).
 nucleotide_level_intervals([[[noncoding,coding],To,From]|Rest],TP, [[To,From]|FP],TN,FN) :-
 	nucleotide_level_intervals(Rest,TP,FP,TN,FN).
 
@@ -365,8 +382,12 @@ clist_to_ext_range_list([Part1|Part2],OutputList) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fill_range_gaps: Add gaps to ranges,
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Document: what is difference between partial/complete
+
 fill_range_gaps([],[],Curpos,Endpos,_Mode) :-
        Curpos >= Endpos.
+
+fill_range_gaps([],[[noncoding,Curpos,Endpos,[[Curpos,Endpos]]]],Curpos,Endpos,_).
 
 fill_range_gaps([[AnnotType,IS,IE,Elems]|_],[[AnnotType,IS,Endpos,Elems]],_,Endpos,partial) :-
 	IE > Endpos.
