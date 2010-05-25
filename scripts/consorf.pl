@@ -4,12 +4,12 @@
 % While the genefinder itself does not at this point care about what chunks it predicts, the inout files must
 % reflect the same chunking of data. As usual, we take care of that by including the toplogy of prediction models in this script.
 
-%:- ['../lost.pl'].
+:- ['../lost.pl'].
 
 % Prolog files in the shared directory can be consulted
 % like this from anywhere..
-%:- lost_include_api(interface).
-%:- lost_include_api(utils_parser_report).
+:- lost_include_api(interface).
+:- lost_include_api(utils_parser_report).
 
 
 % topology 
