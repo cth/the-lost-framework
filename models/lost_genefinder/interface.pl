@@ -63,7 +63,14 @@ compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],Type_Gene,[
         ),
         Number is Nb_Iterations mod 100,
         (Number == 1 -> write(Nb_Iterations) ; write('.')),
+        (Number == 0 ->
+            table_remove(hmm_lost_annot(_,_)),
+            table_remove(hmm_lost_annot(_,_,_))
+        ;
+            true
+        ),
         Nb_Iterations1 is Nb_Iterations+1,
+        !,
         compute_and_save_annotations(Stream_Out,Nb_Iterations1,Rest_ORF,Type_Gene,Rest_Ranges,Dir,Frame) .
     
 
@@ -73,7 +80,7 @@ compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],Type_Gene,[
 build_term_for_annotation(Functor,[Left,Right],Dir,Frame,Annotation,Term) :-
         first_coding(Left,1,Annotation,Start),
         !,
-        Term =..[Functor,Start,Right,Dir,Frame,Annotation].
+        Term =..[Functor,Left,Right,Dir,Frame,[lost_annotation(Annotation),start(Start)]].
 
 
 build_term_for_annotation(_Functor,_Range,_Dir,_Frame,_Annotation,_Term).
