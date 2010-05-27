@@ -925,5 +925,43 @@ file_functor(Filename, Functor) :-
 	terms_from_file(Filename,Terms),
 	findall( F,((member(X,Terms), X =.. [ F |_ ])), Functors),
 	eliminate_duplicate(Functors,[Functor]).
+
+% Split a file of terms into multiple files
+split_file(Filename,ChunkSize,OutputFilePrefix, OutputFileSuffix) :-
+       open(Filename,read,Stream),
+       split_file_loop(Stream,ChunkSize,1,OutputFilePrefix, OutputFileSuffix),
+       close(Stream).
+
+split_file_loop(IStream, ChunkSize, FileNo, OutputFilePrefix,OutputFileSuffix) :-
+	atom_integer(FileNoAtom,FileNo),
+	atom_concat_list([OutputFilePrefix,'_',FileNoAtom,OutputFileSuffix], OutputFile),
+	write('creating split file:'), write(OutputFile),nl,
+	read_next_n_terms(ChunkSize,IStream,Terms),
+	((Terms == []) ->
+	 true
+	;
+	 terms_to_file(OutputFile,Terms),
+	 NextFileNo is FileNo + 1,
+	 length(Terms,NumTerms),
+	 ((NumTerms < ChunkSize) ->
+	  true
+	 ;
+	  !,
+	  split_file_loop(IStream,ChunkSize,NextFileNo,OutputFilePrefix,OutputFileSuffix)
+	 )
+	).
+	
+read_next_n_terms(0,_,[]).
+read_next_n_terms(N,Stream,Terms) :-
+	read(Stream,Term),
+        ((Term == end_of_file) ->
+	 Terms = []
+	;
+	 Terms = [Term|RestTerms],
+	 !,
+	 N1 is N - 1,
+	 read_next_n_terms(N1,Stream,RestTerms)
+	).
+
 		 
 		
