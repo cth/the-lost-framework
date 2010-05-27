@@ -8,11 +8,13 @@
 % Option declaration
 lost_option(lost_best_annotation,type_gene,hard,'Specified with which kind of data the genefinder is set').
 lost_option(lost_best_annotation,use_parameter_file,yes,'Load parameters from the parameter file').
+lost_option(lost_best_annotation,optimized,false,'whether to split prediction in multiple processes').
 
 % Input Format Specification
 lost_input_formats(lost_best_annotation,[prolog(sequence(_))]).
 % Output Format Specification
 lost_output_format(lost_best_annotation,_,text(prolog(ranges(_)))).
+
 
 
 % 
@@ -21,6 +23,7 @@ lost_best_annotation([InputFile],Options,OutputFile) :-
         prismAnnot('lost_genefinder'), % Load the actual PRISM model                                         
         get_option(Options,use_parameter_file,UseParamFile),
         get_option(Options,type_gene,Type_Gene),
+	get_option(Options,optimized,false),
         (UseParamFile == yes ->
             atom_concat('./Parameters/',Type_Gene,Path),
             atom_concat(Path,'.prb',ParamFile),
@@ -40,9 +43,22 @@ lost_best_annotation([InputFile],Options,OutputFile) :-
         %write(save_annotation(lost_prediction,List_Ranges_ORF,List_Annotations,Dir,Frame,OutputFile)),nl,
         %save_annotation(lost_prediction,List_Ranges_ORF,Dir,Frame,List_Annotations,OutputFile). % Måske, something more generic to include in io 
         %save_annotation_to_sequence_file(genemark_genefinder,70,Annotation,OutputFile).
-				
 
+lost_best_annotation([InputFile],Options,OutputFile) :-
+	get_option(Options,optimized,true),
+	subtract(Options,[optimized(true)],NewOptions1),
+	append([optimized(false)], NewOptions1, NewOptions2),
+	terms_to_file('options.pl',[original_options(NewOptions2)]),
+	lost_tmp_directory(Tmp),
+	atom_concat(Tmp,'lost_genefinder_chunk',Prefix),
+	split_file(InputFile, 10, Prefix, '.pl'),
+	atom_concat(Tmp,'lost_genefinder_chunk*pl',InputFilePattern),
+	atom_concat_list(['sh parallel_predict.sh ', OutputFile, ' ', InputFilePattern], Cmd),
+	system(Cmd).
+	
 
+test :-
+	lost_best_annotation(['testdata.pl'],[optimized(true),type_gene(medium), use_parameter_file(yes)], 'testout.pl').
 
 % compute_and_save_annotations(++Stream,++ORF,++Type_Gene,++List_Ranges,++Dir,++Frame)
 % Compute the annotation and write into Stream when a coding region is found.
