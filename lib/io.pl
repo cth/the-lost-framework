@@ -456,7 +456,11 @@ load_annotation_from_file(sequence,Options,File,Annotation) :-
 
 
 load_annotation_from_file(db,Options,File,Annotation) :-
-        terms_from_file(File,Terms),
+        (member(term(Terms),Options) ->
+            SortedTerms = Terms
+        ;
+            terms_from_file(File,Terms)
+        ),
         % Technically not necessary since they will be sorted if this
 	% interface is used
 	sort('=<',Terms,SortedTerms), 

@@ -27,6 +27,7 @@ get_annotation_file(Model, Inputs, Options, Filename) :-
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
 	 term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
+         write(launch_prism_process(ModelFile,Goal)),
 	 launch_prism_process(ModelFile,Goal),
 	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
 	 lost_file_index_update_file_timestamp(AnnotIndex,Filename)
@@ -195,6 +196,12 @@ lost_data_file(SequenceId, SequenceFile) :-
 
 lost_sequence_file(SequenceId, SequenceFile) :-
 	lost_data_file(SequenceId, SequenceFile).
+
+
+is_generated_file(File_Path) :-
+        lost_data_directory(D),
+        atom_concat(D,Name_File,File_Path),
+        atom_concat(_,'.gen',Name_File).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
