@@ -456,11 +456,27 @@ load_annotation_from_file(sequence,Options,File,Annotation) :-
 
 
 load_annotation_from_file(db,Options,File,Annotation) :-
+        member(term(Terms),Options),
+        !,
+        (var(Terms) ->
+            terms_from_file(File,Terms),
+            sort('=<',Terms,SortedTerms)
+        ;        
+            SortedTerms = Terms
+        ),
+                                % Technically not necessary since they will be sorted if this
+                                % interface is used
+        db_terms_to_annotations(Options,SortedTerms,Annotation).
+
+% TO FI
+load_annotation_from_file(db,Options,File,Annotation) :-
         terms_from_file(File,Terms),
+        sort('=<',Terms,SortedTerms),
         % Technically not necessary since they will be sorted if this
 	% interface is used
-	sort('=<',Terms,SortedTerms), 
+
         db_terms_to_annotations(Options,SortedTerms,Annotation).
+
 
 % Utils for load_annotation_from_file(sequence,....)
 

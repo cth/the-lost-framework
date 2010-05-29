@@ -10,7 +10,8 @@
 % like this from anywhere..
 :- lost_include_api(interface).
 :- lost_include_api(utils_parser_report).
-
+:- [script_parser].
+:- [filter_genes].
 
 % topology 
 
@@ -85,6 +86,35 @@ run_orf_annotator(Sequence_File,Options,Orf_annot_File) :-
                             Orf_annot_File).
 
 
+%-------------
+% Run Genebank Annotator
+%-----------
+% From the sequence file, generation of an
+% annotation from Genebank information
+%     genebank_annotation(Key,Left,Right,Dir,Frame,[genbank_annotation(Annot)]
+%-----------
+% Precond: requires options
+run_genebank_annotator(Sequence_File,File_PTT,Options,GeneBank_annot_File) :-
+        ((member(direction(Dir),Options),member(frame(Frame),Options)) ->
+            Options_Chopper = [direction(Dir),frame(Frame)],
+            Options_Filter = [match_strands([Dir]),match_frames([Frame])]
+        ;
+            write(" Options missing"),nl
+        ),
+        run_orf_chopper(Sequence_File,Options_Chopper,Chunk_File),
+        lost_sequence_file(File_PTT,Seq_File_PTT),
+        parser_ptt(Seq_File_PTT,PTT_Parsed),
+        filter_genes(PTT_Parsed,Sequence_File,Options_Filter,GeneBank_Filtered),
+        get_annotation_file(genebank_annotator,
+                            [Chunk_File,GeneBank_Filtered],
+                            [],
+                            GeneBank_annot_File).
+
+
+% Example: run_genebank_annotator('U00096','U00096_ptt',[direction(+),frame(1)],O).
+
+
+
 %--------------------------------------------------------------------------------------------------
 % driving run-predicate for testing and debugging
 %--------------------------------------------------------------------------------------------------
@@ -120,4 +150,27 @@ run_consorf(Sequence_File,Options,Prediction_File):-
 testgoal:-run_chunk_conservation('U00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).				
 
 
+
+%%%script_learning_consorf(Conservation_File,ORF_Annotated_File,GeneBank_File) :-
+%%%        lost_sequence_file(Conservation_File,Conservation_File_Seq),
+%%%        lost_sequence_file(ORF_Annotated_File,ORF_Annotated_File_Seq),
+%%%        lost_sequence_file(GeneBank_File,GeneBank_File_Seq),
+%%%        consult(Conservation_File_Seq),
+%%%        consult(ORF_Annotated_File_Seq),
+%%%        consult(GeneBank_File_Seq),
+%%%        pick_number_annotations(400,List_Ranges,List_ORF,List_Conservation), % TODO
+%%%        get_annotations_coding(List_Ranges,List_Prediction),   % TODO
+%%%        buid_parameters(List_ORF,List_Conservation,List_Prediction,List_Parameters)  % TODO
+%%%        map(build_learning_terms,List_Parameters,Learning_Terms),
+%%%        prismAnnot('../models/consorf_genefinder/consorf_genefinder.psm'),
+%%%        learn(Learning_Terms),
+%%%        atom_concat('../models/consorf_genefinder/Parameters/','consorf',Proba_File),
+%%%        atom_concat(Proba_File,'.prb',Proba_File2),
+%%%        check_or_fail(
+%%%		      save_sw(Proba_File2),
+%%%		      error(could_not_save_parameter_to_file(_ParametersFile))).
+       
+        
+%%%build_learning_terms(Params,Term) :-
+%%%        Term =.. [consorf|Params].
 
