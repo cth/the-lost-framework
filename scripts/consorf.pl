@@ -97,7 +97,7 @@ run_orf_annotator(Sequence_File,Options,Orf_annot_File) :-
 run_genebank_annotator(Sequence_File,File_PTT,Options,GeneBank_annot_File) :-
         ((member(direction(Dir),Options),member(frame(Frame),Options)) ->
             Options_Chopper = [direction(Dir),frame(Frame)],
-            Options_Filter = [match_strands(Dir),match_frames(Frame)]
+            Options_Filter = [match_strands([Dir]),match_frames([Frame])]
         ;
             write(" Options missing"),nl
         ),
@@ -109,6 +109,10 @@ run_genebank_annotator(Sequence_File,File_PTT,Options,GeneBank_annot_File) :-
                             [Chunk_File,GeneBank_Filtered],
                             [],
                             GeneBank_annot_File).
+
+
+% Example: run_genebank_annotator('U00096','U00096_ptt',[direction(+),frame(1)],O).
+
 
 
 %--------------------------------------------------------------------------------------------------
