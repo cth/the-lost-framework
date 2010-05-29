@@ -5,8 +5,8 @@
 
 % Make changes to these three lines:
 lost_config(prism_command,'prism').
-lost_config(lost_base_directory,'/change/to/your/local/lost/directory').
-lost_config(platform,'to specify unix or windows').
+lost_config(lost_base_directory,'c:/work/lost/').
+lost_config(platform,'windows').
 
 % Do not change below this line
 

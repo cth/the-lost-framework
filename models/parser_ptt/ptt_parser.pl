@@ -17,7 +17,7 @@
 %
 %
 % REMARK :
-%      genebank grammar:
+%   genebank grammar:
 %		eg_file -> line eg_file | <eof>
 %		line -> comment | entry
 %		comment -> # non#* <eol>
@@ -95,9 +95,9 @@ fact_building_gb(List):-
         nth1(2,List,Stop),
         nth1(3,List,Dir),
         nth1(6,List,Gene),
-	nth1(7,List,SynCode),
+				nth1(7,List,SynCode),
 	*/
-        Temp is Start mod 3,
+  Temp is Start mod 3,
 	(Temp = 0 ->
             Frm = 3
 	;
@@ -114,6 +114,7 @@ atomize_list([Atom|R1],[Atom|R2]) :-
 	atom(Atom),
 	!,
 	atomize_list(R1,R2).
+
 atomize_list([Token|R1],[Atom|R2]) :-
 	term2atom(Token,Atom),
 	!,

@@ -103,7 +103,7 @@ consorf(InputOrfFile,InputConsFile):-
 % driving run-predicate once required models have been ported to LoSt framework
 %--------------------------------------------------------------------------------------------------
 run_consorf(Sequence_File,Options,Prediction_File):-
-        run_orf_annotater(Sequence_File,Options,Input_Orf_File),
+  run_orf_annotator(Sequence_File,Options,Input_Orf_File),
 	run_chunk_conservation(Sequence_File,Options,Input_Cons_File),
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
 	get_annotation_file(consorf_genefinder,  					
