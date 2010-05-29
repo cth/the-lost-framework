@@ -68,7 +68,7 @@ conservation(Chunk_Stream,Counter,Dir,Frame,Aln_Stream,Cons_Stream):-
             report_cons(Cons_Stream,QId,Left,Right,Dir,Frame,Start_ORF,ChunkTerminated,Cons,Avg_Cons),
             Counter2 is Counter+1,
             !,
-            conservation(Chunk_Stream,Counter2,Dir,Frame,Aln_Stream,Cons_Stream).
+            conservation(Chunk_Stream,Counter2,Dir,Frame,Aln_Stream,Cons_Stream)
 	).
 
 % cons_init(++Chunk_Stream,--QId,--Left,--Right,--Start_ORF,--Query,--All_Alignment,--ChunkTerminated,--Status)
