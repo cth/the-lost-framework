@@ -129,7 +129,7 @@ report_cons(Cons_Stream,QId,Left,Right,Dir,Frame,Start_ORF,ChunkTerminated,Cons,
         ;
             Rest_Infos2 = [start_ORF(Start_ORF)]
         ),
-        write(Cons_Stream,Term),
+        writeq(Cons_Stream,Term),
         write(Cons_Stream,'.'),
         nl(Cons_Stream).
 
