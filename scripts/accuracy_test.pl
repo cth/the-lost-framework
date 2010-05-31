@@ -23,3 +23,16 @@ test :-
 	write(Atom),
 	nl.
         
+
+script_acc(ReferenceFile,PredictionFile,Max) :-
+        lost_sequence_file(ReferenceFile,ReferenceFile2),
+        lost_sequence_file(PredictionFile,PredictionFile2),
+        get_annotation_file(accuracy_report, [ReferenceFile2,PredictionFile2], [start(1),end(Max)],OutputFile),
+	write('Displaying output file: '),write(OutputFile),nl,
+	readFile(OutputFile,Contents),
+	atom_codes(Atom,Contents),
+	write(Atom),
+	nl.
+        
+        
+        
