@@ -63,48 +63,53 @@ where
 - Training_File is a file of goals : 		 consorf(Orf_Annot,Cons_Annot,Ref_Annot). 
 such that there is one goal for each Id,Left,Right,Dir,Frame in Orf_Annot.
 */
-make_training_file(Orf_Annot,Cons_Annot,Reference_File,Training_File):-
-	open(Orf_Annot,read,O_Stream,[alias(orfin)]),
-	open(Training_File,write,T_Stream,[alias(trainout)]),
+make_training_file(Orf_Annot,Cons_Annot, Ref_Annot, Training_File):-
+	open(Orf_Annot,read,OrfChunk_Stream,[alias(orfin)]),
+	open(Training_File,write,Train_Stream,[alias(trainout)]),
 	cl(Cons_Annot),
-	read(Orf_Annot_Stream,Term),
-	make_training_file_rec(Term,O_Stream,Reference_File,T_Stream),	
+	cl(Ref_Annot),
+	
+	read(OrfChunk_Stream,OrfChunk_Term),
+	make_training_file_rec(OrfChunk_Term, OrfChunk_Stream, Train_Stream),!,	% green cut, for tail-recursion optimization  
+	
+	abolish(genebank_annotation/6),
 	abolish(conservation/6),
-	close(Training_Stream),
-	close(Orf_Annot_Stream)
+	close(Train_Stream),
+	close(OrfChunk_Stream)
 	.
 
-make_training_file_rec(end_of_file,_O_Stream,_Reference_File,_T_Stream):-!.	
+make_training_file_rec(end_of_file,_OrfChunk_Stream,_Train_Stream).	
 
-make_training_file_rec(orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Orf_Annot)]), O_Stream, Ref_File, T_Stream):-
-	conservation(Id,Left,Right,Dir,Frame,Extra_Info),
-	member(cons_annotation(Cons_Annot),Extra_Info),
-	load_annotation_from_file(db,[range(Left,Right)],Ref_File,Ref_Annot),!,
+make_training_file_rec(orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Orf_Annot)]), OrfChunk_Stream, Train_Stream):-
+	conservation(Id,Left,Right,Dir,Frame,Extra_Cons_Info),				% ...or chunk mismatch?
+	member(cons_annotation(Cons_Annot),Extra_Cons_Info),					% ...or missing annotation?
+	
+	genebank_annotation(Id,Left,Right,Dir,Frame,Extra_Ref_Info),	% ...or chunk mismatch?
+	member(seq_annotation(Ref_Annot),Extra_Ref_Info),							% ...or missing annotation?
 	
 	Training_Goal =.. [consorf,Orf_Annot,Cons_Annot,Ref_Annot],
 	
-	write(T_Stream,Training_Goal),
-	write(T_Stream,'.'),
-	nl(T_Stream),
-	read(Orf_Annot_Stream,Next_Term),
-	make_training_file_rec(Next_Term,O_Stream,Reference_File,T_Stream).
+	write(Train_Stream,Training_Goal),
+	write(Train_Stream,'.'),
+	nl(Train_Stream),
+	
+	read(OrfChunk_Stream,Next_OrfChunk_Term),
+	make_training_file_rec(Next_OrfChunk_Term,OrfChunk_Stream,Train_Stream).
 
-/* Examples 
+/* Examples 							
 
-							
+	%% making training file
+	make_training_file(Orf_Annot_File, Cons_Annot_File, Genebank_file, Training_File),
+	assert(data(Training_File)),
+	learn.
+	
+	[autoAnnotations].
+	%% Learning
+	prismAnnot(consorf_genefinder.psm, direct).
+	goals(GS), learn(Gs).
 
-							%% making training file
-							make_training_file(Orf_Annot_File,Cons_Annot_File, Genebank_file, Training_File),
-							assert(data(Training_File)),
-							learn.
-							
-							[autoAnnotations].
-							%% Learning
-							prismAnnot(consorf_genefinder.psm, direct).
-							goals(GS), learn(Gs).
-
-							%% Prediction	
-							prismAnnot(consorf_genefinder.psm)	
-							testO1(O),testC1(C), viterbiAnnot(consorf(O,C,A),P)
-							testO2(O),testC2(C), viterbiAnnot(consorf(O,C,A),P)
+	%% Prediction	
+	prismAnnot(consorf_genefinder.psm)	
+	testO1(O),testC1(C), viterbiAnnot(consorf(O,C,R),P)
+	testO2(O),testC2(C), viterbiAnnot(consorf(O,C,R),P)
 */

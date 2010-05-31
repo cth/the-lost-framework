@@ -591,6 +591,45 @@ argument of the fact is a list containing the relevant elements of the
 last fact stored will have a shorter range.
 \end{itemize}
 
+\subsection{Memory mapping of sequence files}
+
+Some times it can be convenient load a sequence file into memory and then be able
+to extract regions of the sequence on demand. The \texttt{io} API contains a method for
+doing just this.
+
+The predicate to map a file in the format \texttt{text(prolog(sequence(\_)))} into memory is
+\begin{verbatim}
+load_sequence(+SequenceID, +Filename)
+\end{verbatim}
+
+This will load the sequence from the file given by \texttt{Filename} and associate with the 
+identifier \texttt{SequenceID}.
+
+
+\begin{verbatim}
+get_sequence_range(+SequenceID, +Min, +Max, -Data)
+\end{verbatim}
+
+The predicate 
+\texttt{get\_sequence\_range/4}
+can then be used to extract a part of the sequence. This is fairly efficient, but 
+depends on the size of the data terms, $|t|$, in the file. The running time of the predicate
+is bounded by $O(2 |t| \times n)$, where $n = \texttt{Max}-\texttt{Min}$.
+
+\subsection{Splitting a Prolog file into multiple files}
+
+When working with large data files, it can sometimes be practical to split a large 
+file with Prolog facts into multiple files, each having a distinct subset of the facts 
+in the original file.
+The \texttt{io} API contains the predicate \texttt{split\_file/2} for doing this:
+
+\begin{verbatim}
+split_file(+InputFile,+FactsPerFile,
+           +OutputFilePrefix, +OutputFileSuffix)
+\end{verbatim}
+
+The $n$ facts in the \texttt{InputFile} will be divided into $m = n / \texttt{FactsPerFile}$ output files. 
+
 \section{The Stats API: \texttt{stats}}
 
 In this module (\texttt{stats.pl}), several predicates are defined to automatically compute

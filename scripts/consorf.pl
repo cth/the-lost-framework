@@ -97,7 +97,7 @@ run_orf_annotator(Sequence_File,Options,Orf_annot_File) :-
 run_genebank_annotator(Sequence_File,File_PTT,Options,GeneBank_annot_File) :-
         ((member(direction(Dir),Options),member(frame(Frame),Options)) ->
             Options_Chopper = [direction(Dir),frame(Frame)],
-            Options_Filter = [match_strands(Dir),match_frames(Frame)]
+            Options_Filter = [match_strands([Dir]),match_frames([Frame])]
         ;
             write(" Options missing"),nl
         ),
@@ -109,6 +109,10 @@ run_genebank_annotator(Sequence_File,File_PTT,Options,GeneBank_annot_File) :-
                             [Chunk_File,GeneBank_Filtered],
                             [],
                             GeneBank_annot_File).
+
+
+% Example: run_genebank_annotator('U00096','U00096_ptt',[direction(+),frame(1)],O).
+
 
 
 %--------------------------------------------------------------------------------------------------
@@ -129,7 +133,7 @@ consorf(InputOrfFile,InputConsFile):-
 % driving run-predicate once required models have been ported to LoSt framework
 %--------------------------------------------------------------------------------------------------
 run_consorf(Sequence_File,Options,Prediction_File):-
-        run_orf_annotater(Sequence_File,Options,Input_Orf_File),
+  run_orf_annotator(Sequence_File,Options,Input_Orf_File),
 	run_chunk_conservation(Sequence_File,Options,Input_Cons_File),
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
 	get_annotation_file(consorf_genefinder,  					
@@ -143,7 +147,7 @@ run_consorf(Sequence_File,Options,Prediction_File):-
 
 % test predicate
 
-testgoal:-run_chunk_conservation('U00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).				
+testgoal:-run_chunk_conservation('U00096',[direction(+),frame(1),mismatch_score(1),mode(0),genecode(11)],Output), write('Output :'),writeln(Output).				
 
 
 
