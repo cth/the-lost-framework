@@ -36,7 +36,30 @@ script_learning(Gene_Type) :-
 		      save_sw(Proba_File2),
 		      error(could_not_save_parameter_to_file(_ParametersFile))).
         
-        
+
+
+% Learning for the combined models
+
+
+script_learning_combined(Gene_Type) :-
+        consult_gene(Gene_Type),
+        get_coding_ORF(Data_Coding,Starts_Position),
+        get_non_coding_ORF(Data_nonCoding),
+        generation_annotation_coding(Data_Coding,Starts_Position,Gene_Type,Annotation_Coding),
+        build_annotation_noncoding(Data_nonCoding,Gene_Type,Annotation_Non_Coding),
+        map(build_learning_terms,Annotation_Coding,Terms_Coding),
+        map(build_learning_terms,Annotation_Non_Coding,Terms_Non_Coding),
+        pick_a_given_number(400,Terms_Coding,Terms_Coding2),
+        pick_a_given_number(400,Terms_Non_Coding,Terms_Non_Coding2),
+        append(Terms_Coding2,Terms_Non_Coding2,Terms_Learning),
+        prism('../models/lost_genefinder/lost_genefinder.psm'),
+        learn(Terms_Learning),
+        atom_concat('../models/lost_genefinder/Parameters/',Gene_Type,Proba_File),
+        atom_concat(Proba_File,'.prb',Proba_File2),
+        check_or_fail(
+		      save_sw(Proba_File2),
+		      error(could_not_save_parameter_to_file(_ParametersFile))).
+
 %---
 % utils script learning
 %---
