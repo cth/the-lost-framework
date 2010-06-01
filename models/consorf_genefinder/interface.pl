@@ -33,7 +33,14 @@ consorf_main(OrfInStream,ConsInStream,OutStream):-
 		(
 		OrfTerm \= eof, ConsTerm \= eof ->
 			OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,InputOrf|_],
-			ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,InputCons|_],
+			ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,Cons_Annot|_],
+			(
+			Cons_Annot = [] ->,
+				L is Stop - Start + 1, 
+				makelist(L,0,InpuCons)
+			;
+				InputCons = Cons_Annot
+			),
       % Derive an annotation somehow
       check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),
            	error(errorpair(InputOrf,InputCons))),

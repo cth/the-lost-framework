@@ -5,7 +5,7 @@ parser_ptt(PTT_File,ParsedPTTFile) :-
         run_model(parser_ptt, % Name of model
                   annotate([PTT_File], % A list of Input Files
                            [],          % Options
-                           ParsedPTTFile)), % Output File
+                           ParsedPTTFile)). % Output File
 
 % Helper predictate 
 filter_genes(ParsedPTT,RawGenome,Options,Filtered) :-
