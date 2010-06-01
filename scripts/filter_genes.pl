@@ -2,8 +2,9 @@
 :- lost_include_api(interface).
 
 parser_ptt(PTT_File,ParsedPTTFile) :-
+        lost_sequence_file(PTT_File,PTT_File2),
         get_annotation_file(parser_ptt, % Name of model
-                            [PTT_File], % A list of Input Files
+                            [PTT_File2], % A list of Input Files
                             [],          % Options
                             ParsedPTTFile), % Output File
         write('Parsing succeeds!! see.: '),
@@ -12,17 +13,27 @@ parser_ptt(PTT_File,ParsedPTTFile) :-
 
 % Helper predictate 
 filter_genes(ParsedPTT,RawGenome,Options,Filtered) :-
-	get_annotation_file(gene_filter,[ParsedPTT,RawGenome], Options,Filtered).
+        (is_generated_file(ParsedPTT) ->
+            ParsedPTT = ParsedPTT_File
+        ;
+            lost_sequence_file(ParsedPTT,ParsedPTT_File)
+        ),
+        (is_generated_file(RawGenome) ->
+            RawGenome = RawGenome_File
+        ;
+            lost_sequence_file(RawGenome,RawGenome_File)
+        ),
+	get_annotation_file(gene_filter,[ParsedPTT_File,RawGenome_File],Options,Filtered).
 
 filter_y_genes(Genes,Sequence,Filtered) :-
-	Options = [ regex_no_match_extra_fields([ gene_name('^y.*$') ]) ]
+	Options = [ regex_no_match_extra_fields([ gene_name('^y.*$') ]) ],
 	filter_genes(Genes,Sequence,Options,Filtered),
 	write('output is :'),
 	write(Filtered),
         nl.
 
 filter_non_y_genes(Genes,Sequence,Filtered) :-
-	Options = [ regex_match_extra_fields([ gene_name('^y.*$') ]) ]
+	Options = [ regex_match_extra_fields([ gene_name('^y.*$') ]) ],
 	filter_genes(Genes,Sequence,Options,Filtered),
 	write('output is :'),
 	write(Filtered),
