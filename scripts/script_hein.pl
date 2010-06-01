@@ -8,10 +8,9 @@
 
 run_hein :-
         parser_fna('U00096_fna','U00096_gbk',[list(280)],InputFile),
-        get_annotation_file(hein_genefinder, % Name of Model
-                            [InputFile], % DB data
-                            [range(1,2000)], % Options
-                             OutputFile
-                           ),
+        run_model(hein_genefinder, % Name of Model
+                  annotate([InputFile], % DB data
+                           [range(1,2000)], % Options
+                           OutputFile)),
         write("Hein analysis succeeds!! Results store in: "),
         write(OutputFile).

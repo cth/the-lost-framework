@@ -2,14 +2,10 @@
 :- lost_include_api(interface).
 
 parser_ptt(PTT_File,ParsedPTTFile) :-
-        lost_sequence_file(PTT_File,PTT_File2),
-        get_annotation_file(parser_ptt, % Name of model
-                            [PTT_File2], % A list of Input Files
-                            [],          % Options
-                            ParsedPTTFile), % Output File
-        write('Parsing succeeds!! see.: '),
-        write(ParsedPTTFile),
-	nl.
+        run_model(parser_ptt, % Name of model
+                  annotate([PTT_File], % A list of Input Files
+                           [],          % Options
+                           ParsedPTTFile)), % Output File
 
 % Helper predictate 
 filter_genes(ParsedPTT,RawGenome,Options,Filtered) :-
@@ -23,7 +19,7 @@ filter_genes(ParsedPTT,RawGenome,Options,Filtered) :-
         ;
             lost_sequence_file(RawGenome,RawGenome_File)
         ),
-	get_annotation_file(gene_filter,[ParsedPTT_File,RawGenome_File],Options,Filtered).
+	run_model(gene_filter,annotate([ParsedPTT,RawGenome], Options,Filtered)).
 
 filter_y_genes(Genes,Sequence,Filtered) :-
 	Options = [ regex_no_match_extra_fields([ gene_name('^y.*$') ]) ],

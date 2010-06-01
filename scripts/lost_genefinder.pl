@@ -155,10 +155,10 @@ pick_a_given_number(Num,[Elt|Rest],[Elt|Rest_Res]) :-
 
 script_annotation(ChunkFile_Name,Type_Gene,Result_File) :-
         lost_sequence_file(ChunkFile_Name,ChunkFile),
-        get_annotation_file(lost_genefinder,
-			    [ChunkFile],
-			    [type_gene(Type_Gene)], % Options Gene_Type
-			    Result_File),
+        run_model(lost_genefinder,
+		  annotate([ChunkFile],
+			   [type_gene(Type_Gene)], % Options Gene_Type
+			   Result_File)),
         write('Lost annotations succeed!!'),nl.
         
 

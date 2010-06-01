@@ -6,11 +6,11 @@
 
 
 % Input Format Specification
-lost_input_formats(lost_best_annotation,[text(easygene_report)]).
+lost_input_formats(annotate,[text(easygene_report)]).
 % Output Format Specification
-lost_output_format(lost_best_annotation,_,[text(prolog(ranges(_)))]).
+lost_output_format(annotate,_,[text(prolog(ranges(_)))]).
 
 
-lost_best_annotation([Easygene_Report],_Options,OutputFile) :-
+annotate([Easygene_Report],_Options,OutputFile) :-
 	consult('eg_parser.pl'),  % Not nice 
 	eg_parser(Easygene_Report,OutputFile).

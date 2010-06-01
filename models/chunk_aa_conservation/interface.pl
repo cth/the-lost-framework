@@ -6,21 +6,21 @@
 :- lost_include_api(utils_parser_report).
 
 
-lost_input_formats(lost_best_annotation, [text(fasta(ffa))]).
-lost_output_format(lost_best_annotation, _Options, text(prolog(ranges(gene)))).
+lost_input_formats(annotate, [text(fasta(ffa))]).
+lost_output_format(annotate, _Options, text(prolog(ranges(gene)))).
 
-lost_option(lost_best_annotation,mismatch_score,1,'Non Gap Mismatch Score'). 
-lost_option(lost_best_annotation,direction,''). %+ for forward strand and - for reverse strand').
-lost_option(lost_best_annotation,frame,'Reading frame: 1,2 or 3').
+lost_option(annotate,mismatch_score,1,'Non Gap Mismatch Score'). 
+lost_option(annotate,direction,''). %+ for forward strand and - for reverse strand').
+lost_option(annotate,frame,'Reading frame: 1,2 or 3').
 
 % TODO: output best alignment = record in a separate file the best alignment /TODO 
 
-lost_option_values(lost_best_annotation,direction,['+','-']).
-lost_option_values(lost_best_annotation,frame,[1,2,3]).
+lost_option_values(annotate,direction,['+','-']).
+lost_option_values(annotate,frame,[1,2,3]).
 
 % This is what is used to get the best annotation
 % requires gencodefile.
-lost_best_annotation([Chunk_File],Options,Chunk_Conservation_File) :-
+annotate([Chunk_File],Options,Chunk_Conservation_File) :-
 	write('LoSt chunk AA conservation analysis: '),nl,
         cl('chunk_aa_conservation.pl'), % Load the actual PRISM model
 	get_option(Options,mismatch_score,Mismatch_Score),

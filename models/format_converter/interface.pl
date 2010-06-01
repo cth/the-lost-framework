@@ -7,12 +7,12 @@
 :- lost_include_api(fasta).
 :- lost_include_api(io).
 
-lost_option(lost_best_annotation,input_format,text(_),'Used to specify the format of the input file.').
-lost_option(lost_best_annotation,output_format,text(_),'Used to specify the format of the output file.').
-lost_option(lost_best_annotation,sequence_index, 1, 'Used to specify the index of a particular sequence in a multisequence format.').
+lost_option(annotate,input_format,text(_),'Used to specify the format of the input file.').
+lost_option(annotate,output_format,text(_),'Used to specify the format of the output file.').
+lost_option(annotate,sequence_index, 1, 'Used to specify the index of a particular sequence in a multisequence format.').
 	    
 % Some ideas for specification of input & output formats...
-lost_input_formats(lost_best_annotation, [text(_)]).
+lost_input_formats(annotate, [text(_)]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost_output_format/3 declarations
@@ -20,13 +20,13 @@ lost_input_formats(lost_best_annotation, [text(_)]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % fasta (single sequence)  ==> text(prolog(sequence(_)))
-lost_output_format(lost_best_annotation, Options, text(prolog(range(SequenceType)))) :-
+lost_output_format(annotate, Options, text(prolog(range(SequenceType)))) :-
 	get_option(Options,sequence_index,_),
 	get_option(Options,input_format,text(fasta_single(SequenceType))),
 	get_option(Options,output_format,text(prolog(sequence(SequenceType)))).
 
 % text(prolog(range)) ==> fasta (single sequence)
-lost_output_format(lost_best_annotation, Options, text(prolog(range(SequenceType)))) :-
+lost_output_format(annotate, Options, text(prolog(range(SequenceType)))) :-
 	get_option(Options,output_format,text(prolog(range(SequenceType)))),
 	get_option(Options,input_format,text(fasta_single(SequenceType))).
 
@@ -36,7 +36,7 @@ lost_output_format(lost_best_annotation, Options, text(prolog(range(SequenceType
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % text(fasta(_)) ==> text(prolog(sequence(_))) 
-lost_best_annotation([InputFile], Options, OutputFile) :-
+annotate([InputFile], Options, OutputFile) :-
 	get_option(Options,input_format,text(fasta(_))),
 	get_option(Options,output_format,OutputFormat),
 	get_option(Options,sequence_index,SeqId),
@@ -47,7 +47,7 @@ lost_best_annotation([InputFile], Options, OutputFile) :-
 	save_annotation_to_sequence_file(HeaderLineAtom, 32, Sequence, OutputFile).
 
 % text(prolog(sequence(_)) ==> text(fasta(_))
-lost_best_annotation([InputFile], Options, OutputFile) :-
+annotate([InputFile], Options, OutputFile) :-
 	get_option(Options,input_format,text(prolog(sequence(_)))),
 	get_option(Options,output_format,text(fasta(_))),
 	% Load the sequence from a file:
