@@ -1,4 +1,4 @@
-\section{\texttt{/lost.pl}}
+\section{/lost.pl}
 %
 \begin{itemize}
 \item lost\_config(++Type,++Value)
@@ -7,7 +7,7 @@
 \end{itemize}
 
 
-\section{\texttt{/lib/accuracy.pl}}
+\section{/lib/accuracy.pl}
 %
 \begin{itemize}
 \item accuracy\_stats(++RefFunctor,++PredFunctor,++Start,++End,--OutputFile)
@@ -32,7 +32,7 @@
 \item reading\_frame(??Frame)
 \end{itemize}
 
-\section{\texttt{/lib/autoAnnotations.pl}}
+\section{/lib/autoAnnotations.pl}
 %
 \begin{itemize}
 \item prismAnnot(++File)
@@ -41,7 +41,7 @@
 \end{itemize}
 
 
-\section{\texttt{/lib/chmm.pl}}
+\section{/lib/chmm.pl}
 %
 \begin{itemize}
 \item init\_store
@@ -56,7 +56,7 @@
 \end{itemize}
 
 
-\section{\texttt{/lib/fasta.pl}}
+\section{/lib/fasta.pl}
 %
 \begin{itemize}
 \item Maybe to merge with the fna parser ?
@@ -65,7 +65,7 @@
 \item atom\_code\_list(++Codes,,--Atoms)
 \end{itemize}
 
-\section{\texttt{/lib/genecode.pl}}
+\section{/lib/genecode.pl}
 %
 \begin{itemize}
 \item genecode(++TableNum,??Codon,??Amino\_Acid)
@@ -75,13 +75,13 @@
 \item genecode\_stop\_codons(++GeneCode,--StopCodons)
 \end{itemize}
 
-\section{\texttt{/lib/genedb.pl}}
+\section{/lib/genedb.pl}
 %
 \begin{itemize}
 \item To remove ??
 \end{itemize}
 
-\section{\texttt{/lib/interface.pl}}
+\section{/lib/interface.pl}
 %
 \begin{itemize}
 \item $>$(++Call)
@@ -113,7 +113,7 @@
 \item list\_lost\_models(--Models) 
 \end{itemize}
 
-\section{\texttt{/lib/io.pl}}
+\section{/lib/io.pl}
 
 \begin{itemize}
 \item get\_data\_from\_file(++File,++Options,--Data)
@@ -135,7 +135,7 @@
 
 
 
-\section{\texttt{/lib/misc\_utils.pl}}
+\section{/lib/misc\_utils.pl}
 %
 \begin{itemize}
 \item atom\_concat\_list(++List,--Atom)
@@ -168,14 +168,14 @@
 \end{itemize}
 
 
-\section{\texttt{/lib/regex.pl}}
+\section{/lib/regex.pl}
 %
 \begin{itemize}
 \item re\_compile(++RegexAtom,--Regex): compiles an atom representing a regular expression to a Prolog list representation
 \item re\_match(++Regex,++Atom,--Matches): tries to match Atom with the regular expression Regex
 \end{itemize}
 
-\section{\texttt{/lib/sequence.pl}}
+\section{/lib/sequence.pl}
 %
 \begin{itemize}
 \item Remark: maybe to merge in one api for this kind of stuff ??(merge with genecode and some predicate of stats)
@@ -184,7 +184,7 @@
 \item dna\_translate(++GeneCode,??NucList,??AAList)
 \end{itemize}
 
-\section{\texttt{/lib/stats.pl}}
+\section{/lib/stats.pl}
 %
 \begin{itemize}
 \item stats(++Type,++Options,++Data,++InputCounting,--Result)
@@ -199,11 +199,57 @@
 \end{itemize}
 
 
-\section{\texttt{/lib/utils\_parser\_report.pl}}
+\section{/lib/utils\_parser\_report.pl}
 %
 \begin{itemize}
 \item parser\_line(++EntryCodes,++ListTokens)
-\item 
+\item parser\_line(++EntryCodes,++IgnoredChars,++ListTokens)
+\item is\_number(++ListCodes)
+\item readline(++Stream,--CodeList)
+\item read\_tab(++Stream,--CodeList)
+\item read\_token(++Stream,--NSpaces,--CodeList)
+\item read\_n\_spaces(++Stream,++Number)
+\end{itemize}
+
+
+
+\section{/lib/xml.pl}
+%
+\begin{itemize}
+\item xml2pl(++Input,--Output)
+\item pl2xml(++Document,--Codes)
+\item  xml\_parse({+Controls},+?Chars,?+Document): parses Chars to/from a data
+\end{itemize}
+
+\section{/models}
+\begin{itemize}
+\item accuracy\_report
+\item best\_prediction\_per\_stop\_codon
+\item chunk\_aa\_conservation
+\item chunk\_translator
+\item cluster\_gene\_finder
+\item consorf\_genefinder
+\item format\_converter
+\item gene\_filter
+\item genebank\_annotator
+\item genemark
+\item genemark\_genefinder
+\item glimmer3
+\item hard\_to\_find\_genes
+\item hein\_genefinder
+\item longest\_prediction\_per\_stop\_codon
+\item lost\_genefinder
+\item mork\_hmm
+\item orf\_annotator
+\item orf\_chopper
+\item parser\_blastxml
+\item parser\_easygene
+\item parser\_fna
+\item parser\_genemark
+\item parser\_ptt
+\item range\_stats
+\item sample\_model1
+\item sample\_model2
 \end{itemize}
 
 
