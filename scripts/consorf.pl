@@ -27,10 +27,7 @@
 %--------------------------------------------------------------------------------------------------
 run_orf_chopper(Sequence_File,Options,OrfChunk_File) :-
 	lost_sequence_file(Sequence_File,Sequence),
-	get_annotation_file('orf_chopper',
-			    [Sequence],
-			    Options,
-			    OrfChunk_File).
+        run_model(orf_chopper,annotate([Sequence],Options,OrfChunkFile)).
 			    
 %--------------------------------------------------------------------------------------------------
 % Translation to amino-acids. 
@@ -47,11 +44,7 @@ run_orf_chopper(Sequence_File,Options,OrfChunk_File) :-
 %--------------------------------------------------------------------------------------------------
 run_chunk_translator(Sequence_File,Options,Translated_Chunk_File) :-
 	run_orf_chopper(Sequence_File,Options,Orf_Chunk_File),
-	get_annotation_file(chunk_translator,
-			    [Orf_Chunk_File],
-			    Options,
-			    Translated_Chunk_File).			    
-
+        run_model(chunk_translator,([Orf_Chunk_File],Options,Translated_Chunk_File)).
 
 %--------------------------------------------------------------------------------------------------
 % Computing conservation annotation
@@ -65,10 +58,7 @@ run_chunk_translator(Sequence_File,Options,Translated_Chunk_File) :-
 %--------------------------------------------------------------------------------------------------
 run_chunk_conservation(Sequence_File,Options,Conservation_File) :-
 	run_chunk_translator(Sequence_File,Options,Translated_Chunk_File),
-	get_annotation_file(chunk_aa_conservation,
-			    [Translated_Chunk_File],
-			    Options,
-			    Conservation_File).
+        run_model(chunk_aa_conservation,annotate([Translated_Chunk_File], Options, Conservation_File)).
 
 %-------------
 % Run orf annotator
@@ -80,11 +70,7 @@ run_chunk_conservation(Sequence_File,Options,Conservation_File) :-
 %-----------
 run_orf_annotator(Sequence_File,Options,Orf_annot_File) :-
         run_orf_chopper(Sequence_File,Options,Chunk_File),
-        get_annotation_file(orf_annotator,
-                            [Chunk_File],
-                            [],
-                            Orf_annot_File).
-
+        run_model(orf_annotator,annotate([Chunk_File],[],Orf_annot_File)).
 
 %-------------
 % Run Genebank Annotator
@@ -105,10 +91,7 @@ run_genebank_annotator(Sequence_File,File_PTT,Options,GeneBank_annot_File) :-
         lost_sequence_file(File_PTT,Seq_File_PTT),
         parser_ptt(Seq_File_PTT,PTT_Parsed),
         filter_genes(PTT_Parsed,Sequence_File,Options_Filter,GeneBank_Filtered),
-        get_annotation_file(genebank_annotator,
-                            [Chunk_File,GeneBank_Filtered],
-                            [],
-                            GeneBank_annot_File).
+        run_model(genebank_annotator, annotate([Chunk_File,GeneBank_Filtered], [], GeneBank_annot_File)).
 
 
 % Example: run_genebank_annotator('U00096','U00096_ptt',[direction(+),frame(1)],O).
@@ -121,11 +104,11 @@ run_genebank_annotator(Sequence_File,File_PTT,Options,GeneBank_annot_File) :-
 consorf(InputOrfFile,InputConsFile):-
 	lost_sequence_file(InputOrfFile,LostInputOrfFile), % ,ConsFile),
 	lost_sequence_file(InputConsFile,LostInputConsFile),
-	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),	
-	get_annotation_file(consorf_genefinder,  					
-			    [LostInputOrfFile,LostInputConsFile], 						
+	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
+	run_model(consorf_genefinder,
+			    annotate([LostInputOrfFile,LostInputConsFile],
 			    [parameter_file(ParameterFile)],   
-			    AnnotFile),
+			    AnnotFile)),
 	write('Resulting consorf prediction file'),nl,
 	writeln(AnnotFile).
 
@@ -136,10 +119,10 @@ run_consorf(Sequence_File,Options,Prediction_File):-
   run_orf_annotator(Sequence_File,Options,Input_Orf_File),
 	run_chunk_conservation(Sequence_File,Options,Input_Cons_File),
 	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
-	get_annotation_file(consorf_genefinder,  					
-			    [Input_Orf_File,Input_Cons_File], 						
+	run_model(consorf_genefinder,
+			    annotate([Input_Orf_File,Input_Cons_File], 						
 			    [option(parameter_file,ParameterFile)],   
-			    Prediction_File),     													
+			    Prediction_File)),     			
 	write('Resulting consorf prediction file'),nl,
 	writeln(Prediction_File).
 
@@ -147,7 +130,7 @@ run_consorf(Sequence_File,Options,Prediction_File):-
 
 % test predicate
 
-testgoal:-run_chunk_conservation('U00096-500',[direction(+),frame(1),mode(0),nmScore(1),genecodefile('genecode11.pl')],Output), write('Output :'),writeln(Output).				
+testgoal:-run_chunk_conservation('U00096',[direction(+),frame(1),mismatch_score(1),mode(0),genecode(11)],Output), write('Output :'),writeln(Output).				
 
 
 

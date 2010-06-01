@@ -7,28 +7,27 @@ minitest :-
 	lost_sequence_file(gb_fragment,GBFile), % Genbank (reference genes)
 	lost_sequence_file(parser_eg_U00096,EGFile), % Easygene predictions
 	lost_sequence_file(parser_gm_U00096,GMFile), % Genemark predictions
-	get_annotation_file(hard_to_find_genes,
-			    [GBFile,EGFile,GMFile], [],
-			    OutputFile),
-	write('File written to: '), write(OutputFile), nl.
+	run_model(hard_to_find_genes,
+	        annotate([GBFile,EGFile,GMFile], [], OutputFile)),
+   	write('File written to: '), write(OutputFile), nl.
 
 
 % This runs genemark and glimmer, but their options needs to be tweaked
 % a bit still...
 test1 :-
         lost_sequence_file('U00096_ptt',GenbankFile),
-        get_annotation_file(parser_ptt, [GenbankFile], [], GBFile),
+        run_model(parser_ptt, annotate([GenbankFile], [], GBFile)),
 	lost_sequence_file('U00096_fna',SeqFile),
-	get_annotation_file(genemark,[SeqFile],[parameters('Escherichia_coli_K12')],GMAllFile),
-	get_annotation_file(best_prediction_per_stop_codon,
-			    [GMAllFile],
-			    [prediction_functor(genemark_gene_prediction),score_functor(start_codon_probability)],
-			    GMBestFile),
-	get_annotation_file(glimmer3,[SeqFile],[mode(from-scratch)],GlimFile),
-        get_annotation_file(hard_to_find_genes,
-			    [GBFile,GMBestFile,GlimFile],
+	run_model(genemark,annotate([SeqFile],[parameters('Escherichia_coli_K12')],GMAllFile)),
+	run_model(best_prediction_per_stop_codon,
+  	        annotate([GMAllFile],
+			 [prediction_functor(genemark_gene_prediction),score_functor(start_codon_probability)],
+			 GMBestFile)),
+	run_model(glimmer3,annotate([SeqFile],[mode(from-scratch)],GlimFile)),
+        run_model(hard_to_find_genes,
+			    annotate([GBFile,GMBestFile,GlimFile],
 			    [],
-			    Hard2FindGenesFile),
+			    Hard2FindGenesFile)),
 	write('Find list of hard to find genes in: '), write(Hard2FindGenesFile),nl.
 
 
@@ -43,14 +42,9 @@ test1 :-
 script_hard([Golden_Standart|List_Predictions],Nucleotids_File,Division,Result_Files) :-
         map(lost_sequence_file,[Golden_Standart|List_Predictions],List_Files),
         lost_sequence_file(Nucleotids_File,Data_File),
-	get_annotation_file(hard_to_find_genes,
-			   List_Files,[],
-			    OutputFile),
+	run_model(hard_to_find_genes, annotate(List_Files,[],OutputFile),
         consult(OutputFile),
         find_and_build_gene(Data_File,Division,Result_Files).
-
-
-
 
 %----        
 % Utils script hard          

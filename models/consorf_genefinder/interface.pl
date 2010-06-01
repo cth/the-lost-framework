@@ -4,11 +4,11 @@
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
-lost_input_formats(lost_best_annotation, [text(prolog(ranges(gene))),text(prolog(ranges(gene)))]).
-lost_output_format(lost_best_annotation, _Options, text(prolog(ranges(gene)))).
+lost_input_formats(annotate, [text(prolog(ranges(gene))),text(prolog(ranges(gene)))]).
+lost_output_format(annotate, _Options, text(prolog(ranges(gene)))).
 
 % This is what is used to get the best annotation
-lost_best_annotation([OrfFile,ConsFile],Options,OutputFile) :-
+annotate([OrfFile,ConsFile],Options,OutputFile) :-
 	write('LoSt consorf genefinder: '),nl,
 				get_option(Options,parameter_file,Paramfile),
 				prismAnnot('consorf_genefinder'), % Load the actual PRISM model
