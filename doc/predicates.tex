@@ -1,16 +1,23 @@
+\section{\texttt{/lost.pl}}
+%
+\begin{itemize}
+\item lost\_config(++Type,++Value)
+\item lost\_include\_api(++ApiName)
+\item lost\_include\_script(++ScriptName)
+\end{itemize}
 
 
-\texttt{/lib/accuracy.pl} \\
+\section{\texttt{/lib/accuracy.pl}}
 %
 \begin{itemize}
 \item accuracy\_stats(++RefFunctor,++PredFunctor,++Start,++End,--OutputFile)
 \item sensitivity(++TruePos,++FalseNeg,--Sens)
 \item specificity(++TruePos,++FalsePos,--Spec)
-\item specificity_traditional(++TrueNeg,++FalsePos,--ST)
-\item correlation_coefficient(++TruePos,++FalsePos,++TrueNeg,++FalseNeg,--CC)
-\item simple_matching_coefficient(++TruePos,++FalsePos,++TrueNeg,++FalseNeg,--SMC)
-\item average_conditional_probability(++TruePos,++FalsePos,++TrueNeg,++FalseNeg,--ACP)
-\item approximate_correlation(++TruePos,++FalsePos,++TrueNeg,++FalseNeg,--AC)
+\item specificity\_traditional(++TrueNeg,++FalsePos,--ST)
+\item correlation\_coefficient(++TruePos,++FalsePos,++TrueNeg,++FalseNeg,--CC)
+\item simple\_matching\_coefficient(++TruePos,++FalsePos,++TrueNeg,++FalseNeg,--SMC)
+\item average\_conditional\_probability(++TruePos,++FalsePos,++TrueNeg,++FalseNeg,--ACP)
+\item approximate\_correlation(++TruePos,++FalsePos,++TrueNeg,++FalseNeg,--AC)
 \item count\_genes(++Functor,++Start,++End,--Count)
 \item correct\_genes(++RefFunctor,++PredFunctor,++Start,++End,--Correct\_Genes)
 \item missing\_genes(++RefFunctor,++PredFunctor,++Start,++End,--Missing\_Genes)
@@ -25,7 +32,7 @@
 \item reading\_frame(??Frame)
 \end{itemize}
 
-\texttt{/lib/autoAnnotations.pl} \\
+\section{\texttt{/lib/autoAnnotations.pl}}
 %
 \begin{itemize}
 \item prismAnnot(++File)
@@ -34,22 +41,22 @@
 \end{itemize}
 
 
-\texttt{/lib/chmm.pl} \\
+\section{\texttt{/lib/chmm.pl}}
 %
 \begin{itemize}
 \item init\_store
 \item init\_constraint\_store(++Constraint,--Store)
 \item forward\_store(++Store)
 \item get\_store(++S)
-\item init_constraint_stores(++Constraints,--Stores)
-\item init_constraint_store(++Constraint,--Store)
+\item init\_constraint\_stores(++Constraints,--Stores)
+\item init\_constraint\_store(++Constraint,--Store)
 \item check\_constraints(++StateUpdate)
 \item check\_each\_constraints(++StateUpdate,++Constraints,++StoreBefores,--StoreAfters)
 \item constraint\_check(++Constraint,++StateUpdate,++StoreBefore,--StoreAfter)
 \end{itemize}
 
 
-\texttt{/lib/fasta.pl}\\
+\section{\texttt{/lib/fasta.pl}}
 %
 \begin{itemize}
 \item Maybe to merge with the fna parser ?
@@ -58,7 +65,7 @@
 \item atom\_code\_list(++Codes,,--Atoms)
 \end{itemize}
 
-\texttt{/lib/genecode.pl} \\
+\section{\texttt{/lib/genecode.pl}}
 %
 \begin{itemize}
 \item genecode(++TableNum,??Codon,??Amino\_Acid)
@@ -68,16 +75,16 @@
 \item genecode\_stop\_codons(++GeneCode,--StopCodons)
 \end{itemize}
 
-\texttt{/lib/genedb.pl} \\
+\section{\texttt{/lib/genedb.pl}}
 %
 \begin{itemize}
 \item To remove ??
 \end{itemize}
 
-\texttt{/lib/interface.pl} \\
+\section{\texttt{/lib/interface.pl}}
 %
 \begin{itemize}
-\item >(++Call)
+\item $>$(++Call)
 \item get\_annotation\_file(++Model,++Inputs,++Options,--FileName)
 \item run\_model(++Model,++Inputs,++Options,--FileName)
 \item train\_model(++Model,++TrainingDataFiles,++Options,--SavedParamsFile)
@@ -106,10 +113,29 @@
 \item list\_lost\_models(--Models) 
 \end{itemize}
 
+\section{\texttt{/lib/io.pl}}
+
+\begin{itemize}
+\item get\_data\_from\_file(++File,++Options,--Data)
+\item get\_data\_from\_terms(++Terms,++Options,--Data)
+\item empty\_lists(??List)
+\item load\_annotation\_from\_file(++Type,++Options,++File,--Annotation)
+\item sequence\_terms\_to\_annotations(++Options,++ListTerms,--Annotation)
+\item db\_terms\_to\_annotations(++Options,++ListTerms,--Annotation)
+\item get\_next\_range(++Range\_Position,++DB,--Range)
+\item save\_annotation\_to\_sequence\_file(++KeyIndex,++ChunkSize,++Annotation,--File)
+\item load\_sequence(++SeqId,--FileName)
+\item unload\_sequence(++SeqId)
+\item get\_sequence\_range(++SeqId,++Min,++Max,--Data)
+\item terms\_from\_file(++File,--Terms)
+\item terms\_to\_file(++File,++Terms)
+\item file\_functor(++FileName,--Functor)
+\item spilt\_file(++Filename,++ChunkSize,++OutputFilePrefix,++OutputFileSuffix)
+\end{itemize}
 
 
 
-\texttt{/lib/misc\_utils.pl} \\
+\section{\texttt{/lib/misc\_utils.pl}}
 %
 \begin{itemize}
 \item atom\_concat\_list(++List,--Atom)
@@ -125,9 +151,9 @@
 \item match\_tail(++InputList,--HeadOfInputList,++TailOfInputList)
 \item not\_member(++Elt,++List)
 \item terms\_has\_rule\_with\_head(++Terms,++Functor,Arity)
-\item abs(++Elt,--Abs)  % Not ISO predicate ?        
-\item min(++Elt1,++El2,--Min)   % Not ISO predicate ?
-\item max(++Elt1,++Elt2,--Max)  % Not ISO predicate ?
+\item abs(++Elt,--Abs)  RK: Not ISO predicate ?        
+\item min(++Elt1,++El2,--Min)   RK: Not ISO predicate ?
+\item max(++Elt1,++Elt2,--Max)  RK: Not ISO predicate ?
 \item list\_max(++List,--Max)
 \item list\_min(++List,--Min)
 \item atom2integer(++Atom,--Integer)
@@ -140,3 +166,46 @@
 \item is\_upper\_case\_alphanumeric(??Code)
 \item is\_lower\_case\_alphanumeric(??Code)
 \end{itemize}
+
+
+\section{\texttt{/lib/regex.pl}}
+%
+\begin{itemize}
+\item re\_compile(++RegexAtom,--Regex): compiles an atom representing a regular expression to a Prolog list representation
+\item re\_match(++Regex,++Atom,--Matches): tries to match Atom with the regular expression Regex
+\end{itemize}
+
+\section{\texttt{/lib/sequence.pl}}
+%
+\begin{itemize}
+\item Remark: maybe to merge in one api for this kind of stuff ??(merge with genecode and some predicate of stats)
+\item dna\_seq\_complement(++List,--ListComplement)
+\item dna\_complement(++Nuc,--Complement)
+\item dna\_translate(++GeneCode,??NucList,??AAList)
+\end{itemize}
+
+\section{\texttt{/lib/stats.pl}}
+%
+\begin{itemize}
+\item stats(++Type,++Options,++Data,++InputCounting,--Result)
+\item get\_init(++Type,--InitCounting)
+\item update\_counting(++Datum,++Past,++InputCounting,--CountingUpdate) 
+\item get(++Type,--Value)  RK: to merge with genecode
+\item normalize(++Type,++Counting,--Probabilities)
+\item sum\_list(++List,--Sum) RK: already define
+\item build\_stat\_facts(++Counting,--ListFacts)
+\item normalize\_stat\_facts(++Facts,--NormalizedFacts)
+\item count\_all(++Facts,--Count)
+\end{itemize}
+
+
+\section{\texttt{/lib/utils\_parser\_report.pl}}
+%
+\begin{itemize}
+\item parser\_line(++EntryCodes,++ListTokens)
+\item 
+\end{itemize}
+
+
+
+
