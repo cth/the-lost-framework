@@ -12,63 +12,63 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Declaration of input and output formats:
 
-lost_input_formats(lost_best_annotation, [text(prolog(ranges(gene))),text(prolog(sequence))]).
-lost_output_format(lost_best_annotation, _, [text(prolog(ranges(gene)))]).
+lost_input_formats(annotate, [text(prolog(ranges(gene))),text(prolog(sequence))]).
+lost_output_format(annotate, _, [text(prolog(ranges(gene)))]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Declaration of input and output formats:
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    match_frames,
 	    [1,2,3],
 	    'A list of valid frames. Genes in other frames will be filtered.').
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    match_strands,
 	    ['-','+'],
 	    'A list of valid strands. Genes occuring an other strand will be filtered.').
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    exact_match_extra_fields,
 	    [],
 	    'A list of Prolog terms terms each of which must unify with an element of the Extralist.').
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    exact_no_match_extra_fields,
 	    [],
 	    'A list of Prolog terms terms any of which must NOT unify with any element of the Extralist.').
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    regex_match_extra_fields,
 	    [],
 	    'A list of regular field names in the extra and regular expressions to match those fields. If a gene is matched by one of these regular expressions, then it is a candidate for the output.').
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    regex_no_match_extra_fields,
 	    [],
 	    'A list of field names in the extra and regular expressions to match those fields. If a gene is matched by any of these regular expression, it will be filtered and will not occur in the output.').
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    match_protein_coding,
 	    no,
 	    'Specifies that the gene should start with a valid start codon and end with a valid stop codon').
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    genecode,
 	    11,
 	    'The gene code to used. This is used to determine which genes are protein coding').
 
-lost_option(lost_best_annotation,
+lost_option(annotate,
 	    invert_results,
 	    no,
 	    'When this option is set to \'yes\', then the filtered genes will appear in the output instead of non-filtered genes').
 
-lost_option_values(lost_best_annotation,match_protein_coding, [yes,no]).
-lost_option_values(lost_best_annotation,gene_code,[11]). % FIXME: add more..
-lost_option_values(lost_best_annotation,insert_results,[yes,no]).
+lost_option_values(annotate,match_protein_coding, [yes,no]).
+lost_option_values(annotate,gene_code,[11]). % FIXME: add more..
+lost_option_values(annotate,insert_results,[yes,no]).
 
-lost_best_annotation([GeneListFile,GeneDataFile], Options, OutFile) :-
-	write('gene_filter: lost_best_annotation called.'),nl,
+annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
+	write('gene_filter: annotate called.'),nl,
 	terms_from_file(GeneListFile,GeneTerms),
 
 	% Filter genes not matching specified frames

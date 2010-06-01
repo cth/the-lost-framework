@@ -1,62 +1,44 @@
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
-% Simple Prolog debugging trick
-:- op(800, fx,'>').
-'>'(X) :- writeq(X), write('\n'), call(X).
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% get_annotation_file/4
+% run_lost_model/2
+% Can be called as,
+% run_model_model(Model, Goal)
+% or
+% Goal @ Model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Will unify Filename with the name of the containing an annotation
-% the the prism run with Model, and Inputs. If no such annotation
-% exists, PRISM will be run to generate it.
+%
 % Model: The name of the model to be run
-% Inputs: A list of filenames given as input to the model.
+%
+% Goal must be of the from, Goal =.. [ F, InputFiles, Options, OutputFile ]
+% InputFiles: A list of filenames given as input to the model.
 % Options: A list of options to the model.
-get_annotation_file(Model, Inputs, Options, Filename) :-
-	lost_model_interface_file(Model, ModelFile),	
-	check_valid_model_call(Model, lost_best_annotation,3, Options),
-	expand_model_options(Model, Goal, Options, ExpandedOptions),
+
+:- op(1020, xfx, using).
+using(Goal,ModelName) :- run_lost_model(ModelName,Goal).
+
+run_model(Model,Goal) :-
+	write(run_lost_model(Model,Goal)),nl,
+	Goal =.. [ Functor, Inputs, Options, Filename ],
+	lost_model_interface_file(Model, ModelFile),
+	check_valid_model_call(Model,Functor,3,Options),
+	expand_model_options(Model, Functor, Options, ExpandedOptions),
 	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Check if a result allready exists:
-	lost_annotation_index_file(AnnotIndex),
-	lost_file_index_get_filename(AnnotIndex,Model,Inputs,ExpandedSortedOptions,Filename),
+	lost_data_index_file(AnnotIndex),
+	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename),
 	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
 	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
-	 term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
-         write(launch_prism_process(ModelFile,Goal)),
-	 launch_prism_process(ModelFile,Goal),
+	 CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
+	 %term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
+	 term2atom(CallGoal,GoalAtom),
+         write(launch_prism_process(ModelFile,GoalAtom)),nl,
+	 launch_prism_process(ModelFile,GoalAtom),
 	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
 	 lost_file_index_update_file_timestamp(AnnotIndex,Filename)
-	).
-
-% Alias for get_annotation_file...
-run_model(Model,Inputs,Options,Filename) :-
-	get_annotation_file(Model,Inputs,Options,Filename).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% train_model/4
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
-	lost_model_interface_file(Model, ModelFile),	
-	check_valid_model_call(Model, lost_learn,3, Options),
-	expand_model_options(Model, Goal, Options, ExpandedOptions),
-	sort(ExpandedOptions,ExpandedSortedOptions),	
-	lost_model_parameter_index_file(Model,ParamFileIndex),
-	lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile),
-	write(lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile)),nl,
-	!,
-	(file_exists(SavedParamsFile) ->
-	 write('Using existing parameter file: '), write(SavedParamsFile), nl
-	 ;
-	 term2atom(lost_learn(TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile),Goal),
-	 launch_prism_process(ModelFile,Goal),
-	 check_or_fail(file_exists(SavedParamsFile),interface_error(missing_parameter_file(SavedParamsFile))),
-	 lost_file_index_update_file_timestamp(ParamFileIndex,SavedParamsFile)
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,7 +167,7 @@ lost_model_parameter_file(Model,ParameterId,ParameterFile) :-
 	atom_concat(Dir,ParameterId,ParameterFile1),
 	atom_concat(ParameterFile1,'.prb',ParameterFile).
 
-lost_annotation_index_file(IndexFile) :-
+lost_data_index_file(IndexFile) :-
 	lost_data_directory(AnnotDir),
 	atom_concat(AnnotDir,'annotations.idx',IndexFile).
 
@@ -215,19 +197,19 @@ is_generated_file(File_Path) :-
 % Retrieve the filename matching (Model,Options,InputFiles) from the file index
 % If no such filename exists in the index, then a new unique filename is created
 % and unified to Filename 
-lost_file_index_get_filename(IndexFile,Model,InputFiles,Options,Filename) :-
+lost_file_index_get_filename(IndexFile,Model,Goal,InputFiles,Options,Filename) :-
 	(file_exists(IndexFile) -> terms_from_file(IndexFile,Terms) ; Terms = []),
-	(lost_file_index_get_filename_from_terms(Terms,Model,InputFiles,Options,Filename) ->
+	(lost_file_index_get_filename_from_terms(Terms,Model,Goal,InputFiles,Options,Filename) ->
 	 true
 	;
-	 % create and reserver new filename:
+	 % create and reserve new filename:
 	 lost_file_index_next_available_index(Terms, Index),
 	 dirname(IndexFile,IndexDir),
 	 term2atom(Index,IndexAtom),
-	 atom_concat_list([IndexDir, Model, '_',IndexAtom,'.gen'], Filename),
+	 atom_concat_list([IndexDir, Model, '_',Goal,'_',IndexAtom,'.gen'], Filename),
 	 lost_file_index_timestamp(Ts),
 	 term2atom(Ts,AtomTs),
-	 append(Terms, [fileid(IndexAtom,AtomTs,Filename,Model,InputFiles,Options)],NewTerms),
+	 append(Terms, [fileid(IndexAtom,AtomTs,Filename,Model,Goal,InputFiles,Options)],NewTerms),
 	 terms_to_file(IndexFile,NewTerms)
 	).
 
@@ -248,12 +230,12 @@ lost_file_index_largest_index([Term|Rest], LargestIndex) :-
 % lost_file_index_get_filename_from_terms/5:
 % Go through a list terms and check find a Filename matching (Model,ParamsId,InputFiles)
 % Fail if no such term exist
-lost_file_index_get_filename_from_terms([Term|_],Model,InputFiles,Options,Filename) :-
-	Term =.. [ fileid, _, _, Filename, Model, InputFiles, Options ],
+lost_file_index_get_filename_from_terms([Term|_],Model,Goal,InputFiles,Options,Filename) :-
+	Term =.. [ fileid, _, _, Filename, Model, Goal, InputFiles, Options ],
 	!.
 
-lost_file_index_get_filename_from_terms([_|Rest],Model,InputFiles,Options,Filename) :-
-	lost_file_index_get_filename_from_terms(Rest,Model,InputFiles,Options,Filename).
+lost_file_index_get_filename_from_terms([_|Rest],Model,Goal,InputFiles,Options,Filename) :-
+	lost_file_index_get_filename_from_terms(Rest,Model,Goal,InputFiles,Options,Filename).
 
 % Get a timestamp corresponding to the current time
 lost_file_index_timestamp(time(Year,Mon,Day,Hour,Min,Sec)) :-
@@ -262,7 +244,7 @@ lost_file_index_timestamp(time(Year,Mon,Day,Hour,Min,Sec)) :-
 
 lost_file_index_get_file_timestamp(IndexFile,Filename,Timestamp) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, TimeStampAtom, Filename, _Model, _InputFiles, _Options ],
+	TermMatcher =.. [ fileid,  _Index, TimeStampAtom, Filename, _Model, _Goal, _InputFiles, _Options ],
 	member(TermMatcher,Terms),
 	parse_atom(TimeStampAtom,Timestamp).
 				   
@@ -272,22 +254,29 @@ lost_file_index_update_file_timestamp(IndexFile,Filename) :-
 	lost_file_index_timestamp(Ts),
 	term2atom(Ts,TsAtom),
 	terms_from_file(IndexFile,Terms),
-	OldTermMatcher =.. [ fileid,  Index, _, Filename, Model, InputFiles, Options ],
+	OldTermMatcher =.. [ fileid,  Index, _, Filename, Model, Goal, InputFiles, Options ],
 	subtract(Terms,[OldTermMatcher],TermsMinusOld),
-	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, InputFiles, Options ],
+	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, Goal, InputFiles, Options ],
 	append(TermsMinusOld,[NewTerm],UpdatedTerms),
 	terms_to_file(IndexFile,UpdatedTerms).
 
 lost_file_index_filename_member(IndexFile, Filename) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Model, _InputFiles, _Options ],
+	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Goal, _Model, _InputFiles, _Options ],
 	member(TermMatcher,Terms).
 
 lost_file_index_inputfiles(IndexFile,Filename,InputFiles) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Model, InputFiles, _Options ],
+	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Goal,_Model, InputFiles, _Options ],
 	member(TermMatcher,Terms).
-	
+
+lost_file_index_move_file(IndexFile,OldFilename,NewFilename) :-
+	terms_from_file(IndexFile,Terms),
+	OldTermMatcher =.. [ fileid,  Index, TS, OldFilename, Model, Goal, InputFiles, Options ],
+	subtract(Terms,[OldTermMatcher],TermsMinusOld),
+	NewTerm =.. [ fileid,  Index, TS, NewFilename, Model, Goal, InputFiles, Options ],
+	append(TermsMinusOld,[NewTerm],UpdatedTerms),
+	terms_to_file(IndexFile,UpdatedTerms).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost model interface analysis
@@ -300,7 +289,6 @@ check_valid_model_call(Model, InterfacePredicate, Arity,Options) :-
 		      interface_error(no_support(Model,InterfacePredicate/Arity))),
 	check_or_warn(verify_model_options_declared(Model,InterfacePredicate,Options),
 		      error(interface(model_called_with_undeclared_options(Model,Options)))),
-	%write(lost_interface_input_formats(Model,InterfacePredicate, _)),nl,
 	check_or_warn(lost_interface_input_formats(Model,InterfacePredicate, _),
 		      warning(interface(missing_input_formats_declaration(Model,InterfacePredicate)))),
 	check_or_warn(lost_interface_defines_output_format(Model,InterfacePredicate),
@@ -327,8 +315,6 @@ lost_interface_defines_output_format(Model,InterfacePredicate) :-
 	terms_from_file(ModelFile, Terms),
 	Head =.. [ lost_output_format, InterfacePredicate, _options, _format],
 	Rule =.. [ :-, Head, _ ],
-	write(Head),nl,
-	write(Rule),nl,
 	(member(Head, Terms) ; member(Rule,Terms)).
 
 lost_interface_output_format_to_file(Model,InterfacePredicate, Options, OutputFormatFile) :-
@@ -382,7 +368,7 @@ lost_model_option_values(Model, InterfacePredicate, OptionName, Values) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 file_modification_time(File,Timestamp) :-
-	lost_annotation_index_file(IndexFile),
+	lost_data_index_file(IndexFile),
 	lost_file_index_filename_member(IndexFile,File),
 	lost_file_index_get_file_timestamp(IndexFile,File,Timestamp).
 
@@ -423,7 +409,7 @@ rec_files_older_than_timestamp([],_).
 
 rec_files_older_than_timestamp([File|FilesRest],TS1) :-
 	timestamp_to_list(TS1,TS1List),
-	lost_annotation_index_file(IndexFile),
+	lost_data_index_file(IndexFile),
 	lost_file_index_filename_member(IndexFile,File),
 	file_modification_time(File,TS2),
 	timestamp_to_list(TS2,TS2List),
@@ -469,7 +455,14 @@ rm_tmp :-
 	write(Command),nl,
 	system(Command).
 
-
+% Move a generated data file somewhere else and update the annotation index
+move_data_file(X,X) :- !.
+move_data_file(OldFilename, NewFilename) :-
+	lost_data_index_file(IndexFile),
+	copy_file(OldFilename,NewFilename),
+	delete_file(OldFilename),
+	lost_file_index_move_file(IndexFile,OldFilename,NewFilename).
+	
 % Allows to query for models that support a particular 
 % pattern of InputFiles, Options, and OutputFormat
 %list_models_of_type(InputFiles,Options,OutputFormat,Models) :-
@@ -489,7 +482,6 @@ list_lost_models(Models) :-
 	lost_models_directory(ModelsDir),
 	directory_files(ModelsDir,Files),
 	subtract(Files,['.','..'],Models).
-%	directories_in_list(Files,Models).	
 
 directories_in_list([],[]).
 

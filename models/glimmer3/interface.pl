@@ -6,13 +6,13 @@
 
 % Interface file for model that runs Glimmer3
 
-% The lost_best_annotation has the following required options,
+% The annotate has the following required options,
 % mode: (corresponds to glimmer3 scripts)
 %    value=from-scratch: train using long-orfs and run prediction
 %    value=from-training: traing using data specified by option parameter_file
 %    value=iterated: ...
 
-lost_best_annotation([InputFile], Options, OutputFile) :-
+annotate([InputFile], Options, OutputFile) :-
   lost_required_option(Options,mode,from-scratch),
   glimmer3_config(scripts_directory, ScriptsDir),
   atom_concat_list([ScriptsDir,'g3-from-scratch.csh'], Script),
@@ -26,7 +26,7 @@ lost_best_annotation([InputFile], Options, OutputFile) :-
   glimmer3_parse_prediction_file(PredictionFile,OutputFile).
 
 %testme :-
-%	lost_best_annotation(['/tmp/U00096_fna.seq'],
+%	annotate(['/tmp/U00096_fna.seq'],
 %			     [mode(from-scratch)],
 %			     'test_out.pl').
   

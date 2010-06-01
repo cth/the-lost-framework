@@ -110,25 +110,41 @@ this file gives access to all the shared APIs (See chapter \ref{chap:lost_shared
 
 To integrate into the framework each model must provide a file called
 \texttt{interface.pl}, which must be located in the same directory as
-the model. In the file \texttt{interface.pl}, one or more of the predefined
-predicates
+the model. In the file \texttt{interface.pl}, one or more interface
+predicates are defined.  These predicates serve as entry points of
+using the model. 
+
+\subsection{Model interface predicates}
+
+This section describes predicates, that when implemented in 
+the \texttt{interface.pl} file provided by a model, allows the 
+model provide functionalities that integrate into the general framework.
+
+For common tasks these predicate are named according to the
+following convention:
 \begin{itemize}
-\item \texttt{lost\_best\_annotation/3}.
-\item \texttt{lost\_learn/3}
+\item \texttt{annotate/3}: Do inference with the model and produce a
+  "annotation" as output. The annotation take different forms depending on context.
+\item \texttt{train/3}: Training the model on the input data and save
+  a switch file or similar as output.
+\item \texttt{generate/3}: Generate some data using the model.
 \end{itemize}
-\noindent
-are implemented and these serve as entry points of using the model. 
+
+It is possible to use the other predicate names than these, but it is 
+\emph{strongly} recommended to use these names whenever it makes
+sense.
 
 The general form of these predicates is that they take a list of
 input files, a list of options and the name of an output file. They 
 generally read the input files, do some processing and then write
 a result to the output file. The type of processing depends on the
-predicate. The predicate \texttt{lost\_best\_annotation/3} is meant to
+predicate. The predicate \texttt{annotate/3} is meant to
 be used when running the model in prediction mode, so for instance, it 
 might produce a file containing the viterbi path for a given input
-sequence. The predicate \texttt{lost\_learn} is meant to be used when 
+sequence. The predicate \texttt{train/3} is meant to be used when 
 training the model and the output file would usually be the learned
-parameters of the trained model.
+parameters of the trained model. With the \texttt{generate/3}
+predicate, the model is supposed to be used in a generative fashion.
 
 Models should declare the \emph{type} associated to the arguments of
 these predicates. These declarations include
@@ -148,26 +164,13 @@ these predicates. These declarations include
 %of model, this might not apply. The convention is not enforced in
 %anyway and is only recommended practice.
 
-\subsection{Model interface predicates}
+Interface predicates have the following form,
 
-This section describes predicates, that when implemented in 
-the \texttt{interface.pl} file provided by a model, allows the 
-model provide functionalities that integrate into the general framework.
+\begin{verbatim}
+predicate_name(+InputFileNames,+Options,+OutputFilename)
+\end{verbatim}
 
-\subsubsection{
-  \texttt{
-    lost\_best\_annotation(+InputFileNames,+Options,+OutputFilename)
-  }
-}
-
-The framework calls this predicate to obtain a ``best annotation''
-from the model. The model is free to provide this annotation in
-any way it sees fit. It is the responsibility of the model to save the
-annotation to \texttt{OutputFilename}, when
-\texttt{lost\_best\_annotation} is called. If the model for some
-reason is unable to write the annotation to \texttt{OutputFilename},
-then it should \texttt{throw} an exception. The predicate takes the
-following arguments:
+The predicate takes the following arguments:
 \begin{itemize}
 
 \item \texttt{InputFileNames}: Is a list of filenames (with absolute paths),
@@ -185,41 +188,19 @@ following arguments:
   The options must be declared as described in section
   \label{sec:option_declarations}.
 
-\item \texttt{OutputFilename}: Full filename which the resulting ``best
-  annotation'' should be saved to. The model is expected to save
+\item \texttt{OutputFilename}: Full filename which the result should be saved to. The model is expected to save
   the resulting annotation to this file before the completion of 
-  \texttt{lost\_best\_annotation}. The \emph{io} API contains some
+  \texttt{annotate}. The \emph{io} API contains some
   common predicates for saving annotations (see section \ref{sec:io}).
 \end{itemize}
 
-\subsubsection{
-  \texttt{
-    lost\_learn(+InputFileNames,+Options,+OutputFilename)
-  }
-}
-
-This predicate is used for training models. The model is expected to 
-save the result of the training session (e.g. a switch parameter file
-or similar) to \texttt{OutputFilename}.  It expects three arguments
-\begin{itemize}
-\item \texttt{InputFileNames}: Is a list of filenames (with absolute paths),
-  each containing an input to the model. These are used for providing 
-  the traning data. 
-  There is no restriction on the format of the files, but the model
-  should declare what file formats it expects.
-  Predicates to parse a wide range of file formats are supplied in
-  the \emph{io} API (see section \ref{sec:io}). 
-\item \texttt{Options}: Is a list of facts, where the functor
-  works as key and the first argument serves as the value of the
-  option, eg. \texttt{key(Value)}. 
-  % This list is use to parameterize the model in various ways. 
-  For convenience, option values can be checked an
-  extracted using the predicates \texttt{get\_option} (see section \ref{sec:interface}).
-\item \texttt{OutputFilename}: Full filename which the resulting switch
-  parameters or similar should be saved to. The model is expected to save
-  the result to this file when \texttt{lost\_learn} is called. If the
-  model is unable to do this, it should throw an exception.
-\end{itemize}
+Depending the the \texttt{predicate\_name} the predicates will do
+conceptually different things, but there is a common pattern:
+The model reads a processes the files given \texttt{InputFileNames}.
+It is then the responsibility of the predicate to save the
+annotation to \texttt{OutputFilename}. If the model for some
+reason is unable to write the annotation to \texttt{OutputFilename},
+then it should \texttt{throw} an exception.
 
 \subsection{Declaration of options for interface predicates}
 \label{sec:option_declarations}
@@ -232,11 +213,7 @@ lost_option(+InterfaceGoal,+OptionName,+DefaultValue,+Description).
 \end{verbatim}
 
 \begin{itemize}
-\item \texttt{InterfaceGoal}: InterfaceGoal is one of
-	\begin{itemize}
-	  \item \texttt{lost\_best\_annotation}
-	  \item \texttt{lost\_learn}
-	\end{itemize}
+\item \texttt{InterfaceGoal}: InterfaceGoal is the functor name of defined interface predicate.
 \item \texttt{OptionName}: An atom for the name of key. This is the
   functor identifying this particular option.
 \item \texttt{DefaultValue}: If the option is left unspecified then
@@ -248,14 +225,14 @@ the option. Should be in single quotes.
 \noindent
 As example, consider an option declaration:
 \begin{verbatim}
-lost_option(lost_best_annotation,debug,no,'Enable/disable debug prints').
+lost_option(annotate,debug,no,'Enable/disable debug prints').
 \end{verbatim}
 
 In this declaration, we state that the goal
-\texttt{lost\_best\_annotation} take the option
+\texttt{annotate} take the option
 \texttt{debug}. If this option is not a member of the
 \texttt{Options} list, then it will be added with the default value \texttt{no} before 
-\texttt{lost\_best\_annotation} is called by the framework. 
+\texttt{annotate} is called by the framework. 
 
 For instance, assuming the model is called \texttt{my\_model}, it
 might be called from a script with
@@ -264,7 +241,7 @@ get_annotation_file(my_model,['/some/path/infile'],[],FileOut),
 \end{verbatim}
 which will start a new PRISM process and invoke 
 \begin{verbatim}
-lost_best_annotation(['/some/path/infile'],[debug(no)],FileOut),
+annotate(['/some/path/infile'],[debug(no)],FileOut),
 \end{verbatim}
 in \texttt{\$MODELS/my\_model/interface.pl}.
 Note that the option \texttt{debug} has been inserted with the
@@ -283,7 +260,7 @@ In our example above, the option \texttt{debug} might have two
 possible values, \texttt{no} and \texttt{yes}, so a declaration might
 look like, 
 \begin{verbatim}
-lost_option_values(lost_best_annotation, debug, [yes,no]).
+lost_option_values(annotate, debug, [yes,no]).
 \end{verbatim}
 
 \subsubsection{Option checking}
@@ -315,18 +292,18 @@ the declaration belong. The second argument is a list of format
 identifiers as described in chapter \ref{chap:file_formats}.
 For instance, we may have a declaration,
 \begin{verbatim}
-lost_input(lost_best_annotation, 
+lost_input(annotate, 
     [ text(prolog(sequence(dna))), text(prolog(sequence(amino_acids)))]).
 \end{verbatim}
 
 The last entry of the list of formats may have the special star quantifier, which works 
 similar to a kleene star: It states that the last entry is a placeholder for between zero or more entries of the specified type. For instance,
 \begin{verbatim}
-lost_input(lost_best_annotation, 
+lost_input(annotate, 
     [ text(prolog(sequence(dna))), star(text(prolog(sequence(dna))))]).
 \end{verbatim}
 \noindent
-specifies that \texttt{lost\_best\_annotation} takes one or more input files of the type \texttt{text(prolog(sequence(dna)))}.
+specifies that \texttt{annotate} takes one or more input files of the type \texttt{text(prolog(sequence(dna)))}.
 
 \subsubsection{Output file formats}
 
@@ -373,22 +350,26 @@ extension.
 The API provides the interface to lost models following the
 conventions described in section \ref{sec:lost_model_conventions}.
 
-The predicate,
+Running a model is done using the goal \texttt{run\_model}
 \begin{verbatim}
-get_annotation_file(Model, Inputs, Options, OutputFile)
+run_model(Model,annotate(InputFiles,Options,OutputFile)
 \end{verbatim}
 
-is used to retrieve the best annotation generated by a specified
-\texttt{Model} invoked with the specified \texttt{Inputs} and
-\texttt{Options}. \texttt{Inputs} is a list of file names containing 
+%The predicate,
+%\begin{verbatim}
+%get_annotation_file(Model, Inputs, Options, OutputFile)
+%\end{verbatim}
+
+In this case we run the models \texttt{annotate} goal. 
+This is used to retrieve the annotation generated by a specified
+\texttt{Model} invoked with the specified \texttt{InputFiles} and
+\texttt{Options}. \texttt{InputFiles} is a list of file names containing 
 input for the model. \texttt{Options} is a list of facts on the form
 \texttt{key(Value)}, where \texttt{key} is the name of an
 option and \texttt{Value} is a concrete value.
-
-As a consequence of calling this predicate the output \emph{best
-  annotation}) from the model is written to the file
+As a consequence of calling this predicate the output from the model is written to the file
 \texttt{OutputFile}. If the model has been previously invoked with exactly
-the same \texttt{Inputs} and \texttt{Options} , then
+the same \texttt{InputFiles} and \texttt{Options} , then
 \texttt{OutputFile} will unify with the outcome of the previous
 invokation. In this way, the results of running a model are cached.
 
@@ -396,8 +377,8 @@ The generated annotation files are named according to a convention, where
 all annotation files will be placed in the \texttt{\$LOST/data/}
 directory and the \texttt{Filename} is construed according to the following convention:
 \begin{verbatim}
-{Modelname}_{Id}.gen
-\end{verbatim}x
+{Model}_{GoalFunctor}_{Id}.gen
+\end{verbatim}
 
 The first time a model \texttt{OutputFile} is generated, the file
 \texttt{annotation.idx} will be created in \texttt{\$LOST/data/}. This file
@@ -406,7 +387,7 @@ file to the model, input files and options that generated
 the particular annotation. This database file contains Prolog facts 
 of the form
 \begin{verbatim}
-fileid(Id,Filename,Model,Options,InputFiles).
+fileid(Id,Filename,Model,Goal,Options,InputFiles).
 \end{verbatim}
 
 The annotation index is automatically maintained by
@@ -414,10 +395,23 @@ The annotation index is automatically maintained by
 
 If an annotation for a particular run of a model is not present then
 \texttt{get\_annotation\_file/4} will start a new PRISM process 
-that invokes the \texttt{lost\_best\_annotation} predicate provided
+that invokes the \texttt{annotate} predicate provided
 be the model \texttt{interface.pl} file. By the contract of model 
 conventions, the model will generate the annotation and save it 
 to the file indicated by the provided filename.
+
+\subsection{Moving generated files around}
+
+Once a file has been generated, you may wish the move or rename the
+file. Doing this using normal system commands will fail to the update 
+the annotation index and as result the file may be regenerated, even 
+if it was already generated once.  Instead, you should use
+
+\begin{verbatim}
+move_data_file(+OldFilename, +NewFilename)
+\end{verbatim}
+\noindent
+This predicate makes sure that the annotation index is updated accordingly.
 
 \section{Input-Output API: \texttt{io}}
 \label{sec:io}
@@ -1112,7 +1106,7 @@ Given an input file with gene predictions, this model selects for each
 stop codon the longest matching prediction. Only the longest
 prediction for each stop coden will be written to the output file.
 
-For the goal \texttt{lost\_best\_annotation/3}, the following files
+For the goal \texttt{annotate/3}, the following files
 and options are expected:
 \begin{itemize}
 \item Input files: \texttt{text(prolog(ranges(gene)))}
@@ -1133,7 +1127,7 @@ predictions to the output file. The score is for each prediction is
 assumed to be present the \texttt{Extra} list argument of the
 prediction facts in the input file. 
 
-For the goal \texttt{lost\_best\_annotation/3}, the following files
+For the goal \texttt{annotate/3}, the following files
 and options are expected:
 \begin{itemize}
 \item Input files: \texttt{text(prolog(ranges(gene)))}
