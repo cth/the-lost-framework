@@ -23,11 +23,14 @@
 %			orf-annotations, 	alphabet={.,<,-,>}
 %			conservation, 		alphabet={0,1,2,3,4,5,6,7,8}
 %=========================================================
+%:-dynamic(genebank_annotation/6).
+%:-dynamic(conservation/6).
+%:- ddynamic(data/1).
 :- set_prism_flag(learn_mode,both).
 :- set_prism_flag(log_viterbi,on).
 :- set_prism_flag(scaling,log_exp).
 
-data('u00096-20k_cnk_+1.trn').
+data('trainingTest').
 values(begin,[c,n]).
 values(trans(_),[c,n,end]).
 values(emit(_),[
@@ -72,8 +75,8 @@ make_training_file(Orf_Annot,Cons_Annot, Ref_Annot, Training_File):-
 	read(OrfChunk_Stream,OrfChunk_Term),
 	make_training_file_rec(OrfChunk_Term, OrfChunk_Stream, Train_Stream),!,	% green cut, for tail-recursion optimization  
 	
-	abolish(genebank_annotation/6),
-	abolish(conservation/6),
+	%abolish(genebank_annotation/6),
+	%abolish(conservation/6),
 	close(Train_Stream),
 	close(OrfChunk_Stream)
 	.
@@ -82,8 +85,14 @@ make_training_file_rec(end_of_file,_OrfChunk_Stream,_Train_Stream).
 
 make_training_file_rec(orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Orf_Annot)]), OrfChunk_Stream, Train_Stream):-
 	conservation(Id,Left,Right,Dir,Frame,Extra_Cons_Info),				% ...or chunk mismatch?
-	member(cons_annotation(Cons_Annot),Extra_Cons_Info),					% ...or missing annotation?
-	
+	member(cons_annotation(Cons),Extra_Cons_Info),					% ...or missing annotation?
+	(
+	Cons = [] -> 																						% in case no conservation was reported from blast, replace [] by a list of L 0's
+		L is Right - Left + 1, 
+		makelist(L,0,Cons_Annot)	
+	;
+		Cons_Annot = Cons
+	),	
 	genebank_annotation(Id,Left,Right,Dir,Frame,Extra_Ref_Info),	% ...or chunk mismatch?
 	member(seq_annotation(Ref_Annot),Extra_Ref_Info),							% ...or missing annotation?
 	
@@ -95,6 +104,13 @@ make_training_file_rec(orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Or
 	
 	read(OrfChunk_Stream,Next_OrfChunk_Term),
 	make_training_file_rec(Next_OrfChunk_Term,OrfChunk_Stream,Train_Stream).
+
+makelist(0,_,[]).
+makelist(N,X,[X|Rest]):-
+	N > 0,
+	M is N-1,
+	makelist(M,X,Rest).
+
 
 /* Examples 							
 
