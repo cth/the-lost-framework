@@ -27,7 +27,7 @@
 %--------------------------------------------------------------------------------------------------
 run_orf_chopper(Sequence_File,Options,OrfChunk_File) :-
 	lost_sequence_file(Sequence_File,Sequence),
-        run_model(orf_chopper,annotate([Sequence],Options,OrfChunkFile)).
+        run_model(orf_chopper,annotate([Sequence],Options,OrfChunk_File)).
 			    
 %--------------------------------------------------------------------------------------------------
 % Translation to amino-acids. 
