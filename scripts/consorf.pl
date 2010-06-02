@@ -44,7 +44,7 @@ run_orf_chopper(Sequence_File,Options,OrfChunk_File) :-
 %--------------------------------------------------------------------------------------------------
 run_chunk_translator(Sequence_File,Options,Translated_Chunk_File) :-
 	run_orf_chopper(Sequence_File,Options,Orf_Chunk_File),
-        run_model(chunk_translator,([Orf_Chunk_File],Options,Translated_Chunk_File)).
+        run_model(chunk_translator,annotate([Orf_Chunk_File],Options,Translated_Chunk_File)).
 
 %--------------------------------------------------------------------------------------------------
 % Computing conservation annotation
