@@ -4,7 +4,7 @@
 %:- set_prism_flag(learn_mode,hparams).
 %:- set_prism_flag(log_viterbi,on).
 
-coding_clusters(10).
+coding_clusters(1).
 
 data('training_data.pl').
 /*
@@ -122,7 +122,6 @@ cluster_hmm_rec(nc,[N1|SequenceRest],[0|AnnotRest]) :-
 cluster_hmm_rec(State,[N1,N2,N3|SequenceRest],[ClusterId,ClusterId,ClusterId|AnnotRest]) :-
         State =.. [ _, ClusterId ],
         State \= nc, 
-%        write(cluster_hmm(State)),nl,
         custom_msw(emit(State), [N1,N2,N3]),
         custom_msw(trans(State),NextState),
         cluster_hmm_rec(NextState,SequenceRest,AnnotRest).

@@ -8,6 +8,17 @@
 :- ['../../lost.pl'].
 :- lost_include_api(io).
 
+
+% Extract ORFs for each gene
+% For each gene, create annotation (as if only one cluster existed)
+% For each gene: "Train" model to get MSW distribution.
+% Scale each msw according to the number of outcomes for that MSW
+% Output results
+statistics_from_model(GenesFile, ORFFile) :-
+	load_genes(GenesFile),
+	load_clusters(ClustersFile),
+	FIXME.
+	
 test :-
         create_training_data(   'clusters.pl',
                                 'ecoli_genes.pl',
@@ -142,56 +153,4 @@ get_cluster_orfs([(_,_,GeneNames)|RestClusters],Genes,[(SelectedGenes,ORFs)|Rest
         select_genes_with_names(GeneNames,Genes,SelectedGenes),
         map(get_gene_orf,SelectedGenes,ORFs),
         get_cluster_orfs(RestClusters,Genes,RestORFs).
-
-get_gene_nucleotide_sequence(Gene, Nucleotides) :-
-        Gene =.. [ _functor, LeftEnd, RightEnd, Strand, _frame, _extra ],
-        get_sequence_range(genome,LeftEnd,RightEnd,Sequence),
-        ((Strand = '+') ->
-                Nucleotides = Sequence
-                ;
-                dna_seq_complement(Sequence,SequenceComplemented),
-                reverse(SequenceComplemented,Nucleotides)
-        ).
-
-get_noncoding_nucleotide_sequence_before_gene(Genes,Gene,Nucleotides) :-
-        Gene =.. [ _functor, LeftEnd, RightEnd, '+', _frame, _extra ],
-	((Strand == '+') -> RangeRightEnd is LeftEnd - 1 ; RangeLeftEnd is RightEnd + 1),
-	% If the is a previous (in reading direction) gene in the same reading frame
-	% then we are interested in the range between the two genes
-        (previous_gene_same_frame(Genes,Gene,PreviousGene) ->
-	 PreviousGene =.. [ _, LeftEnd,RightEnd,_,_,_],
-	 ((Strand == '+') -> RangeLeftEnd is RightEnd + 1 ; RangeRightEnd is LeftEnd - 1)
-	 ;
-	 ((Strand == '+') -> RangeLeftEnd = 1 ; RangeRightEnd = max)
-	 ),
-        get_sequence_range(genome,RangeLeftEnd,RangeRightEnd,Sequence),
-        ((Strand = '+') ->
-                Nucleotides = Sequence
-                ;
-                dna_seq_complement(Sequence,SequenceComplemented),
-                reverse(SequenceComplemented,Nucleotides)
-        ).
-
-previous_gene_same_frame(Genes,Gene,PreviousGene) :-
-        Gene =.. [ _, LeftEnd, _, '+', Frame, _ ],
-        findall(RightEnd1,
-		(member(G1,Genes),G1 =.. [_,_,RightEnd1,'+',Frame,_]),
-		AllGeneEnds),
-	PreviousGeneEnd :: AllGeneEnds,
-	PreviousGeneEnd #< LeftEnd,
-	maxof(labeling(PreviousGeneEnd), PreviousGeneEnd),
-	member(PreviousGene,Genes),
-	PreviousGene =.. [ _, _, PreviousGeneEnd, '+',Frame,_].
-
-
-previous_gene_same_frame(Genes,Gene,PreviousGene) :-
-        Gene =.. [ _, _, RightEnd, '-', Frame, _ ],
-        findall(LeftEnd1,
-		(member(G1,Genes),G1=..[_,LeftEnd1,_,'-',Frame,_]),
-		AllGeneEnds),
-	PreviousGeneEnd :: AllGeneEnds,
-	PreviousGeneEnd #> RightEnd,
-	minof(labeling(PreviousGeneEnd), PreviousGeneEnd),
-	member(PreviousGene,Genes),
-	PreviousGene =.. [_,PreviousGeneEnd,_,'-',Frame,_].
 
