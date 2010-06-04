@@ -944,26 +944,29 @@ file_functor(Filename, Functor) :-
 
 % Split a file of terms into multiple files
 split_file(Filename,ChunkSize,OutputFilePrefix, OutputFileSuffix) :-
+        split_file(Filename,ChunkSize,OutputFilePrefix, OutputFileSuffix,_).
+split_file(Filename,ChunkSize,OutputFilePrefix, OutputFileSuffix,ResultingFiles) :-
        open(Filename,read,Stream),
-       split_file_loop(Stream,ChunkSize,1,OutputFilePrefix, OutputFileSuffix),
+       split_file_loop(Stream,ChunkSize,1,OutputFilePrefix, OutputFileSuffix,ResultingFiles),
        close(Stream).
 
-split_file_loop(IStream, ChunkSize, FileNo, OutputFilePrefix,OutputFileSuffix) :-
+split_file_loop(IStream, ChunkSize, FileNo, OutputFilePrefix,OutputFileSuffix,ResultingFiles) :-
 	atom_integer(FileNoAtom,FileNo),
 	atom_concat_list([OutputFilePrefix,'_',FileNoAtom,OutputFileSuffix], OutputFile),
 	write('creating split file:'), write(OutputFile),nl,
 	read_next_n_terms(ChunkSize,IStream,Terms),
 	((Terms == []) ->
-	 true
+         ResultingFiles = []
 	;
 	 terms_to_file(OutputFile,Terms),
 	 NextFileNo is FileNo + 1,
 	 length(Terms,NumTerms),
 	 ((NumTerms < ChunkSize) ->
-	  true
+          ResultingFiles = []
 	 ;
 	  !,
-	  split_file_loop(IStream,ChunkSize,NextFileNo,OutputFilePrefix,OutputFileSuffix)
+          ResultingFiles = [OutputFile|RestResultingFiles],
+	  split_file_loop(IStream,ChunkSize,NextFileNo,OutputFilePrefix,OutputFileSuffix,RestResultingFiles)
 	 )
 	).
 	
