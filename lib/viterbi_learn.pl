@@ -1,37 +1,37 @@
 :- ['../../lost.pl'].
 :- lost_include_api(io).
 
-erf_learn_file(File) :-
+viterbi_learn_file(File) :-
 	clear_counters,
 	add_pseudo_counts,
         open(File,read,Stream),
-        erf_learn_stream(Stream),
+        viterbi_learn_stream(Stream),
         close(Stream),
 	set_switches_from_counts.
 
-erf_learn_file_count_only(File) :-
+viterbi_learn_file_count_only(File) :-
 	clear_counters,	
         open(File,read,Stream),
-        erf_learn_stream(Stream),
+        viterbi_learn_stream(Stream),
         close(Stream).
 
-erf_learn_stream(Stream) :-
+viterbi_learn_stream(Stream) :-
         read(Stream,Term),
         ((Term == end_of_file) ->
                 true
                 ;
-                erf_learn_term(Term),
+                viterbi_learn_term(Term),
                 !,
-                erf_learn_stream(Stream)).
+                viterbi_learn_stream(Stream)).
 
-erf_learn([]).
-erf_learn([G|Gs]) :-
+viterbi_learn([]).
+viterbi_learn([G|Gs]) :-
 	clear_counters,
-        erf_learn_term(G),
+        viterbi_learn_term(G),
         !,
-        erf_learn(Gs).
+        viterbi_learn(Gs).
 
-erf_learn_term(G) :-
+viterbi_learn_term(G) :-
         viterbit(G,_,T),
         tree_switches(T,S),
         forall(member(M,S),count_msw(M)),
