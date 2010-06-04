@@ -8,7 +8,7 @@
 % HISTORIQUE :
 %      O.T.L 23/10/2009: creation
 %      M.P   18/01/2010: Integration in the LOST toolbox and few modifications
-%
+%      M.P   04/06/2010: Range option
 %  
 % DESCRIPTION :
 %            Generation of terms from a FNA file
@@ -25,11 +25,11 @@
 % given Options
 % Options: - default = []: generation of a list of nucleotids
 %          - list(Size): chunking of the genome into list of nucleotids with a length Size
-%          - array_bprolog(Size): the same as list_of_list but with non ISO arrays of B-Prolog. (NOT AVAILABLE)
+%          - range([Min,Max])
 %----------
 parser_fna(Options,FNA_File,GBK_File,Output_File) :-
         open(GBK_File,read,GBK_Stream),
-        get_info_gbk(GBK_Stream,Genbank_Key,N_BP),
+        get_info_gbk(GBK_Stream,GeneBank_Key,N_BP),
         close(GBK_Stream),
         open(FNA_File,read,FNA_Stream),
         open(Output_File,write,Output_Stream),
@@ -37,110 +37,193 @@ parser_fna(Options,FNA_File,GBK_File,Output_File) :-
         atom_codes(Comment,[37|First_Line]),
         write(Output_Stream,Comment),
         nl(Output_Stream),
-        parser_fna_data(Options,FNA_Stream,Genbank_Key,N_BP,Output_Stream),
+        parser_fna_data(Options,FNA_Stream,GeneBank_Key,N_BP,Output_Stream),
         close(FNA_Stream),
         close(Output_Stream).
 
+ 
 
-parser_fna(Options,FNA_File,Genbank_Key,N_BP,Output_File) :-
+parser_fna(Options,FNA_File,GeneBank_Key,N_BP,Output_File) :-
         open(FNA_File,read,FNA_Stream),
         open(Output_File,write,Output_Stream),
         readline(FNA_Stream,First_Line),
         atom_codes(Comment,[37|First_Line]),
         write(Output_Stream,Comment),
         nl(Output_Stream),
-        parser_fna_data(Options,FNA_Stream,Genbank_Key,N_BP,Output_Stream),
+        parser_fna_data(Options,FNA_Stream,GeneBank_Key,N_BP,Output_Stream),
         close(FNA_Stream),
         close(Output_Stream).
 
 
 
 %Default 
-parser_fna_data([list('none')],FNA_Stream,Genbank_Key,N_BP,Output_Stream) :-
+parser_fna_data(Options,FNA_Stream,GeneBank_Key,N_BP,Output_Stream) :-
+        member(list('none'),Options),
         !,
-        compute_data(FNA_Stream,N_BP,List_Nuc),
-        Data = data(Genbank_Key,1,N_BP,List_Nuc),
-        write(Output_Stream,Data),
-        write(Output_Stream,'.'),
-        nl(Output_Stream).
+        member(range([Min,Max]),Options),
+        ((Min = min, Max = max)->
+            Range = [1,N_BP]
+        ;
+            Range = [Min,Max]
+        ),
+        compute_data(FNA_Stream,GeneBank_Key,Range,N_BP,Output_Stream).
 
 % List
-parser_fna_data([list(Size)],FNA_Stream,Genbank_Key,N_BP,Output_Stream) :-
+parser_fna_data(Options,FNA_Stream,GeneBank_Key,N_BP,Output_Stream) :-
+        member(list(Size),Options),
         Size \= 'none',
-        compute_data(FNA_Stream,Size,List_Nuc),
-        Data = data(Genbank_Key,1,Size,List_Nuc),
-        write(Output_Stream,Data),
-        write(Output_Stream,'.'),
-        nl(Output_Stream),
-        Position is Size+1,
-        list_data_rec(Size,FNA_Stream,Genbank_Key,N_BP,Position,Output_Stream).
-
-% Array
-% B-Prolog only
-%%%parser_fna_data([array_bprolog(Size)],FNA_Stream,Genbank_Key,_N_BP,Output_Stream) :-
-%%%        Dim is N_BP//Size+1,
-%%%        new_array(Array,[Dim,Size]),
-%%%        compute_data(FNA_Stream,Size,Data),
-%%%        Array[1] @= Data,
-%%%        nl(Output_Stream),
-%%%        Position is Size+1,
-%%%        array_data_rec(Size,FNA_Stream,Position),
-%%%        Data = data(Genbank_Key,1,N_BP,Data),
-%%%        write(Output_Stream,Data),
-%%%        write(Output_Stream,'.').
-     
+        member(range([Min,Max]),Options),
+        ((Min = min, Max = max)->
+            Range = [1,N_BP]
+        ;
+            Range = [Min,Max]
+        ),
+        compute_data(FNA_Stream,GeneBank_Key,Range,Size,Output_Stream).
 
 
 
-
-list_data_rec(_Size,_FNA_Stream,_Genbank_Key,N_BP,Position,_Output_Stream) :-
-        N_BP =< Position,
-        !.
-
-list_data_rec(Size,FNA_Stream,Genbank_Key,N_BP,Position,Output_Stream) :-
-        compute_data(FNA_Stream,Size,List_Nuc),
-        length(List_Nuc,Length),
-        Position_End is Position+Length-1,
-        Data = data(Genbank_Key,Position,Position_End,List_Nuc),
-        write(Output_Stream,Data),
-        write(Output_Stream,'.'),
-        nl(Output_Stream),
-        Position2 is Position_End+1,
-        list_data_rec(Size,FNA_Stream,Genbank_Key,N_BP,Position2,Output_Stream).
+% compute_data(GenBank_Key,Range,Size,Stream).
 
 
+compute_data(In_Stream,GenBank_Key,Range,Size,Out_Stream) :-
+        get_code(In_Stream,Code),
+        var(L),
+        compute_data_rec(In_Stream,Code,GenBank_Key,Range,Size,1,1,_Left,L-L,Out_Stream).
 
-% compute_data(++FNA_Stream,++Size,--Data)
-
-compute_data(Stream,Size,Data) :-
-        get_code(Stream,Code),
-        compute_data_rec(Stream,Code,1,Size,Data).
 
 % EOF
-compute_data_rec(_Stream,-1,_Position,_Size,[]) :-
-        !.
 
-% Last Element of the list
-compute_data_rec(_Stream,Code,Size,Size,[Nuc]) :-
-        nucleotid_letter(Code),
+compute_data_rec(_In_Stream,-1,GeneBank_Key,_Range,_Size,Position,_Size_Num,Left,Data-[],Out_Stream) :-
         !,
-        Minuscule_Code is Code +32,
-        atom_codes(Nuc,[Minuscule_Code]).
+        Right is Position-1,
+        Data = data(GeneBank_Key,Left,Right,Data),
+        writeq(Out_Stream,Data),write(Out_Stream,'.'),nl(Out_Stream).
+       
 
 
-compute_data_rec(Stream,Code,Position,Size,[Nuc|Rest]) :-
-        nucleotid_letter(Code),
-        !,
-        Minuscule_Code is Code +32,
-        atom_codes(Nuc,[Minuscule_Code]),
-        Position1 is Position+1,
-        get_code(Stream,New_Code),
-        compute_data_rec(Stream,New_Code,Position1,Size,Rest).
+% Case Before Range
 
-% Non interesting character
-compute_data_rec(Stream,_Code,Position,Size,Data) :-
-        get_code(Stream,New_Code),
-        compute_data_rec(Stream,New_Code,Position,Size,Data).
+compute_data_rec(In_Stream,Code,GenBank_Key,[Min,Max],Size,Position,Size_Num,Left,Data1-Data2,Out_Stream) :-
+           nucleotid_letter(Code),
+           Position < Min,
+           !,
+           get_code(In_Stream,New_Code),
+           Position1 is Position+1,
+           compute_data_rec(In_Stream,New_Code,GenBank_Key,[Min,Max],Size,Position1,Size_Num,Left,Data1-Data2,Out_Stream).
+
+% Case After Range
+
+compute_data_rec(_In_Stream,_Code,GeneBank_Key,[_Min,Max],_Size,Position,_Size_Num,Left,Data-[],Out_Stream) :-
+           Position > Max,
+           !,
+           (Data = [] ->
+               true
+           ;
+               Right is Position-1,
+               Term = data(GeneBank_Key,Left,Right,Data)
+           ),
+           writeq(Out_Stream,Term),write(Out_Stream,'.'),nl(Out_Stream).
+
+
+% Case in Range
+% End of a sub_terms
+compute_data_rec(In_Stream,Code,GeneBank_Key,[Min,Max],Size,Position,Size_Num,Left,Data-Data2,Out_Stream) :-
+           nucleotid_letter(Code),
+           Position >= Min,
+           Position =< Max,
+           Size = Size_Num,
+           !,
+           (Position = Min ->
+               Left = Min
+           ;
+               true
+           ),
+           Minuscule_Code is Code +32,
+           atom_codes(Nuc,[Minuscule_Code]),
+           Data2 = [Nuc],
+           Term = data(GeneBank_Key,Left,Position,Data),
+           writeq(Out_Stream,Term),write(Out_Stream,'.'),nl(Out_Stream),
+           get_code(In_Stream,New_Code),
+           Position1 is Position+1,
+           var(L),
+           compute_data_rec(In_Stream,New_Code,GeneBank_Key,[Min,Max],Size,Position1,1,Position1,L-L,Out_Stream).
+
+% Inside a sub_terms
+compute_data_rec(In_Stream,Code,GeneBank_Key,[Min,Max],Size,Position,Size_Num,Left,Data1-Data2,Out_Stream) :-
+           nucleotid_letter(Code),
+           Position >= Min,
+           Position =< Max,
+           Size_Num <Size,
+           !,
+              (Position = Min ->
+               Left = Min
+           ;
+               true
+           ),
+           Size_Num1 is Size_Num+1,
+           get_code(In_Stream,New_Code),
+           Position1 is Position+1,
+           Minuscule_Code is Code +32,
+           atom_codes(Nuc,[Minuscule_Code]),
+           Data2 = [Nuc|Data3],
+           compute_data_rec(In_Stream,New_Code,GeneBank_Key,[Min,Max],Size,Position1,Size_Num1,Left,Data1-Data3,Out_Stream).
+
+        
+%% Non interesting character
+compute_data_rec(In_Stream,_Code,GenBank_Key,Range,Size,Positon,Size_Num,Left,Data1-Data2,Out_Stream) :-
+        get_code(In_Stream,New_Code),
+        compute_data_rec(In_Stream,New_Code,GenBank_Key,Range,Size,Positon,Size_Num,Left,Data1-Data2,Out_Stream).
+
+
+
+%%%list_data_rec(_Size,_FNA_Stream,_Genbank_Key,N_BP,Position,_Output_Stream) :-
+%%%        N_BP =< Position,
+%%%        !.
+
+%%%list_data_rec(Size,FNA_Stream,Genbank_Key,N_BP,Position,Output_Stream) :-
+%%%        compute_data(FNA_Stream,Size,List_Nuc),
+%%%        length(List_Nuc,Length),
+%%%        Position_End is Position+Length-1,
+%%%        Data = data(Genbank_Key,Position,Position_End,List_Nuc),
+%%%        write(Output_Stream,Data),
+%%%        write(Output_Stream,'.'),
+%%%        nl(Output_Stream),
+%%%        Position2 is Position_End+1,
+%%%        list_data_rec(Size,FNA_Stream,Genbank_Key,N_BP,Position2,Output_Stream).
+
+
+
+%%%% compute_data(++FNA_Stream,++Range,--[Left,Right],++Size,--Data)
+
+%%%compute_data(Stream,++RanSize,Data) :-
+%%%        get_code(Stream,Code),
+%%%        compute_data_rec(Stream,Code,1,Size,Data).
+
+%%%% EOF
+%%%compute_data_rec(_Stream,-1,_Position,_Size,[]) :-
+%%%        !.
+
+%%%% Last Element of the list
+%%%compute_data_rec(_Stream,Code,Size,Size,[Nuc]) :-
+%%%        nucleotid_letter(Code),
+%%%        !,
+%%%        Minuscule_Code is Code +32,
+%%%        atom_codes(Nuc,[Minuscule_Code]).
+
+
+%%%compute_data_rec(Stream,Code,Position,Size,[Nuc|Rest]) :-
+%%%        nucleotid_letter(Code),
+%%%        !,
+%%%        Minuscule_Code is Code +32,
+%%%        atom_codes(Nuc,[Minuscule_Code]),
+%%%        Position1 is Position+1,
+%%%        get_code(Stream,New_Code),
+%%%        compute_data_rec(Stream,New_Code,Position1,Size,Rest).
+
+%%%% Non interesting character
+%%%compute_data_rec(Stream,_Code,Position,Size,Data) :-
+%%%        get_code(Stream,New_Code),
+%%%        compute_data_rec(Stream,New_Code,Position,Size,Data).
 
 
 % get_info_gbk
@@ -159,8 +242,9 @@ get_info_gbk(GBK_Stream,Genbank_Key,N_BP) :-
 %%%%
 
 nucleotid_letter(Code) :-
-        member(Code,[65,67,71,84]).
-
+        member(Code,[65,67,71,84]),
+        !.
+       
 
 
 

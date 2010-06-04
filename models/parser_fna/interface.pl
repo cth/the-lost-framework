@@ -6,6 +6,7 @@
 
 % Option declaration
 lost_option(annotate,list,'none','Divided sequences of Nucleotids into pieces').
+lost_option(annotate,range,[min,max],'Define a range to extract a sub-part of the genome').
 
 % Input Format Specification
 lost_input_formats(annotate,[text(fna),text(gbk)]).
