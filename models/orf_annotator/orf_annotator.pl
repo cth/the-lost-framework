@@ -63,7 +63,7 @@ gen_annotation('-',Left,Right,Starts,Annotation) :-
 % +
 gen_annotation_rec('+',_Left,Right,First_Start,[],Annotation) :-
         !,
-        Length is Right-First_Start,
+        Length is Right-First_Start-5,
         makelist(Length,'-',Annot),
         append(['<','<','<'|Annot],['>','>','>'],Annotation).
 
