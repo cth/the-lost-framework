@@ -95,10 +95,13 @@ compute_data(In_Stream,GenBank_Key,Range,Size,Out_Stream) :-
 
 compute_data_rec(_In_Stream,-1,GeneBank_Key,_Range,_Size,Position,_Size_Num,Left,Data-[],Out_Stream) :-
         !,
-        Right is Position-1,
-        Data = data(GeneBank_Key,Left,Right,Data),
-        writeq(Out_Stream,Data),write(Out_Stream,'.'),nl(Out_Stream).
-       
+        (Data = [] ->
+            true
+        ;
+            Right is Position-1,
+            Term = data(GeneBank_Key,Left,Right,Data),
+            writeq(Out_Stream,Term),write(Out_Stream,'.'),nl(Out_Stream)
+           ).
 
 
 % Case Before Range
@@ -120,10 +123,10 @@ compute_data_rec(_In_Stream,_Code,GeneBank_Key,[_Min,Max],_Size,Position,_Size_N
                true
            ;
                Right is Position-1,
-               Term = data(GeneBank_Key,Left,Right,Data)
-           ),
-           writeq(Out_Stream,Term),write(Out_Stream,'.'),nl(Out_Stream).
-
+               Term = data(GeneBank_Key,Left,Right,Data),
+           writeq(Out_Stream,Term),write(Out_Stream,'.'),nl(Out_Stream)
+           ).
+           
 
 % Case in Range
 % End of a sub_terms
@@ -230,10 +233,7 @@ compute_data_rec(In_Stream,_Code,GenBank_Key,Range,Size,Positon,Size_Num,Left,Da
 
 get_info_gbk(GBK_Stream,Genbank_Key,N_BP) :-
         readline(GBK_Stream,List_Codes),
-        parser_line(List_Codes,[9,32],[_Locus,Genbank,N_BP|_Rest]),
-        atom_codes(Genbank,L),
-        append([39|L],[39],L2),
-	atom_codes(Genbank_Key,L2).
+        parser_line(List_Codes,[9,32],[_Locus,Genbank_Key,N_BP|_Rest]).
 
 
 
