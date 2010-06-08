@@ -116,6 +116,14 @@ not_member(Elt,List) :-
 
 not_member(_Elt,_List).
 
+
+% remove_dups(++List,--Pruned)
+% Remove duplicate values of List
+% Note: sort is used because the precidate already to do that
+
+remove_dups(List,Pruned) :-
+        sort(List,Pruned).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Term manipulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
