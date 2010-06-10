@@ -116,6 +116,38 @@ not_member(Elt,List) :-
 
 not_member(_Elt,_List).
 
+% Intersperse a list with a particular separator
+% e.g. intersperse(',', ['a','b','c'], ['a',',','b,',','c'])
+intersperse(_,[],[]).
+intersperse(_,[One],[One]).
+intersperse(Separator,[One,Two|Rest],[One,Separator|NewRest]) :-
+        intersperse(Separator,[Two|Rest],NewRest).
+
+% take(+N,+ListIn,-ListOut). 
+% true if ListOut contains is the first N elements of ListIn
+take(0, [], []).
+take(N, [E|R1],[E|R2]) :-
+        N1 is N - 1,
+        !,
+        take(N1,R1,R2).
+
+
+% split_list(+N,+List,-FirstPart,-LastPart)
+% FirstPart is the first N elements of List
+% LastPart is the remaining
+split_list(_, [], [], []).
+split_list(N, [E|List], [E|ListHead], ListTail) :-
+        N > 0,
+        N1 is N - 1,
+        !,
+        split_list(N1,List,ListHead,ListTail).
+split_list(N, [E|List], [], [E|ListTail]) :-
+        N =< 0,
+        N1 is N - 1,
+        !,
+        split_list(N1,List,[],ListTail).
+       
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Term manipulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -161,12 +193,22 @@ list_min([E|R],Min) :-
 	((E < MR) -> Min = E ; Min = MR).
 
 
-% atom_to_integer(++Atom,--Integer)
+% atom_integer(??Atom,??Integer)
 % Converts and atom representing an integer number to an
-% Integer usuable in arithmetic operationes
+% Integer usuable in arithmetic operationes and vice versa
+
 atom2integer(Atom,Integer) :-
-	atom_chars(Atom, Chars),
-	number_chars(Integer, Chars).
+        atom_integer(Atom,Integer).
+
+atom_integer(Atom,Integer) :-
+        ground(Atom),
+        atom_chars(Atom, Chars),
+        number_chars(Integer, Chars).
+
+atom_integer(Atom,Integer) :-
+        ground(Integer),
+        number_chars(Integer,Chars),
+        atom_chars(Atom,Chars).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
