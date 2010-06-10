@@ -148,6 +148,16 @@ split_list(N, [E|List], [], [E|ListTail]) :-
         split_list(N1,List,[],ListTail).
        
 
+% FIXME: A predicate like this allready exist in b-prolog 
+% and is called eliminate_duplicate/2
+%
+% remove_dups(++List,--Pruned)
+% Remove duplicate values of List
+% Note: sort is used because the precidate already to do that
+
+remove_dups(List,Pruned) :-
+        sort(List,Pruned).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Term manipulation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
