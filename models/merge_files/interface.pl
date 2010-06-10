@@ -1,8 +1,8 @@
 % Simple model that aggregates multiple files into one.
 % Should be fast and with a very low memory footprint.
 
-lost_input_formats(lost_best_annotation,[star(text(prolog(_)))]).
-lost_output_format(lost_best_annotation,_,[text(prolog(_))]).
+lost_input_formats(annotate,[star(text(prolog(_)))]).
+lost_output_format(annotate,_,[text(prolog(_))]).
 
 annotate(InputFiles,_Options,OutputFile) :-
 	open(OutputFile,write,Stream),
