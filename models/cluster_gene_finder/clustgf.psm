@@ -1,10 +1,8 @@
 %:- set_prism_flag(log_scale,on).
-%:- set_prism_flag(scaling,log_exp).
+:- set_prism_flag(scaling,log_exp).
 %:- set_prism_flag(learn_mode,both).
 %:- set_prism_flag(learn_mode,hparams).
-%:- set_prism_flag(log_viterbi,on).
-
-coding_clusters(1).
+:- set_prism_flag(log_viterbi,on).
 
 data('training_data.pl').
 /*
@@ -107,24 +105,24 @@ get_list_codons(L) :-
 % HMM structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cluster_hmm(Seq,Annotation) :-
+cluster_hmm(Seq,--Annotation) :-
         custom_msw(begin,State),
-        cluster_hmm_rec(State,Seq,Annotation).
+        cluster_hmm_rec(State,Seq,--Annotation).
 
 % End State
-cluster_hmm_rec(end,[],[]).
+cluster_hmm_rec(end,[],--[]).
 
-cluster_hmm_rec(nc,[N1|SequenceRest],[0|AnnotRest]) :-
+cluster_hmm_rec(nc,[N1|SequenceRest],--[0|AnnotRest]) :-
         custom_msw(emit(nc), N1),
         custom_msw(trans(nc),NextState),
-        cluster_hmm_rec(NextState,SequenceRest,AnnotRest).
+        cluster_hmm_rec(NextState,SequenceRest,--AnnotRest).
 
-cluster_hmm_rec(State,[N1,N2,N3|SequenceRest],[ClusterId,ClusterId,ClusterId|AnnotRest]) :-
+cluster_hmm_rec(State,[N1,N2,N3|SequenceRest],--[ClusterId,ClusterId,ClusterId|AnnotRest]) :-
         State =.. [ _, ClusterId ],
         State \= nc, 
         custom_msw(emit(State), [N1,N2,N3]),
         custom_msw(trans(State),NextState),
-        cluster_hmm_rec(NextState,SequenceRest,AnnotRest).
+        cluster_hmm_rec(NextState,SequenceRest,--AnnotRest).
 
 %%% MISC
 

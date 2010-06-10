@@ -50,7 +50,8 @@ class GeneClusterer
 
   def cluster_genes(num_clusters)
     puts "Building #{num_clusters} clusters.."
-    @clusterer = Ai4r::Clusterers::KMeans.new
+    @clusterer = Ai4r::Clusterers::KMeans.new 
+    @clusterer.max_iterations = 200 
     #@clusterer.distance_function = max_distance_function
     @clusterer.build(@genes,num_clusters)
     puts "Done."

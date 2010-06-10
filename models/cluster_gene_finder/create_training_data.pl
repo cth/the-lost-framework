@@ -9,27 +9,22 @@
 :- lost_include_api(io).
 
 
-% Extract ORFs for each gene
-% For each gene, create annotation (as if only one cluster existed)
-% For each gene: "Train" model to get MSW distribution.
-% Scale each msw according to the number of outcomes for that MSW
-% Output results
-statistics_from_model(GenesFile, ORFFile) :-
-	load_genes(GenesFile),
-	load_clusters(ClustersFile),
-	FIXME.
-	
 test :-
         create_training_data(   'clusters.pl',
                                 'ecoli_genes.pl',
                                 'ecoli_orfs.pl').
 
-create_training_data(ClustersFile,GenesFile,ORFFile) :-
+create_training_data(ClustersFile,GenesFile,ORFFile,TrainingDataFile) :-
         load_genes(GenesFile),
         load_clusters(ClustersFile),
         open(ORFFile,read,InStream),
-        open('training_data.pl',write,OutStream),
+        open(TrainingDataFile,write,OutStream),
+        % Pretend to the model that there is one cluster (for genes)
+        % We only need/want one for purposes of generating gene
+        % statistics
+        assert(coding_clusters(1)), 
         create_orf_training_data(InStream,OutStream),
+        retract(coding_clusters(1)),
         close(InStream),
         close(OutStream).
 
