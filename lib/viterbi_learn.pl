@@ -1,6 +1,7 @@
 :- ['../../lost.pl'].
 :- lost_include_api(io).
 
+
 viterbi_learn_file(File) :-
 	clear_counters,
 	add_pseudo_counts,
@@ -20,6 +21,7 @@ viterbi_learn_stream(Stream) :-
         ((Term == end_of_file) ->
                 true
                 ;
+                %write(Term),nl,
                 viterbi_learn_term(Term),
                 !,
                 viterbi_learn_stream(Stream)).
@@ -77,6 +79,8 @@ merge_count_term(T) :-
 	assert(T).
 
 add_pseudo_counts :-
+%	% PRISM2 version:
+%	findall(msw(V,O), (get_values(V,Os),member(O,Os)), MSWs),
 	findall(msw(V,O), (values(V,Os),member(O,Os)), MSWs),
 	forall(member(MSW,MSWs), assert(count_table(MSW,0.00001))).
 
