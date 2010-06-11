@@ -146,6 +146,13 @@ split_list(N, [E|List], [], [E|ListTail]) :-
         N1 is N - 1,
         !,
         split_list(N1,List,[],ListTail).
+
+%% zip(+List1,+List2,ZippedList)
+% Combines two lists into one
+zip([],_,[]).
+zip(_,[],[]).
+zip([E1|L1],[E2|L2],[[E1,E2]|ZipRest]) :-
+        zip(L1,L2,ZipRest).
        
 
 % FIXME: A predicate like this allready exist in b-prolog 
