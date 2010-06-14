@@ -2,13 +2,13 @@
 % Creation of index
 \usepackage{makeidx}
 % Generation of hyperlink into a pdf file
-\usepackage[colorlinks=true, urlcolor=blue,linktocpage=true]{hyperref} % Warning: Can be source of a compiled error if the \label \ref is not good 
-
+\usepackage[colorlinks=true, urlcolor=blue,linktocpage=true]{hyperref} % Warning: Can be source of a compiled error if the \label \ref is not good
+\usepackage{pldoc}
 
 \title{Lost API documentation}
 \author{Lost Members}
 
-\makeindex
+%\makeindex
 \begin{document}
 \maketitle
 
@@ -93,7 +93,7 @@ The lost framework is divided into several parts:
 
 \chapter{Creating lost models}
 
-\section{Lost model conventions}\label{sec:lost_model_conventions}
+\section{Lost model conventions}\label{sec:lostmodelconventions}
 
 Each model is located in its own subdirectory of the 
 \texttt{\$LOST/models/} directory, henceforth called \texttt{\$MODELS}. 
@@ -106,7 +106,7 @@ Models are allowed to consult files with paths relative to the
 only directly consult file which are located in the 
 \texttt{\$MODEL} directory or a subdirectory of it.
 The exception to this is the file \texttt{\$LOST/lost.pl}. Consulting
-this file gives access to all the shared APIs (See chapter \ref{chap:lost_shared_apis}).
+this file gives access to all the shared APIs (See chapter \ref{chap:lostsharedapis}).
 
 To integrate into the framework each model must provide a file called
 \texttt{interface.pl}, which must be located in the same directory as
@@ -150,11 +150,11 @@ Models should declare the \emph{type} associated to the arguments of
 these predicates. These declarations include
 \begin{itemize}
 \item The formats of input files, see section
-  \ref{sec:file_formats_declarations}.
+  \ref{sec:fileformatsdeclarations}.
 \item The format of the output file, see section
-  \ref{sec:file_formats_declarations}.
+  \ref{sec:fileformatsdeclarations}.
 \item Options and default values for options, see section
-  \ref{sec:option_declarations}.
+  \ref{sec:optiondeclarations}.
 \item Optionally, a set of possible values any declared option.
 \end{itemize}
 
@@ -186,7 +186,7 @@ The predicate takes the following arguments:
   in various ways. To check the value of a given option, the predicate
   \texttt{get\_option} (see section \ref{sec:interface}) should be used.
   The options must be declared as described in section
-  \label{sec:option_declarations}.
+  \label{sec:optiondeclarations}.
 
 \item \texttt{OutputFilename}: Full filename which the result should be saved to. The model is expected to save
   the resulting annotation to this file before the completion of 
@@ -203,7 +203,7 @@ reason is unable to write the annotation to \texttt{OutputFilename},
 then it should \texttt{throw} an exception.
 
 \subsection{Declaration of options for interface predicates}
-\label{sec:option_declarations}
+\label{sec:optiondeclarations}
 
 Options to interface predicates should be declared in the
 \texttt{interface.pl} file. An option is declared by adding a 
@@ -289,7 +289,7 @@ lost_input_format(PredicateName, [ Format1, .., FormatN ]).
 \noindent
 where \texttt{PredicateName} is the name of the predicate to which 
 the declaration belong. The second argument is a list of format 
-identifiers as described in chapter \ref{chap:file_formats}.
+identifiers as described in chapter \ref{chap:fileformats}.
 For instance, we may have a declaration,
 \begin{verbatim}
 lost_input(annotate, 
@@ -319,7 +319,7 @@ lost_output_format(PredicateName,Options, Format)
 \noindent
 This predicate should specify the relation between a set of \texttt{Options} and a particular \texttt{Format} for the interface predicate \texttt{PredicateName}.
 \texttt{Format} should unify to one of the formats described in
-chapter \ref{chap:file_formats}.
+chapter \ref{chap:fileformats}.
 
 \subsubsection{Checking of file formats}
 
@@ -328,7 +328,7 @@ scheme described above. If a model neglects to declare file formats or
 declares them wrongly, then a warning will be issued.
 
 \chapter{Lost shared APIs}
-\label{chap:lost_shared_apis}
+\label{chap:lostsharedapis}
 
 To use the lost APIs, the file \texttt{\$LOST/lost.pl} must be consulted. To make the models
 independent of the absolute path of the \texttt{\$LOST} directory, they should consult it with
@@ -348,7 +348,7 @@ extension.
 \section{The interface API: \texttt{interface}}
 
 The API provides the interface to lost models following the
-conventions described in section \ref{sec:lost_model_conventions}.
+conventions described in section \ref{sec:lostmodelconventions}.
 
 Running a model is done using the goal \texttt{run\_model}
 \begin{verbatim}
@@ -1422,7 +1422,7 @@ subtypes with \texttt{SequenceType}. A ground value for
 
 \chapter{Predicates listing}
 
-\input{predicates.tex}
+\input{libraries} 
 
 \chapter{Notes and stuff}
 

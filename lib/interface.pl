@@ -285,6 +285,10 @@ print_available_model_rec([Name|Rest]) :-
 % Directory and file management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+lost_utilities_directory(UtilsDir) :-
+        lost_config(lost_base_directory,BaseDir),!,
+        atom_concat(BaseDir,'/utilities/',UtilsDir).
+
 lost_tmp_directory(TmpDir) :-
         lost_config(lost_base_directory,BaseDir),!,
         atom_concat(BaseDir,'/tmp/', TmpDir).

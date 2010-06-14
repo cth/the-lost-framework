@@ -13,16 +13,16 @@
 
 % Overall report the accuracy statistics for a particular predictor.
 accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
-	count_genes(PredFunctor,Start,End,NumberPredictedGenes),
-	count_genes(RefFunctor,Start,End,NumberActualGenes),
+	count_genes(PredFunctor,Start,End,NumberPredictedGenes),!,
+	count_genes(RefFunctor,Start,End,NumberActualGenes),!,
 	number_of_correct_genes(RefFunctor, PredFunctor,Start,End,NumberCorrect),
 	number_of_wrong_genes(RefFunctor, PredFunctor, Start, End, NumberWrong),
-	gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,GSN),
-	gene_level_specificity(RefFunctor,PredFunctor,Start,End,GSP),
-	wrong_genes(RefFunctor,PredFunctor,Start,End,Wrong),
-	missing_genes(RefFunctor,PredFunctor,Start,End,Missing),
-	annotations_as_lists(PredFunctor,Start,End,PredAnnot),
-	annotations_as_lists(RefFunctor,Start,End,RefAnnot),
+	gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,GSN),!,
+	gene_level_specificity(RefFunctor,PredFunctor,Start,End,GSP),!,
+	wrong_genes(RefFunctor,PredFunctor,Start,End,Wrong),!,
+	missing_genes(RefFunctor,PredFunctor,Start,End,Missing),!,
+	annotations_as_lists(PredFunctor,Start,End,PredAnnot),!,
+	annotations_as_lists(RefFunctor,Start,End,RefAnnot),!,
 	nucleotide_level_accuracy_counts(Start,End, RefAnnot, PredAnnot, TP,FP,TN,FN),
 	sensitivity(TP,FN,SN),
 	specificity(TP,FP,SP),
@@ -249,20 +249,23 @@ report_nstats(ReferenceAnnotFunctor,PredictionAnnotFunctor,Start,End) :-
 	write('Nucleotide Level FN: '), write(FN), nl.
 
 nucleotide_level_accuracy_counts(Begin,End, RefAnnot, PredAnnot, TP,FP,TN,FN) :-
-	map(fill_range_gaps(input,output,Begin,End,partial), RefAnnot, RefAnnotFilled), !,
-	map(fill_range_gaps(input,output,Begin,End,partial), PredAnnot,PredAnnotFilled), !,
-	map(rm_seq_elems,PredAnnotFilled,PredAnnotSimple),
-	map(rm_seq_elems,RefAnnotFilled,RefAnnotSimple),
-	distinct_intervals(RefAnnotSimple, RefAnnotDistinct),
-	distinct_intervals(PredAnnotSimple, PredAnnotDistinct),
-	all_frames_coding_intervals(RefAnnotDistinct,RefAnnotDistinctCoding),
-	all_frames_coding_intervals(PredAnnotDistinct,PredAnnotDistinctCoding),
-	binary_distinct_intervals(RefAnnotDistinctCoding,PredAnnotDistinctCoding,CombinedDistinct),
-	nucleotide_level_intervals(CombinedDistinct,TPL,FPL,TNL,FNL),
-	sum_range_list(TPL,TP),
-	sum_range_list(FPL,FP),
-	sum_range_list(TNL,TN),
-	sum_range_list(FNL,FN).
+        map(sort, RefAnnot, RefAnnotSorted),
+	map(fill_range_gaps(input,output,Begin,End,partial), RefAnnotSorted, RefAnnotFilled), !,
+        map(sort, PredAnnot, PredAnnotSorted),!,
+	map(fill_range_gaps(input,output,Begin,End,partial), PredAnnotSorted,PredAnnotFilled), !,
+	map(rm_seq_elems,PredAnnotFilled,PredAnnotSimple),!,
+	map(rm_seq_elems,RefAnnotFilled,RefAnnotSimple),!,
+	distinct_intervals(RefAnnotSimple, RefAnnotDistinct),!,
+	distinct_intervals(PredAnnotSimple, PredAnnotDistinct),!,
+	all_frames_coding_intervals(RefAnnotDistinct,RefAnnotDistinctCoding),!,
+	all_frames_coding_intervals(PredAnnotDistinct,PredAnnotDistinctCoding),!,
+	binary_distinct_intervals(RefAnnotDistinctCoding,PredAnnotDistinctCoding,CombinedDistinct),!,
+	nucleotide_level_intervals(CombinedDistinct,TPL,FPL,TNL,FNL),!,
+	sum_range_list(TPL,TP),!,
+	sum_range_list(FPL,FP),!,
+	sum_range_list(TNL,TN),!,
+	sum_range_list(FNL,FN),!,
+        true.
 	
 all_frames_coding_intervals([],[]).
 	

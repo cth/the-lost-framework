@@ -6,14 +6,17 @@
 :- ['../../lost.pl'].
 :- lost_include_api(sequence).
 :- lost_include_api(io).
-:- [erf_learn].
+:- lost_include_api(misc_utils).
+:- lost_include_api(viterbi_learn).
 
-create_stats_with_model(GenesFile,GenomeFile)  :-
-       create_stat_labels_file(clustgf, 'stats.lbl'),
-       create_stats_from_model(clustgf,'ecoli_genes.pl','ecoli_genome.pl','stats.csv').
+create_stats_with_model(GenesFile,GenomeFile,StatsCSVFile,StatsLabelsFile)  :-
+       assert(coding_clusters(1)),
+       create_stat_labels_file(clustgf, StatsLabelsFile),
+       create_stats_from_model(clustgf,GenesFile,GenomeFile,StatsCSVFile),
+       retract(coding_clusters(1)).
 
 create_stat_labels_file(Model,File) :-
-        prism(Model),
+        prismAnnot(Model,direct),
         set_sw_all,
         all_switch_instances(Instances),
         extract_label_parts(Instances,Labels),
@@ -40,13 +43,8 @@ extract_stat_parts([],[]).
 extract_stat_parts([sw(_,_,P)|As],[P|Bs]) :-
         extract_stat_parts(As,Bs).
 
-intersperse(_,[],[]).
-intersperse(_,[One],[One]).
-intersperse(Separator,[One,Two|Rest],[One,Separator|NewRest]) :-
-        intersperse(Separator,[Two|Rest],NewRest).
-
 create_stats_from_model(Model,GenesFile,GenomeFile,StatsFile) :-
-        prism(Model),
+        prismAnnot(Model,direct),
         write('loading genome..'),
 	load_sequence(genome,GenomeFile),
         write(done),nl,
@@ -56,15 +54,25 @@ create_stats_from_model(Model,GenesFile,GenomeFile,StatsFile) :-
         write('done'),nl,
         !,
         open(StatsFile,write,Stream),
+        !,
         forall( member(Gene,Genes), (
-                create_gene_statistics(Gene,Stats),
-                write_stats_as_csv(Stream,Stats) 
+                (create_gene_statistics(Gene,Stats),!,
+                write_stats_as_csv(Stream,Stats)) 
                 )
         ),
         close(Stream).
 
+%create_and_write_gene_stats_as_csv([],Stream).
+%create_and_write_gene_stats_as_csv([Gene|Rs],Stream) :-
+%      create_gene_statistics(Gene,Stats),!,
+%      write_stats_as_csv(Stream,Stats),
+%      !,
+%      create_and_write_gene_stats_as_csv(Rs,Stream).
+
 create_gene_model_goal(Gene,cluster_hmm(Nucleotides,Annot)) :-
+        write('get_sequence'),nl,
 	get_gene_nucleotide_sequence(Gene,Nucleotides),
+        write('done'),nl,
 	length(Nucleotides, GeneLength),
 	list_of(1,GeneLength, Annot).
 
@@ -73,7 +81,7 @@ create_gene_statistics(Gene,stats(Name,Stats)) :-
         gene_name(Gene,Name),
         create_gene_model_goal(Gene,Goal),
 	clear_counters,
-        (erf_learn_term(Goal) ->
+        (viterbi_learn_term(Goal) ->
         	add_pseudo_counts,
         	set_switches_from_counts,
                 table_remove(_),
@@ -81,7 +89,7 @@ create_gene_statistics(Gene,stats(Name,Stats)) :-
                 sort(SwitchInstances,Stats)
                 ;
                 write('could not learn goal:'),
-                write(Goal),
+                %write(Goal),
                 Stats = nil
         ).
 
