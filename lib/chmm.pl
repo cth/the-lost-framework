@@ -100,6 +100,7 @@ init_constraint_store(alldifferent,[]).
 
 init_constraint_store(subseq_alldifferent(_WindowSize),Q) :- empty_queue(Q).
 
+init_constraint_store(duration,Duration) :- duration(Duration).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Implementation of constraint checker rules 
@@ -235,6 +236,17 @@ constraint_check(fix_alignment(S1From,S2From,_),[State,Emit],
 
 % If the list for the alignment becomes empty then it has succesfully been checked:
 constraint_check(fix_alignment(_,_,_),_,[S1,S2,[]],[S1,S2,[]]).
+
+
+
+% Duration: constraint check
+constraint_check(duration,State,StoreBefore,StoreAfter) :-
+        StoreAfter is StoreBefore-1,
+        (StoreAfter > 0 ->
+            State = c
+        ;
+            State = stop
+        ).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

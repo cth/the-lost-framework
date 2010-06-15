@@ -1,16 +1,20 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% accuracy.pl
-% Christian Theil Have, dec. 2009.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This is a tool to calculate the accuracy of gene finder predictions
-% against a reference annotation.
-% It expects to find facts representing the predictions and the
-% reference annation. These facts are expected to be on the form
-% functor(From, To, Strand, ReadingFrame, Name).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/** <module> Module accuracy.pl
+
+ This is a tool to calculate the accuracy of gene finder predictions
+ against a reference annotation. It expects to find facts representing
+ the predictions and the reference annation. These facts are expected
+ to be on the form functor(From, To, Strand, ReadingFrame, Name).
+
+ @author Christian Theil Have
+ @date dec. 2009.
+
+*/
 
 :- lost_include_api(misc_utils).
 
+%% accuracy_stats(+RefFunctor,+PredFunctor,+Start,+End,+OutputFile)
+%
 % Overall report the accuracy statistics for a particular predictor.
 accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
 	count_genes(PredFunctor,Start,End,NumberPredictedGenes),!,
@@ -66,19 +70,44 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
 % accuracy measures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
+%% sensivity(+TP,+TN,-SN)
+%
+% Computation of the sensity
+% ==
+% SN is TP/(TP+FN) or undefined
+% ==
 sensivitity(0,0,undefined) :- !.
 sensitivity(TP, FN, SN) :-
 	SN is TP / (TP + FN).
-	
+
+%% specificity(+TP,+FP,-SP)
+%
+% Computation of the specificity
+% ==
+% SP is TP/(TP+FN) or undefined
+% ==
 specificity(0,0,undefined) :- !.
 specificity(TP,FP,SP) :-
 	SP is TP / (TP + FP).
+
+
+%% specificity_traditional(+TN,+FP,-SP)
+%
+% Computation of the tradional specificity
+% ==
+% SP is TN / (TN + FP)
+% ==
 
 specificity_traditional(0,0,undefined) :- !.
 specificity_traditional(TN,FP,SP) :-
 	SP is TN / (TN + FP).
 
-% Note: 0.0 is adddd to make numbers floats instead of ints. 
+
+%% correlation_coefficient(+TP,+FP,+TN,+FN,-CC)
+%
+% Computation of correlation coefficient
+%
+% Note: 0.0 is add to make numbers floats instead of ints. 
 % Ints are not allowed to be larger than 268435455 in bprolog which
 % would otherwise cause this predicate to overflow for realistic data sizes
 correlation_coefficient(TP,FP,TN,FN,CC) :-
@@ -93,11 +122,20 @@ correlation_coefficient(TP,FP,TN,FN,CC) :-
 	        CC is Numerator / Denominator
                 ;
                 CC=undefined).
-
+%% simple_matching_coefficient(+TP,+FP,+TN,+FN,-SMC)
+%
+% Computation of the simple matching coefficient
+% ==
+% SMC is (TP + TN) / (TP + FN + FP + TN)
+% ==
 simple_matching_coefficient(0,0,0,0,undefined) :- !.
 simple_matching_coefficient(TP,FP,TN,FN,SMC) :-
 	SMC is (TP + TN) / (TP + FN + FP + TN).
-	
+
+%% average_conditional_probability(+TP,+FP,+TN,+FN,-ACP)
+%
+% Computation of the average condtional probability
+
 average_conditional_probability(0,_,_,0,undefined) :- !.
 average_conditional_probability(0,0,_,_,undefined) :- !.
 average_conditional_probability(_,0,0,_,undefined) :- !.
@@ -109,7 +147,11 @@ average_conditional_probability(TP,FP,TN,FN,ACP) :-
 	C is TN / (TN+FP),
 	D is TN / (TN+FN),
 	ACP is (A+B+C+D)/4.
-	
+
+%% approximate_correlation(+TP,+FP,+TN,+FN,-AC)
+%
+% Computation of the average correlation
+
 aproximate_correlation(TP,FP,TN,FN,undefined) :-
 	average_conditional_probability(TP,FP,TN,FN,undefined),
         !.
@@ -175,6 +217,11 @@ wrong_genes(RefFunctor,PredFunctor,Start,End,WG) :-
 % Hard to find genes list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%gene_finding_difficulty_report(+RefFunctor,+PredictionFunctors,+RangeMin,+RangeMax,+MatchCriteria,-GenePredictionDifficultyList)
+%
+% Predicates that computes a report on the difficulty to find a gene
+%
+
 gene_finding_difficulty_report(RefFunctor,PredictionFunctors,RangeMin,RangeMax,MatchCriteria,GenePredictionDifficultyList) :-
 	annotations_as_detailed_list(RefFunctor,RangeMin,RangeMax,ReferenceGenes),
 	map(annotations_as_detailed_list(input,RangeMin,RangeMax,output),PredictionFunctors,PredictionGenes),
@@ -194,6 +241,12 @@ combine_gene_scores(RefFunctor,
 	gene_difficulty_score(NumGeneFinders,NumFoundGene,CombinedScore),
 	combine_gene_scores(RefFunctor,RefGenesRest,GeneScoresRest,CombinedRest).
 
+%% gene_difficulty_score(+NumGeneFinders, +NumFoundGene, -DifficultyScore)
+%
+% DifficultyScore is computed given the following formula
+% ==
+% DifficultyScore is 1 - ( NumFoundGene / NumGeneFinders)
+% ==
 
 gene_difficulty_score(NumGeneFinders, NumFoundGene, DifficultyScore) :-
 	NumFoundGene =< NumGeneFinders,
@@ -239,6 +292,13 @@ gene_score_list(MatchCriteria,[_|GenesRest], PredictedGenes, [0|RestScores]) :-
 % Calculate nucleotide level accuracy counts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% report_nstats(+ReferenceAnnotFunctor,+PredictionAnnotFunctor,+Start,+End)
+%
+% This predicate computes and prints in the standart output: True Positive, 
+% True Negative, False Positive, False Negative
+% If I am right, Start and End specified a sub-part of the genome where this
+% computation is performed
+
 report_nstats(ReferenceAnnotFunctor,PredictionAnnotFunctor,Start,End) :-
 	annotations_as_lists(PredictionAnnotFunctor,Start,End,PredAnnot),nl,
 	annotations_as_lists(ReferenceAnnotFunctor,Start,End,RefAnnot),nl,
@@ -247,6 +307,11 @@ report_nstats(ReferenceAnnotFunctor,PredictionAnnotFunctor,Start,End) :-
 	write('Nucleotide Level FP: '), write(FP), nl,
 	write('Nucleotide Level TN: '), write(TN), nl,
 	write('Nucleotide Level FN: '), write(FN), nl.
+
+
+%% nucleotide_level_accuracy_counts(+Begin,+End,+RefAnnot,+PredAnnot,-TP,-FP,-TN,-FN)
+%
+% Compute some statistics at the nucleotide level.
 
 nucleotide_level_accuracy_counts(Begin,End, RefAnnot, PredAnnot, TP,FP,TN,FN) :-
         map(sort, RefAnnot, RefAnnotSorted),
@@ -490,8 +555,19 @@ db_annotation_min(AnnotType, Strand,ReadingFrame,Max) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Possible strand and reading frame combinations
-strand(+). strand(-).
-reading_frame(1). reading_frame(2). reading_frame(3).
+
+%% strand(+Strand)
+%
+% Strand in {+,-}
+strand(+).
+strand(-).
+
+%% reading_frame(+Frame)
+%
+% Frame in {1,2,3}
+reading_frame(1).
+reading_frame(2).
+reading_frame(3).
 
 strand_reading_frame_combinations(Combinations) :-
 	findall([S,R], (strand(S),reading_frame(R)), Combinations).
