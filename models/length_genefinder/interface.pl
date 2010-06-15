@@ -1,3 +1,9 @@
+%-----
+% TODO list:
+%     Update interface.pl: I hope same interface for several probabilistic models
+
+
+
 :- ['../../lost.pl'].                                                                   
 :- lost_include_api(interface).                                                         
 :- lost_include_api(autoAnnotations).
