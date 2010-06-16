@@ -1173,6 +1173,9 @@ The options supported by the model are:
 \item \texttt{match\_strands}: A list of valid strands. Genes occuring
   an other strand will be filtered. The list must be a subset of the
   \emph{default value}: \texttt{['+','-']}.
+\item \texttt{range}: A range represented by a list of two integers values . Genes
+with a length in this range will be keep. The  \emph{default value}: \texttt{[default,default]},
+can be used to not filter on the length of a gene.  
 \item \texttt{exact\_match\_extra\_fields}: A list of Prolog terms
   terms each of which must unify with an element of 
 the \texttt{Extra} list of the gene terms. Genes which do not are filtered. 
