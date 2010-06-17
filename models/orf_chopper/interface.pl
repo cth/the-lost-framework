@@ -6,7 +6,8 @@
 lost_input_formats(annotate, [text(prolog(sequence(_)))]).
 lost_output_format(annotate, _Options, text(prolog(ranges(gene)))).
 
-lost_option(annotate,direction,''). %+ for forward strand and - for reverse strand').
+% Valid format for the options ?
+lost_option(annotate,direction,+,''). %+ for forward strand and - for reverse strand').
 lost_option(annotate,frame,'Reading frame: 1,2 or 3').
 
 lost_option_values(annotate,direction,['+','-']).
