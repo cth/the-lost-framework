@@ -73,6 +73,11 @@ lost_option(annotate,
             max,
             'An integer value denoting the right-most nucleotide to include in results. The default value (min) refers to the right-most nucleotide in the input data').
 
+lost_option(annotate,
+            range,
+            [default,default],
+            'A range [RangeMin,RangeMax] used to filter genes with a length in this range').
+            
 lost_option_values(annotate,match_protein_coding, [yes,no]).
 lost_option_values(annotate,gene_code,[11]). % FIXME: add more..
 lost_option_values(annotate,insert_results,[yes,no]).
@@ -113,11 +118,18 @@ annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
 	filter_by_strands(MatchStrands,GeneTermsMatchFrame,GeneTermsMatchStrand),
 	report_number_filtered(GeneTermsMatchStrand),
 
+        % Filter genes with a length in a specified Range
+        get_option(Options,range,Range),
+	write('filtering genes which a length in '), write(Range),nl,
+	!,
+	filter_by_length(Range,GeneTermsMatchStrand,GeneTermsFilterRange),
+	report_number_filtered(GeneTermsFilterRange),
+        
 	% Filter out any genes that do not match all of the specified
 	% regular expressions in match_extra_fields
 	write('Filtering genes not matching match_extra_fields'),nl,
 	get_option(Options,regex_match_extra_fields,NoMatchRegexExtraFields),
-	regex_filter_non_matching(NoMatchRegexExtraFields,GeneTermsMatchStrand,MatchRegexNo),
+	regex_filter_non_matching(NoMatchRegexExtraFields,GeneTermsFilterRange,MatchRegexNo),
 	report_number_filtered(MatchRegexNo),	
 
 	% Filter out genes matching any of the regular expressions
@@ -151,7 +163,6 @@ annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
                ;
                FinalResults=MatchAll
         ),
-
 	% Write genes that where not filtered out to the output file:
 	terms_to_file(OutFile,FinalResults).
 
@@ -239,12 +250,12 @@ filter_by_frames(GoodFrames,[_|TermsRest],MatchedRest) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % filter_by_length(+MinLength,+MaxLength,+GeneTermsIn,-GeneTermsOut)
 
-filter_by_length(default,default,GeneTerms,GeneTerms) :- 
+filter_by_length([default,default],GeneTerms,GeneTerms) :- 
         write('filter_by_length: No filtering performed'),nl,!.
 
-filter_by_length(_,_,[],[]).
+filter_by_length(_Range,[],[]).
 
-filter_by_length(MinLength,MaxLength,[G|GRest],[G|MRest]) :-
+filter_by_length([MinLength,MaxLength],[G|GRest],[G|MRest]) :-
 	G =.. [ _functor, Start, End, _strand, _frame, _extra ],
         ((End > Start) ->
                 Length is (End - Start) + 1 
@@ -254,10 +265,10 @@ filter_by_length(MinLength,MaxLength,[G|GRest],[G|MRest]) :-
         Length >= MinLength,
         Length =< MaxLength,
         !,
-        filter_by_length(MinLength,MaxLength,GRest,MRest).
+        filter_by_length([MinLength,MaxLength],GRest,MRest).
 
-filter_by_length(MinLength,MaxLength,[_|GRest],MRest) :-
-        filter_by_length(MinLength,MaxLength,GRest,MRest).
+filter_by_length([MinLength,MaxLength],[_|GRest],MRest) :-
+        filter_by_length([MinLength,MaxLength],GRest,MRest).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

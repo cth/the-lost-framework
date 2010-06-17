@@ -1173,6 +1173,9 @@ The options supported by the model are:
 \item \texttt{match\_strands}: A list of valid strands. Genes occuring
   an other strand will be filtered. The list must be a subset of the
   \emph{default value}: \texttt{['+','-']}.
+\item \texttt{range}: A range represented by a list of two integers values . Genes
+with a length in this range will be keep. The  \emph{default value}: \texttt{[default,default]},
+can be used to not filter on the length of a gene.  
 \item \texttt{exact\_match\_extra\_fields}: A list of Prolog terms
   terms each of which must unify with an element of 
 the \texttt{Extra} list of the gene terms. Genes which do not are filtered. 
@@ -1441,14 +1444,17 @@ subtypes with \texttt{SequenceType}. A ground value for
 \item Models should \texttt{lost\_tmp\_directory} for intermediary
   files. 
 
-\item Document all of undocumented models  and update
-comments in all the file to update the documentation (Matthieu, Christian)
 
 \item More flexibility in the definition of lost\_option. Sometimes, it could be
 useful to not have a default value. What happens if there is dependencies between
 lost options (added by Matthieu).
 
-
+\item Suggestion/Flying idea for unitary testing of a model: not clear in my mind
+but it could be a predicate in interface that launches a predefined unit
+tests of the model with small input. Verdict can be done by regression testing: 
+comparison of the generated file and the previous generated file. Maybe, had
+a repertory test in the model repertory. (Matt)
+\item Document all of undocumented models. (Matthieu, Christian)
 
 \end{itemize}
 
