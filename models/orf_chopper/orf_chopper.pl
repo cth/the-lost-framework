@@ -212,7 +212,7 @@ subtype(rst).
 *===============================================================================
 */
 
-dna_chop_init(S,SeqStartPos,Dir,Frame,Length,Id,ChunkFileOutStream):-
+dna_chop_init(S,SeqStartPos,Dir,Frame,Min_Length,Max_Length,Length,Id,ChunkFileOutStream):-
 	Pm3 is SeqStartPos mod 3,
 	init_frame(Pm3, Frame,Offset,S,S2),
 	ChunkStartPos = SeqStartPos + Offset,
@@ -228,10 +228,10 @@ dna_chop_init(S,SeqStartPos,Dir,Frame,Length,Id,ChunkFileOutStream):-
             Length = RightPos
 	),
 	nonprob_msw(dna(start),FirstState),
-	dna_chop(FirstState,Dir,Frame,S4-[],LeftPos, RightPos, Id,ChunkFileOutStream).
+	dna_chop(FirstState,Dir,Frame,S4-[],LeftPos, RightPos,Id,Min_Length,Max_Length,ChunkFileOutStream).
 
 
-dna_chop(end,_Dir,_Frm,S-S,P,P,_Id,_Chunk).
+dna_chop(end,_Dir,_Frm,S-S,P,P,_Id,Min_Length,Max_Length,_Chunk).
 dna_chop(This,Dir,Frame,S1-S2,P1, P2, Id,ChunkFileOutStream):-
 	This \= end,
 	sub_parse(This,Dir,S1-S3,P1, P3, Begins-[],Ends-[]), % emit a sequence of type This
@@ -240,7 +240,7 @@ dna_chop(This,Dir,Frame,S1-S2,P1, P2, Id,ChunkFileOutStream):-
         ;
             Dir_symbol = '-'
         ),
-	report(Id,P1,P3,S1,Dir_symbol,Frame,Begins,Ends,ChunkFileOutStream),
+	report(Id,P1,P3,S1,Dir_symbol,Frame,Begins,Ends,Min_Length,Max_Length,ChunkFileOutStream),
 	nonprob_msw(trans(This),Next),
 	dna_chop(Next,Dir,Frame,S3-S2,P3,P2,Id,ChunkFileOutStream).
 
@@ -306,9 +306,8 @@ nonprob_msw(S,V):-
 % report(++Id,++First_Pos,++Pos_After,++Sequence,++Dir,++Frame,++Starts_Positions,++Stop_Position,++OutStream),
 %--------------------------------------------------------------------------------------
 % Outputs current chunk to the output file
-%
-report(Id,First_Pos,Pos_After,S1,Dir,Frame,Starts_Positions,Stop_Position,ChunkFileOutStream) :-
-	(Dir = '+' ->
+report(Id,First_Pos,Pos_After,S1,Dir,Frame,Starts_Positions,Stop_Position,Min_Length,Max_Length,ChunkFileOutStream) :-
+       (Dir = '+' ->
             N is Pos_After-First_Pos,
             Left is First_Pos,
             Right is Pos_After-1   
@@ -316,17 +315,19 @@ report(Id,First_Pos,Pos_After,S1,Dir,Frame,Starts_Positions,Stop_Position,ChunkF
             N is First_Pos-Pos_After,
             Left is Pos_After+1 ,
             Right is First_Pos  
-	),
-        
+	),        
 	nFirst(N,S1,S,_),
-	(Dir = '+' ->
-            S2 = S
+        (kept_orf(Min_Length,Max_Length,N) -> % test to konw if the orf is kept or not
+            (Dir = '+' ->
+                S2 = S
+            ;
+                reverse_complement(S,[],S2,0,_)
+            ),
+            Entry =.. [chunk,Id,Left,Right,Dir,Frame,[sequence(S),starts(Starts_Positions),stop(Stop_Position)]],
+            writeq(ChunkFileOutStream,Entry), writeln(ChunkFileOutStream,'.')
         ;
-            reverse_complement(S,[],S2,0,_)
-	),
-	Entry =.. [chunk,Id,Left,Right,Dir,Frame,[sequence(S),starts(Starts_Positions),stop(Stop_Position)]],
-	writeq(ChunkFileOutStream,Entry), writeln(ChunkFileOutStream,'.').
-
+            true
+        ).
 
 
 %======================================================
@@ -357,3 +358,40 @@ orf_chop_main(data(Id,StartPos,_,S),Dir,Frame,FileInStream,ChunkFileOutStream):-
 	read(FileInStream,Term),
 	chop_main(Term,Dir,Frame,FileInStream,ChunkFileOutStream).
 */
+
+
+
+
+%--
+% Utils Report
+%--
+
+%% kept_orf(+Min_Length,+Max_Length,+N)
+%
+%
+% kept_orf(Min_Length,Max_Length,N) when N belongs in the range defined by Min_Length, Max_Length.
+% When one or  two variables are undefined, the test is true
+
+
+kept_orf(undefined,undefined,N) :-
+        !.
+        
+kept_orf(Min_Length,undefined,N) :-
+        Min_Length \= undefined,
+        !,
+        Min_Length =< N.
+
+kept_orf(undefined,Max_Length,N) :-
+        Max_Length \= undefined,
+        !,
+        N =< Max_Length.
+
+
+kept_orf(Min_Length,Max_Length,N) :-
+        Min_Length \= undefined,
+        Max_Length \= undefined,
+        !,
+        Min_Length =< N,
+        N =< Max_Length.
+
+        
