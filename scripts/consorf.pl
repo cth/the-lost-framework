@@ -134,26 +134,9 @@ testgoal:-run_chunk_conservation('U00096',[direction(+),frame(1),mismatch_score(
 
 
 
-%%%script_learning_consorf(Conservation_File,ORF_Annotated_File,GeneBank_File) :-
-%%%        lost_sequence_file(Conservation_File,Conservation_File_Seq),
-%%%        lost_sequence_file(ORF_Annotated_File,ORF_Annotated_File_Seq),
-%%%        lost_sequence_file(GeneBank_File,GeneBank_File_Seq),
-%%%        consult(Conservation_File_Seq),
-%%%        consult(ORF_Annotated_File_Seq),
-%%%        consult(GeneBank_File_Seq),
-%%%        pick_number_annotations(400,List_Ranges,List_ORF,List_Conservation), % TODO
-%%%        get_annotations_coding(List_Ranges,List_Prediction),   % TODO
-%%%        buid_parameters(List_ORF,List_Conservation,List_Prediction,List_Parameters)  % TODO
-%%%        map(build_learning_terms,List_Parameters,Learning_Terms),
-%%%        prismAnnot('../models/consorf_genefinder/consorf_genefinder.psm'),
-%%%        learn(Learning_Terms),
-%%%        atom_concat('../models/consorf_genefinder/Parameters/','consorf',Proba_File),
-%%%        atom_concat(Proba_File,'.prb',Proba_File2),
-%%%        check_or_fail(
-%%%		      save_sw(Proba_File2),
-%%%		      error(could_not_save_parameter_to_file(_ParametersFile))).
-       
-        
-%%%build_learning_terms(Params,Term) :-
-%%%        Term =.. [consorf|Params].
+test_optimization :-
+	lost_sequence_file('U00096',Sequence),
+        run_model(orf_chopper,annotate([Sequence],[direction(+),frame(1)],OrfChunk_File)),
+        run_model(chunk_translator,annotate([OrfChunk_File],[mode(0),genecode(11)],Orf_FASTA)),
+        run_model(chunk_aa_conservation,annotate([Orf_FASTA],[optimized(true),direction(+),frame(1),mismatch_score(1)],_Conservation)).
 
