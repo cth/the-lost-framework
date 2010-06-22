@@ -2,16 +2,18 @@
 :- lost_include_api(interface).
 :- lost_include_api(io).
 
-lost_option(lost_best_annotation,use_parameter_file,yes,'Load parameters from the parameter file').
+lost_option(annotate,use_parameter_file,yes,'Load parameters from the parameter file').
 	    
 % Some ideas for specification of input & output formats...
-lost_input_formats(lost_best_annotation, [text(prolog(sequence)),text(prolog(prism_switches))]).
-lost_output_format(lost_best_annotation, _, text(prolog(sequence))).
+lost_input_formats(annotate, [text(prolog(sequence)),text(prolog(prism_switches))]).
+lost_input_formats(train,[text(prolog(sequence))]).
+lost_output_format(annotate, _, text(prolog(sequence))).
+lost_output_format(train, _, text(prolog(prism_swithches))).
 
 % This is what is used to get the best annotation
-lost_best_annotation([InputFile,ParamFile],Options,OutputFile) :-
+annotate([InputFile,ParamFile],Options,OutputFile) :-
 	write('sample model 1: '),nl,
-	write(lost_best_annotation([InputFile,ParamFile],Options,OutputFile)),nl,
+	write(annotate([InputFile,ParamFile],Options,OutputFile)),nl,
 	get_option(Options,use_parameter_file,UseParamFile),
 	prism(sample1), % Load the actual PRISM model
 	% If no parameter file was specificed, just use default (uniform) parameters:
@@ -29,7 +31,7 @@ lost_best_annotation([InputFile,ParamFile],Options,OutputFile) :-
 	save_annotation_to_sequence_file(sample_model1_annot,4,OutputSequence,OutputFile),
 	write('model 1 terminated successfully.'),nl.
 
-lost_learn([TrainingDataFile],_Options,ParametersFile) :-
+train([TrainingDataFile],_Options,ParametersFile) :-
 	write('Training sample_model1'),nl,
 	load_sequence_list_from_file(TrainingDataFile,InputSequence),
 	prism(sample1),
@@ -43,3 +45,4 @@ lost_learn([TrainingDataFile],_Options,ParametersFile) :-
 		      error(could_not_save_parameter_to_file(ParametersFile))),
 	write('Pameters was saved to file: '),
 	write(ParametersFile),nl.
+

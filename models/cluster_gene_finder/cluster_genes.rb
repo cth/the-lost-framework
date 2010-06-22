@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 require './ai4r/lib/ai4r.rb'
 
 include Ai4r
@@ -49,7 +50,8 @@ class GeneClusterer
 
   def cluster_genes(num_clusters)
     puts "Building #{num_clusters} clusters.."
-    @clusterer = Ai4r::Clusterers::KMeans.new
+    @clusterer = Ai4r::Clusterers::KMeans.new 
+    @clusterer.max_iterations = 200 
     #@clusterer.distance_function = max_distance_function
     @clusterer.build(@genes,num_clusters)
     puts "Done."
@@ -215,11 +217,28 @@ class GeneClusterer
   end
 end
 
+## Main 
+if ARGV.length != 4
+then
+        puts "this script takes exactly four arguments:"
+        puts " - The name of a csv file with one line for each gene"
+        puts " - The name of a file with labels for of the csv fields"
+        puts " - The number of clusters to create"
+        puts " - The file to which the resulting clusters should be written"
+        exit
+end
+
+stats_file = ARGV[0]
+label_file = ARGV[1]
+num_clusters = ARGV[2]
+output_file = ARGV[3]
+
+puts "Stats file: " + stats_file
+puts "label file: " + label_file
+puts "number of clusters: " + num_clusters
+
 gc = GeneClusterer.new
-gc.load_gene_data("range_stats_28.csv", "range_stats_28.lbl")
-#gc.load_gene_data("small_stats.csv", "range_stats_28.lbl")
-gc.load_genome_data("range_stats_32.csv")
-#gc.incremental_clustering(10)
-#gc.build_and_test_cluster_of_size(3)
-gc.cluster_genes(10)
-gc.write_clusters_to_file('clusters.pl')
+gc.load_gene_data(stats_file, label_file)
+gc.cluster_genes(num_clusters.to_i)
+gc.write_clusters_to_file(output_file)
+

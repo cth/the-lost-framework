@@ -12,17 +12,17 @@
 '>'(X) :- writeq(X), write('\n'), call(X).
 
 
-lost_option(lost_best_annotation,max_nucleotide_order,1, 'Nucleotide stats will be build upto this order.').
-lost_option(lost_best_annotation,max_amino_acid_order,0, 'Amino acid stats will be build upto this order.').
+lost_option(annotate,max_nucleotide_order,1, 'Nucleotide stats will be build upto this order.').
+lost_option(annotate,max_amino_acid_order,0, 'Amino acid stats will be build upto this order.').
 
-lost_option(lost_best_annotation,amino_acid_stats,yes,'Whether to include amino acid statistics.').
-lost_option(lost_best_annotation,nucleotide_stats,yes,'Whether to include nucleotide statistics.').
-lost_option(lost_best_annotation,length_stats,yes,'Whether to include length statistics.').
+lost_option(annotate,amino_acid_stats,yes,'Whether to include amino acid statistics.').
+lost_option(annotate,nucleotide_stats,yes,'Whether to include nucleotide statistics.').
+lost_option(annotate,length_stats,yes,'Whether to include length statistics.').
 
-lost_option(lost_best_annotation,genecode,11,'The genetic code to use for translation').
+lost_option(annotate,genecode,11,'The genetic code to use for translation').
 
 % The main model predicate:
-lost_best_annotation([GenesFile,GenomeFile], Options, OutputFile) :-
+annotate([GenesFile,GenomeFile], Options, OutputFile) :-
   terms_from_file(GenesFile,Terms),
   load_sequence(genome,GenomeFile),
   max_gene_length(Terms,0,MaxGeneLength),

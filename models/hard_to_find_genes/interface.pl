@@ -5,16 +5,16 @@
 :- lost_include_api(accuracy).
 :- lost_include_api(io).
 
-lost_option(lost_best_annotation,start,min, 'An positive integer indicating the start of the range.').
-lost_option(lost_best_annotation,end,max, 'A positive integer indicating the end of the range.').
-lost_option(lost_best_annotation,gene_match_criteria,start_and_stop,'Whether to match both \'start_and_stop\' or just \'stop\' codons').
+lost_option(annotate,start,min, 'An positive integer indicating the start of the range.').
+lost_option(annotate,end,max, 'A positive integer indicating the end of the range.').
+lost_option(annotate,gene_match_criteria,start_and_stop,'Whether to match both \'start_and_stop\' or just \'stop\' codons').
 
-lost_option_values(lost_best_annotation,gene_match_criteria,[start_and_stop,stop]).
+lost_option_values(annotate,gene_match_criteria,[start_and_stop,stop]).
 
-lost_input_formats(lost_best_annotation,[text(prolog(ranges(gene))),star(text(prolog(ranges(gene))))]).
-lost_output_format(lost_best_annotation,_options,text(prolog(ranges(gene)))).
+lost_input_formats(annotate,[text(prolog(ranges(gene))),star(text(prolog(ranges(gene))))]).
+lost_output_format(annotate,_options,text(prolog(ranges(gene)))).
 
-lost_best_annotation([GoldenStandardFile|PredictionsFiles], Options, OutFile) :-
+annotate([GoldenStandardFile|PredictionsFiles], Options, OutFile) :-
         % Consult all input files 
 	forall(member(File,[GoldenStandardFile|PredictionsFiles]),consult(File)),
         % Find main functors for all input files:

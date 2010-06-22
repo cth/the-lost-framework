@@ -1,0 +1,326 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  NAME :
+%      lost_genefinder_ctr
+% VERSION :
+%     1.0
+%
+% AUTHOR : Matthieu Petit
+%
+% FUNCTION :
+%      Hmm based on Genemark, duration models as a constraint
+% 
+% HISTORIC :
+%  Mai 10: creation                           MP
+
+%
+% REMARKS : any problem, contact petit@(without advertissement)ruc.dk
+%
+% NOTE TO THE USER: n/a
+%
+% REFERENCE: 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ 
+
+:- set_prism_flag(scaling,log_exp).
+:- set_prism_flag(learn_mode,both).
+:- set_prism_flag(log_viterbi,on).
+:- ['./Parameters/domain_U00096.pl'].
+:- ['./Parameters/stats_length_U00096.pl'].
+
+
+%-----
+% HMM architecture
+%-----
+
+% HS to HS
+
+% Initialization
+values(begin,['nc','start']).
+
+% Transitions from Non coding states
+values(trans('nc'),['nc','start','end']).
+
+% Transitions from Start to Coding
+values(trans('start'),['c']).
+ 
+% Transitions from Coding 
+values(trans('c'),['c','stop']).
+
+
+% Transition to the end
+values(trans('stop'),['end']).
+
+
+% HS to emission
+% Genetic code: Table 11
+values(emit('nc'),[a,c,g,t]).
+
+values(emit('start'),[[t,t,g],[c,t,g],[a,t,t],[a,t,c],[a,t,a],[a,t,g],[g,t,g]]).
+
+values(emit('stop'),[[t,a,a],[t,g,a],[t,a,g]]).
+
+values(emit('c'),Codons_List) :-
+        get_list_codons(Codons_List).
+
+
+% Duration setting
+%values(duration,Domain) :-
+%        get_gene_type(Gene_Type),
+%        get_domain(Gene_Type,Domain).
+
+
+values(duration(Options),Domain) :-
+        member(Options,[gene(Gene_Type)]),
+        !,
+        get_domain(Gene_Type,Domain).
+        
+values(duration(Options),Domain) :-
+        member(Options,[length(Min,Max)]),
+        !,
+        get_domain_length(Min,Max).
+
+
+
+get_list_codons(L) :-
+        L = [ [a,a,a],[a,a,t],[a,a,c],[a,a,g],
+              [a,t,a],[a,t,t],[a,t,c],[a,t,g],
+              [a,c,a],[a,c,t],[a,c,c],[a,c,g],
+              [a,g,a],[a,g,t],[a,g,c],[a,g,g],
+                      [t,a,t],[t,a,c],
+              [t,t,a],[t,t,t],[t,t,c],[t,t,g],
+              [t,c,a],[t,c,t],[t,c,c],[t,c,g],
+                      [t,g,t],[t,g,c],[t,g,g],
+              [c,a,a],[c,a,t],[c,a,c],[c,a,g],
+              [c,t,a],[c,t,t],[c,t,c],[c,t,g],
+              [c,c,a],[c,c,t],[c,c,c],[c,c,g],
+              [c,g,a],[c,g,t],[c,g,c],[c,g,g],
+              [g,a,a],[g,a,t],[g,a,c],[g,a,g],
+              [g,t,a],[g,t,t],[g,t,c],[g,t,g],
+              [g,c,a],[g,c,t],[g,c,c],[g,c,g],
+              [g,g,a],[g,g,t],[g,g,c],[g,g,g]
+             ].
+
+%---
+% Process definition for Learning
+%---
+% Classic implementation
+
+
+hmm_lost(Seq,Gene_Type,Annotation) :-
+        set_params(Gene_Type),
+        msw(begin,State),
+        hmm_lost_rec(State,Seq,Gene_Type,_Duration,Annotation).
+
+
+% End State
+hmm_lost_rec(State,[],_Gene_Type,_Duration,[]) :-
+        State = 'end',
+        !.
+
+% stop codon = end of the iteration
+hmm_lost_rec(State,[N1,N2,N3],_Gene_Type,0,[1,1,1]) :-
+        State = 'stop',
+        !,
+        msw(emit(State), [N1,N2,N3]),
+        msw(trans(State),New_State),
+        hmm_lost_rec(New_State,[],_Gene_Type,0,[]).
+
+% start codon state
+hmm_lost_rec(State,[N1,N2,N3|Rest_Nuc],Gene_Type,Duration,[1,1,1|Rest_Annot]) :-
+        State = 'start',
+        !,
+        msw(emit(State),[N1,N2,N3]),
+        msw(duration(Gene_Type),Duration),
+        msw(trans(State),New_State),
+        hmm_lost_rec(New_State,Rest_Nuc,Gene_Type,Duration,Rest_Annot).
+
+
+
+% coding state
+hmm_lost_rec(State,[N1,N2,N3|Rest_Nuc],_Gene_Type,Duration,[1,1,1|Rest_Annot]) :-
+        State = 'c',
+        !,
+        msw(emit(State),[N1,N2,N3]),
+        Duration1 is Duration-1,
+        msw(trans(State,Duration),New_State),
+        hmm_lost_rec(New_State,Rest_Nuc,_Gene_Type,Duration1,Rest_Annot).
+
+
+
+% non coding state
+hmm_lost_rec(State,[Nuc|Rest_Nuc],Gene_Type,Duration,[0|Rest_Annot]) :-
+        State = 'nc',
+        !,
+        msw(emit(State),Nuc),
+        msw(trans(State),New_State),
+        hmm_lost_rec(New_State,Rest_Nuc,Gene_Type,Duration,Rest_Annot).
+
+
+
+
+
+%---
+% Process definition for Inference
+%---
+% 
+% Classic implementation
+% Annotation: [0,0,0 (non codin region), 1,1,1,1 (coding region)]
+hmm_lost_annot(Seq,Gene_Type,--Annot) :-
+        set_params(Gene_Type),
+        msw(begin,State),
+        hmm_lost_annot_rec(State,Gene_Type,_Duration,Seq,--Annot).
+
+
+hmm_lost_annot_rec(State,_Gene_Type,_Duration,[],--[]) :-
+        State = 'end',
+        !.
+
+
+
+% stop codon = end of the iteration
+hmm_lost_annot_rec(State,Gene_Type,0,[N1,N2,N3],--[1,1,1]) :-
+        State = 'stop',
+        !,
+        msw(emit(State), [N1,N2,N3]),
+        msw(trans(State),New_State),
+        hmm_lost_annot_rec(New_State,Gene_Type,0,[],--[]).
+
+% start codon state
+hmm_lost_annot_rec(State,Gene_Type,Duration,[N1,N2,N3|Rest_Nuc],--[1,1,1|Rest_Annot]) :-
+        State = 'start',
+        !,
+        msw(emit(State),[N1,N2,N3]),
+        msw(duration(Gene_Type),Duration),
+        msw(trans(State),New_State),
+        hmm_lost_annot_rec(New_State,Gene_Type,Duration,Rest_Nuc,--Rest_Annot).
+
+
+
+% coding state
+hmm_lost_annot_rec(State,Gene_Type,Duration,[N1,N2,N3|Rest_Nuc],--[1,1,1|Rest_Annot]) :-
+        State = 'c',
+        !,
+        msw(emit(State),[N1,N2,N3]),
+        Duration1 is Duration-1,
+        msw(trans(State,Duration),New_State),
+        hmm_lost_annot_rec(New_State,Gene_Type,Duration1,Rest_Nuc,--Rest_Annot).
+
+
+
+% non coding state
+hmm_lost_annot_rec(State,Gene_Type,Duration,[Nuc|Rest_Nuc],--[0|Rest_Annot]) :-
+        State = 'nc',
+        !,
+        msw(emit(State),Nuc),
+        msw(trans(State),New_State),
+        hmm_lost_annot_rec(New_State,Gene_Type,Duration,Rest_Nuc,--Rest_Annot).
+
+
+
+
+
+%------
+% Duration_model
+%------
+
+get_epsilon(0.000001).
+
+% Set parameters of the model: duration model is fixed
+
+set_params(Type) :-
+        compute_domain_smooth(Type,New_Stats),
+        normalize(length,New_Stats,[([],(_Domain,Proba))]),
+        fix_sw(duration(Type),Proba).
+
+
+
+% First version of the distribution: Domain = Number of Codons inside the coding region (start and stop excluded) from 1 to the last number of codons counted
+%                                    Counts = When no counts, a pseudo counts is added (get_epsilon)
+
+
+compute_domain(Gene_Type,New_Stats) :-
+        stats_length(Gene_Type,Stats),
+        compute_domain_rec(Stats,1,New_Stats).
+
+
+compute_domain_rec([],_,[]) :-
+        !.
+
+
+compute_domain_rec([(Number,Counts)|Rest_Stats],Num,[(Number1,Counts)|Rest_Results]) :-
+        Number1 is Number//3,
+        Num = Number1,
+        !,
+        Num1 is Num+1,
+        compute_domain_rec(Rest_Stats,Num1,Rest_Results).
+
+
+compute_domain_rec([(Number,Counts)|Rest_Stats],Num,[(Num,Epsilon)|Rest_Results]) :-
+        !,
+        get_epsilon(Epsilon),
+        Num1 is Num+1,
+        compute_domain_rec([(Number,Counts)|Rest_Stats],Num1,Rest_Results).
+
+
+
+
+% Second version of the distribution: Domain = Number of Codons inside the coding region (start and stop excluded) from 1 to the last number of codons counted
+%                                     Counts = To have a more "smoothy curve", pseudo-counts for no counts is computed as a meaning given the counts around
+%                               
+
+compute_domain_smooth(Type,[]) :-
+        stats_length(Type,[]),
+        !.
+
+
+compute_domain_smooth(Type,[(1,New_Counts)|Rest_New_Stats]) :-
+        stats_length(Type,[(Number,Counts)|Rest_Stats]),
+        Number1 is Number//3,
+        (Number1 == 1 ->
+            Counts = New_Counts,
+            Left = [1,Counts],
+            get_right(Rest_Stats,Right),
+            Stats = Rest_Stats
+        ;
+            Stats = [(Number,Counts)|Rest_Stats],
+            New_Counts = 0,
+            Left = [1,New_Counts],
+            Right = [Number1,Counts]
+        ),
+        compute_domain_smooth_rec(Stats,2,Left,Right,Rest_New_Stats).
+
+
+compute_domain_smooth_rec([],_Num,_Left,_Right,[]) :-
+        !.
+
+compute_domain_smooth_rec([(Number,Counts)|Rest_Stats],Num,_Left,Right,[(Number1,Counts)|Rest_New_Stats]) :-
+        Number1 is Number//3,
+        Number1 == Num,
+        !,
+        Num1 is Num+1,
+        get_right(Rest_Stats,New_Right),
+        compute_domain_smooth_rec(Rest_Stats,Num1,Right,New_Right,Rest_New_Stats).
+
+
+compute_domain_smooth_rec(Stats,Num,[Left,Count_Left],[Right,Count_Right],[(Num,Counts)|Rest_New_Stats]) :-
+        LR is Left-Right,
+        Counts is (Count_Left-Count_Right)/LR * Num + (Left*Count_Right-Right*Count_Left)/LR,
+        Num1 is Num+1,
+        compute_domain_smooth_rec(Stats,Num1,[Left,Count_Left],[Right,Count_Right],Rest_New_Stats).
+
+
+        
+
+
+% get_right(++Stats,--Right).
+get_right([],_) :-
+        !.
+
+
+get_right([(Number,Counts)|_],[Number1,Counts]) :-
+        !,
+        Number1 is Number//3.
+
+
+

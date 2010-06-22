@@ -6,7 +6,7 @@
                                                                                         
 % 
 
-lost_best_annotation([InputFile],Options,OutputFile) :-                                 
+annotate([InputFile],Options,OutputFile) :-                                 
 	write('Hein genefinder: '),nl,                                                         
         prismAnnot('hein'), % Load the actual PRISM model                                         
         (lost_option(Options,parameter_file,ParamFile) ->

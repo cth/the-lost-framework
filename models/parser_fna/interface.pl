@@ -5,14 +5,15 @@
 % Generate data predicates form fna file of Genbank
 
 % Option declaration
-lost_option(lost_best_annotation,list,'none','Divided sequences of Nucleotids into pieces').
+lost_option(annotate,list,'none','Divided sequences of Nucleotids into pieces').
+lost_option(annotate,range,[min,max],'Define a range to extract a sub-part of the genome').
 
 % Input Format Specification
-lost_input_formats(lost_best_annotation,[text(fna),text(gbk)]).
+lost_input_formats(annotate,[text(fna),text(gbk)]).
 % Output Format Specification
-lost_output_format(lost_best_annotation,_,text(prolog(sequence(dna)))).
+lost_output_format(annotate,_,text(prolog(sequence(dna)))).
 
 
-lost_best_annotation([FNA_File,GBK_File],Options,OutputFile) :-
+annotate([FNA_File,GBK_File],Options,OutputFile) :-
         consult(fna_parser),
         parser_fna(Options,FNA_File,GBK_File,OutputFile).

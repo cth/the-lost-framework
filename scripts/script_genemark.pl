@@ -10,10 +10,9 @@
 
 run_genemark(FnaFile,GbkFile,[Min,Max],OutputFile) :-
         parser_fna(FnaFile,GbkFile,[],InputFile),
-        get_annotation_file(genemark_genefinder, % Name of Model
-                            [InputFile], % DB data
-                            [range(Min,Max)], % Options
-                             OutputFile
-                           ),
+        run_model(genemark_genefinder, % Name of Model
+                  annotate([InputFile], % DB data
+                           [range(Min,Max)], % Options
+                            OutputFile)),
         write("Genemark analysis succeeds!! Results store in: "),
         write(OutputFile).

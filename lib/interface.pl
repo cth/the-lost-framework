@@ -1,61 +1,47 @@
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
-% Simple Prolog debugging trick
-:- op(800, fx,'>').
-'>'(X) :- writeq(X), write('\n'), call(X).
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% get_annotation_file/4
+% run_lost_model/2
+% Can be called as,
+% run_model_model(Model, Goal)
+% or
+% Goal @ Model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Will unify Filename with the name of the containing an annotation
-% the the prism run with Model, and Inputs. If no such annotation
-% exists, PRISM will be run to generate it.
+%
 % Model: The name of the model to be run
-% Inputs: A list of filenames given as input to the model.
+%
+% Goal must be of the from, Goal =.. [ F, InputFiles, Options, OutputFile ]
+% InputFiles: A list of filenames given as input to the model.
 % Options: A list of options to the model.
-get_annotation_file(Model, Inputs, Options, Filename) :-
-	lost_model_interface_file(Model, ModelFile),	
-	check_valid_model_call(Model, lost_best_annotation,3, Options),
-	expand_model_options(Model, Goal, Options, ExpandedOptions),
+
+:- op(1020, xfx, using).
+using(Goal,ModelName) :- run_lost_model(ModelName,Goal).
+
+
+      
+% Run a Lost Model
+run_model(Model,Goal) :-
+	write(run_lost_model(Model,Goal)),nl,
+	Goal =.. [ Functor, Inputs, Options, Filename ],
+	lost_model_interface_file(Model, ModelFile),
+	check_valid_model_call(Model,Functor,3,Options),
+	expand_model_options(Model, Functor, Options, ExpandedOptions),
 	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Check if a result allready exists:
-	lost_annotation_index_file(AnnotIndex),
-	lost_file_index_get_filename(AnnotIndex,Model,Inputs,ExpandedSortedOptions,Filename),
+	lost_data_index_file(AnnotIndex),
+	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename),
 	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
 	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
-	 term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
-	 launch_prism_process(ModelFile,Goal),
+	 CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
+	 %term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
+	 term2atom(CallGoal,GoalAtom),
+         write(launch_prism_process(ModelFile,GoalAtom)),nl,
+	 launch_prism_process(ModelFile,GoalAtom),
 	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
 	 lost_file_index_update_file_timestamp(AnnotIndex,Filename)
-	).
-
-% Alias for get_annotation_file...
-run_model(Model,Inputs,Options,Filename) :-
-	get_annotation_file(Model,Inputs,Options,Filename).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% train_model/4
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-train_model(Model, TrainingDataFiles, Options, SavedParamsFile) :-
-	lost_model_interface_file(Model, ModelFile),	
-	check_valid_model_call(Model, lost_learn,3, Options),
-	expand_model_options(Model, Goal, Options, ExpandedOptions),
-	sort(ExpandedOptions,ExpandedSortedOptions),	
-	lost_model_parameter_index_file(Model,ParamFileIndex),
-	lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile),
-	write(lost_file_index_get_filename(ParamFileIndex,Model,TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile)),nl,
-	!,
-	(file_exists(SavedParamsFile) ->
-	 write('Using existing parameter file: '), write(SavedParamsFile), nl
-	 ;
-	 term2atom(lost_learn(TrainingDataFiles,ExpandedSortedOptions,SavedParamsFile),Goal),
-	 launch_prism_process(ModelFile,Goal),
-	 check_or_fail(file_exists(SavedParamsFile),interface_error(missing_parameter_file(SavedParamsFile))),
-	 lost_file_index_update_file_timestamp(ParamFileIndex,SavedParamsFile)
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,11 +125,169 @@ launch_prism_process(PrismPrologFile, Goal) :-
 	write('--> PRISM process exits with code '), write(ExitCode),nl,
 	% Unfortunately bprolog/prism does get the concept of exit codes. DOH!!!
 	check_or_fail((ExitCode==0), error(launch_prism_process(PrismPrologFile,Goal))),
-	chdir(CurrentDir).
+        chdir(CurrentDir).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Launching Help for a model
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+help_model(Model) :-
+        nl,
+        write('#####################################################################'),nl,
+        write('# Lost Framework Help                                               #'),nl,
+        write('#####################################################################'),nl,
+        nl,
+        % Information collections
+        lost_model_interface_file(Model,ModelFile),
+        file_directory_name(ModelFile,Dirname),
+        catch(terms_from_file(ModelFile,Terms),_,Error ='yes'),
+        (Error == 'yes' ->
+            write('This Model does not exist'),nl,
+            write('List of models available:'),nl,
+            print_available_model
+        ;
+            findall(Term,(member(Term,Terms),Term =.. [lost_input_formats,_InterfacePredicate,_Formats]),Term_Input),
+            findall(Term,(member(Term,Terms),Term =.. [lost_output_format,_InterfacePredicate,_Options,_Formats]),Term_Output1),
+            findall(Head,(member(Rule,Terms),Rule =.. [:-,Head,_],Head =.. [lost_output_format,_InterfacePredicate,_Options,_Formats]),Term_Output2),
+            append(Term_Output1,Term_Output2,Term_Output),
+            findall(Term,(member(Term,Terms),Term =.. [lost_option|_ParamsOpts]),Term_Option),
+            help_information(Term_Input,Term_Output,Term_Option,Predicates),
+                                % Printing information
+            write('Model name: '), write(Model),nl,
+            write('Model directory: '), write(Dirname),nl,
+            nl,
+            write('Defined predicates:'),nl,
+            print_predicates_help(Predicates)
+        ).
+
+
+% help_information(+Term_Input,+Term_Output,+Term_Option,-Predicates)
+% Compute a list of informations for each defined predicate of the models
+
+help_information(Term_Input,Term_Output,Term_Option,Predicates) :-
+        findall(InterfacePredicate,member(lost_input_formats(InterfacePredicate,_Formats),Term_Input),Predicate_Defined1),
+        findall(InterfacePredicate,member(lost_output_format(InterfacePredicate,_Options,_Formats),Term_Output),Predicate_Defined2),
+        append(Predicate_Defined1,Predicate_Defined2,Predicate_Defined3),
+        remove_dups(Predicate_Defined3,Predicate_Defined),
+        help_information_rec(Predicate_Defined,Term_Input,Term_Output,Term_Option,Predicates).
+
+
+help_information_rec([],_,_,_,[]) :-
+        !.
+
+help_information_rec([PredName|Rest],Term_Input,Term_Output,Term_Option,[Predicate|Rest_Predicates]) :-
+        findall(Format_In,member(lost_input_formats(PredName,Format_In),Term_Input),Formats_In),
+        findall(Format_Out,member(lost_output_format(PredName,_Options,Format_Out),Term_Output),Formats_Out),
+        findall([OptName,Default,Description],member(lost_option(PredName,OptName,Default,Description),Term_Option),List_Options),
+        Predicate =.. [PredName,Formats_In,List_Options,Formats_Out],
+        help_information_rec(Rest,Term_Input,Term_Output,Term_Option,Rest_Predicates).
+
+% print_predicates_help(++Predicates)
+% Predicate that writes information of the defined predicates on the standart output
+
+print_predicates_help([]) :-
+        !.
+
+print_predicates_help([Predicates|Rest]) :-
+        Predicates =.. [PredName,In_Format,Options,Out_Format],
+        Sign =..[PredName,'InputFiles','Options','OutputFile'],
+        write(Sign),nl,
+        write('----------'),nl,
+        (In_Format = [T|_] ->      % Assumption: Arity of the InputFile remains the same
+            length(T,Size_In),
+            write('number of input files: '),write(Size_In),nl
+        ;
+            write('number of InputFiles: not specified'),nl
+        ),
+        length(Options,Size_Options),
+        write('number of options: '),write(Size_Options),nl,
+        write('number of output file: 1'),nl, % TO MODIDY when 1 and more output files will be available
+        write('----------'),nl,
+        write('Format of the input file(s):'),nl,
+        print_inout_format(In_Format),
+        (Size_Options =\= 0 ->
+            write('----------'),nl,
+            write('Option(s) available:'),nl,
+            print_options(Options)
+        ;
+            true
+        ),
+        write('----------'),nl,
+        write('Format of the output file(s):'),nl,
+        print_inout_format(Out_Format),
+        nl,
+        print_predicates_help(Rest).
+
+% Utils print_predicates
+
+print_inout_format([]) :-
+        !.
+
+
+print_inout_format([Elt|Rest]) :-
+        is_list(Elt),
+        !,
+        print_inout_format(Elt),
+        nl,
+        print_inout_format(Rest).
+
+print_inout_format([Elt|Rest]) :-
+        var(Elt),
+        !,
+        write('format not specified'),nl,
+        print_inout_format(Rest).
+
+
+print_inout_format([Elt|Rest]) :-
+        write(Elt),nl,
+        print_inout_format(Rest).
+
+
+
+print_options([]) :-
+        !.
+
+print_options([[OptName,Default,Description]|Rest]) :-
+        !,
+        write('name: '),write(OptName),nl,
+        write('default value: '),write(Default),nl,
+        write('description: '),write(Description),nl,
+        nl,
+        print_options(Rest).
+
+
+        
+        
+
+
+  
+        
+print_available_model :-
+        lost_models_directory(ModelsDir),
+        getcwd(Current),
+        cd(ModelsDir),
+        directory_files('.',['.','..'|List_Name]), % B-Prolog build-in
+        cd(Current),
+        print_available_model_rec(List_Name).
+
+
+print_available_model_rec([]) :-
+        !.
+
+print_available_model_rec([Name|Rest]) :-
+        write(Name),nl,
+        print_available_model_rec(Rest).
+
+        
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Directory and file management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+lost_utilities_directory(UtilsDir) :-
+        lost_config(lost_base_directory,BaseDir),!,
+        atom_concat(BaseDir,'/utilities/',UtilsDir).
 
 lost_tmp_directory(TmpDir) :-
         lost_config(lost_base_directory,BaseDir),!,
@@ -184,7 +328,7 @@ lost_model_parameter_file(Model,ParameterId,ParameterFile) :-
 	atom_concat(Dir,ParameterId,ParameterFile1),
 	atom_concat(ParameterFile1,'.prb',ParameterFile).
 
-lost_annotation_index_file(IndexFile) :-
+lost_data_index_file(IndexFile) :-
 	lost_data_directory(AnnotDir),
 	atom_concat(AnnotDir,'annotations.idx',IndexFile).
 
@@ -195,6 +339,12 @@ lost_data_file(SequenceId, SequenceFile) :-
 
 lost_sequence_file(SequenceId, SequenceFile) :-
 	lost_data_file(SequenceId, SequenceFile).
+
+
+is_generated_file(File_Path) :-
+        lost_data_directory(D),
+        atom_concat(D,Name_File,File_Path),
+        atom_concat(_,'.gen',Name_File).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -208,19 +358,19 @@ lost_sequence_file(SequenceId, SequenceFile) :-
 % Retrieve the filename matching (Model,Options,InputFiles) from the file index
 % If no such filename exists in the index, then a new unique filename is created
 % and unified to Filename 
-lost_file_index_get_filename(IndexFile,Model,InputFiles,Options,Filename) :-
+lost_file_index_get_filename(IndexFile,Model,Goal,InputFiles,Options,Filename) :-
 	(file_exists(IndexFile) -> terms_from_file(IndexFile,Terms) ; Terms = []),
-	(lost_file_index_get_filename_from_terms(Terms,Model,InputFiles,Options,Filename) ->
+	(lost_file_index_get_filename_from_terms(Terms,Model,Goal,InputFiles,Options,Filename) ->
 	 true
 	;
-	 % create and reserver new filename:
+	 % create and reserve new filename:
 	 lost_file_index_next_available_index(Terms, Index),
 	 dirname(IndexFile,IndexDir),
 	 term2atom(Index,IndexAtom),
-	 atom_concat_list([IndexDir, Model, '_',IndexAtom,'.gen'], Filename),
+	 atom_concat_list([IndexDir, Model, '_',Goal,'_',IndexAtom,'.gen'], Filename),
 	 lost_file_index_timestamp(Ts),
 	 term2atom(Ts,AtomTs),
-	 append(Terms, [fileid(IndexAtom,AtomTs,Filename,Model,InputFiles,Options)],NewTerms),
+	 append(Terms, [fileid(IndexAtom,AtomTs,Filename,Model,Goal,InputFiles,Options)],NewTerms),
 	 terms_to_file(IndexFile,NewTerms)
 	).
 
@@ -241,12 +391,12 @@ lost_file_index_largest_index([Term|Rest], LargestIndex) :-
 % lost_file_index_get_filename_from_terms/5:
 % Go through a list terms and check find a Filename matching (Model,ParamsId,InputFiles)
 % Fail if no such term exist
-lost_file_index_get_filename_from_terms([Term|_],Model,InputFiles,Options,Filename) :-
-	Term =.. [ fileid, _, _, Filename, Model, InputFiles, Options ],
+lost_file_index_get_filename_from_terms([Term|_],Model,Goal,InputFiles,Options,Filename) :-
+	Term =.. [ fileid, _, _, Filename, Model, Goal, InputFiles, Options ],
 	!.
 
-lost_file_index_get_filename_from_terms([_|Rest],Model,InputFiles,Options,Filename) :-
-	lost_file_index_get_filename_from_terms(Rest,Model,InputFiles,Options,Filename).
+lost_file_index_get_filename_from_terms([_|Rest],Model,Goal,InputFiles,Options,Filename) :-
+	lost_file_index_get_filename_from_terms(Rest,Model,Goal,InputFiles,Options,Filename).
 
 % Get a timestamp corresponding to the current time
 lost_file_index_timestamp(time(Year,Mon,Day,Hour,Min,Sec)) :-
@@ -255,7 +405,7 @@ lost_file_index_timestamp(time(Year,Mon,Day,Hour,Min,Sec)) :-
 
 lost_file_index_get_file_timestamp(IndexFile,Filename,Timestamp) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, TimeStampAtom, Filename, _Model, _InputFiles, _Options ],
+	TermMatcher =.. [ fileid,  _Index, TimeStampAtom, Filename, _Model, _Goal, _InputFiles, _Options ],
 	member(TermMatcher,Terms),
 	parse_atom(TimeStampAtom,Timestamp).
 				   
@@ -265,22 +415,29 @@ lost_file_index_update_file_timestamp(IndexFile,Filename) :-
 	lost_file_index_timestamp(Ts),
 	term2atom(Ts,TsAtom),
 	terms_from_file(IndexFile,Terms),
-	OldTermMatcher =.. [ fileid,  Index, _, Filename, Model, InputFiles, Options ],
+	OldTermMatcher =.. [ fileid,  Index, _, Filename, Model, Goal, InputFiles, Options ],
 	subtract(Terms,[OldTermMatcher],TermsMinusOld),
-	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, InputFiles, Options ],
+	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, Goal, InputFiles, Options ],
 	append(TermsMinusOld,[NewTerm],UpdatedTerms),
 	terms_to_file(IndexFile,UpdatedTerms).
 
 lost_file_index_filename_member(IndexFile, Filename) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Model, _InputFiles, _Options ],
+	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Goal, _Model, _InputFiles, _Options ],
 	member(TermMatcher,Terms).
 
 lost_file_index_inputfiles(IndexFile,Filename,InputFiles) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Model, InputFiles, _Options ],
+	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Goal,_Model, InputFiles, _Options ],
 	member(TermMatcher,Terms).
-	
+
+lost_file_index_move_file(IndexFile,OldFilename,NewFilename) :-
+	terms_from_file(IndexFile,Terms),
+	OldTermMatcher =.. [ fileid,  Index, TS, OldFilename, Model, Goal, InputFiles, Options ],
+	subtract(Terms,[OldTermMatcher],TermsMinusOld),
+	NewTerm =.. [ fileid,  Index, TS, NewFilename, Model, Goal, InputFiles, Options ],
+	append(TermsMinusOld,[NewTerm],UpdatedTerms),
+	terms_to_file(IndexFile,UpdatedTerms).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost model interface analysis
@@ -293,7 +450,6 @@ check_valid_model_call(Model, InterfacePredicate, Arity,Options) :-
 		      interface_error(no_support(Model,InterfacePredicate/Arity))),
 	check_or_warn(verify_model_options_declared(Model,InterfacePredicate,Options),
 		      error(interface(model_called_with_undeclared_options(Model,Options)))),
-	%write(lost_interface_input_formats(Model,InterfacePredicate, _)),nl,
 	check_or_warn(lost_interface_input_formats(Model,InterfacePredicate, _),
 		      warning(interface(missing_input_formats_declaration(Model,InterfacePredicate)))),
 	check_or_warn(lost_interface_defines_output_format(Model,InterfacePredicate),
@@ -320,8 +476,6 @@ lost_interface_defines_output_format(Model,InterfacePredicate) :-
 	terms_from_file(ModelFile, Terms),
 	Head =.. [ lost_output_format, InterfacePredicate, _options, _format],
 	Rule =.. [ :-, Head, _ ],
-	write(Head),nl,
-	write(Rule),nl,
 	(member(Head, Terms) ; member(Rule,Terms)).
 
 lost_interface_output_format_to_file(Model,InterfacePredicate, Options, OutputFormatFile) :-
@@ -375,7 +529,7 @@ lost_model_option_values(Model, InterfacePredicate, OptionName, Values) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 file_modification_time(File,Timestamp) :-
-	lost_annotation_index_file(IndexFile),
+	lost_data_index_file(IndexFile),
 	lost_file_index_filename_member(IndexFile,File),
 	lost_file_index_get_file_timestamp(IndexFile,File,Timestamp).
 
@@ -416,7 +570,7 @@ rec_files_older_than_timestamp([],_).
 
 rec_files_older_than_timestamp([File|FilesRest],TS1) :-
 	timestamp_to_list(TS1,TS1List),
-	lost_annotation_index_file(IndexFile),
+	lost_data_index_file(IndexFile),
 	lost_file_index_filename_member(IndexFile,File),
 	file_modification_time(File,TS2),
 	timestamp_to_list(TS2,TS2List),
@@ -462,7 +616,14 @@ rm_tmp :-
 	write(Command),nl,
 	system(Command).
 
-
+% Move a generated data file somewhere else and update the annotation index
+move_data_file(X,X) :- !.
+move_data_file(OldFilename, NewFilename) :-
+	lost_data_index_file(IndexFile),
+	copy_file(OldFilename,NewFilename),
+	delete_file(OldFilename),
+	lost_file_index_move_file(IndexFile,OldFilename,NewFilename).
+	
 % Allows to query for models that support a particular 
 % pattern of InputFiles, Options, and OutputFormat
 %list_models_of_type(InputFiles,Options,OutputFormat,Models) :-
@@ -480,9 +641,11 @@ list_lost_models_to_file(File) :-
 	
 list_lost_models(Models) :-
 	lost_models_directory(ModelsDir),
-	directory_files(ModelsDir,Files),
+        getcwd(C),
+        cd(ModelsDir),
+	directory_files('.',Files),
+        cd(C),
 	subtract(Files,['.','..'],Models).
-%	directories_in_list(Files,Models).	
 
 directories_in_list([],[]).
 
