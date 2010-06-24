@@ -17,8 +17,9 @@
 # outmode= s(eq): just raw sequence as .seq
 # outmode= l(enght): sorted lenghts
 # outmode= i(nfo): statisics on sequence (some printed for .seq and .dat)
-# outmode= p(tt): prints "ptt" file with start..stop, frame and 7 colums
 # outmode= f(rames): prints out frame sequence in .dat format
+# outmode= ptt: prints "ptt" file with start..stop, frame and 7 colums
+# outmode= pl: prints "ptt" file in .pl format
 
 # typemode_x..y: only sequences in lenght x to y
 
@@ -376,8 +377,8 @@ i=0
 while i < len(annot):
         if annot[i] in verified:
                 k=[]
-                k.append((annot[i][0],annot[i][1],str(annot[i][4])))
-                i=i+1
+                #k.append((annot[i][0],annot[i][1],str(annot[i][4])))
+                #i=i+1
                 while annot[i] in verified:
                         k.append((annot[i][0],annot[i][1],str(annot[i][4])))
                         i=i+1
@@ -405,18 +406,23 @@ if outmode=='f':
                         frame_seq+=','+str(e[4])
                 print 'model([%s]).'%frame_seq
         if typemode=='mvc':
-                print '%s %s contiguous verified mRNAs'%('%',len(contiguous_verified))
+                y=0
+                for j in contiguous_verified:
+                        for g in j:
+                                y=y+1
+                print '%s number of contiguous verified mRNAs:%s'%('%',y)
+                print '%s %s contiguous regions'%('%',len(contiguous_verified))
                 for e in contiguous_verified:
                         print '%s pos %s..%s'%('%',e[0][0],e[-1][1])
                         frame_seq=e[0][2]
-                        for j in e:
+                        for j in e[1:]:
                                 frame_seq+=','+j[2]
                         print 'model([%s]).'%frame_seq
 
 
 ##### print ptt:
 
-if outmode=='p':
+if outmode=='ptt':
         if typemode=='mv':
                 print '%s number of verified mRNAs:%s'%('%',len(verified))
                 for e in verified:
@@ -427,10 +433,36 @@ if outmode=='p':
                 for j in contiguous_verified:
                         for g in j:
                                 y=y+1
-                print '%s number of verified mRNAs:%s'%('%',y)
-                #for i in contiguous_verified:
-                #        for e in i:
-                #                print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[2])
+                print '%s %s contiguous regions'%('%',len(contiguous_verified))
+                print '%s number of contiguous verified mRNAs:%s'%('%',y)
+                for i in contiguous_verified:
+                        for e in i:
+                                print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[2])
+
+if outmode=='pl':
+        if typemode=='mv':
+                print '%s number of verified mRNAs:%s'%('%',len(verified))
+                for e in verified:
+                        if e[3]<4:
+                                print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'+\'',e[3],'[]')
+                        else:
+                                print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'-\'',e[3],'[]')
+
+        if typemode=='mvc':
+                y=0
+                for j in contiguous_verified:
+                        for g in j:
+                                y=y+1
+                print '%s number of contiguous verified mRNAs:%s'%('%',y)
+                for i in contiguous_verified:
+                        for e in i:
+                                if e[2]<4:
+                                        print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'+\'',e[2],'[]')
+                                else:
+                                        print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'-\'',e[2],'[]')
+
+
+
 
 
 
