@@ -1,0 +1,51 @@
+% Model used to estimate how many often each type of elements 
+% multiset 1 needs to be delete in order to result in multiset 2 
+
+values(delete(_), [yes,no]).
+
+differential_delete(InList, OutList) :-
+        eliminate_duplicate(OutList,OutSet),
+        sort(OutSet,OutSetOrdered),
+        zero_counts_from_elem_list(OutSetOrdered,InitialCounter),
+        count_elems(OutList,InitialCounter,OutCounts),
+        differential_delete_counts(InList,OutCounts).
+        
+differential_delete_counts(InList, OutCounts) :-
+        differential_delete_rec(InList, OutList),
+        delete(OutList,delete,OutList1),
+        eliminate_duplicate(OutList1,OutSet),
+        sort(OutSet,OutSetOrdered),
+        zero_counts_from_elem_list(OutSetOrdered,InitialCounter),
+        count_elems(OutList1,InitialCounter,OutCounts).
+
+differential_delete_rec([],[]).
+
+differential_delete_rec([X|Xs],[Y|Ys]) :-
+        msw(delete(X),Delete),
+        ((Delete == yes) ->  Y=delete ; Y=X),
+        differential_delete_rec(Xs,Ys).
+
+% All counts are zero
+% all_zero([]).
+% all_zero([(_,0)|Xs]) :- all_zero(Xs).
+
+
+count_elems([],C,C).
+count_elems([X|Xs],CountsBefore,FinalCounts) :-
+        increment_count(CountsBefore,CountsAfter,X),
+        count_elems(Xs,CountsAfter,FinalCounts).
+
+zero_counts_from_elem_list([], []).
+zero_counts_from_elem_list([X|Xs], [(X,0)|Ys]) :-
+        zero_counts_from_elem_list(Xs,Ys).
+
+decrement_nonzero_count([(E,0)|Xs],[(E,0)|Ys],Elem) :-
+        decrement_nonzero_count(Xs,Ys,Elem).
+decrement_nonzero_count([(Elem,Count)|Xs],[(Elem,Decremented)|Xs],Elem) :-
+        Decremented is Count - 1.
+        
+increment_count([(Elem,Count)|Xs],[(Elem,Incremented)|Xs],Elem) :-
+        Incremented is Count + 1.
+increment_count([(Other,OtherCount)|Xs],[(Other,OtherCount)|Ys],Elem) :-
+        Other \= Elem,
+        increment_count(Xs,Ys,Elem).
