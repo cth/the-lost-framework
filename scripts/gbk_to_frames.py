@@ -423,6 +423,11 @@ if outmode=='f':
 ##### print ptt:
 
 if outmode=='ptt':
+        if typemode=='m':
+                print '%s number of mRNAs:%s'%('%',len(mRNAs))
+                for e in mRNAs:
+                        print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[3])
+
         if typemode=='mv':
                 print '%s number of verified mRNAs:%s'%('%',len(verified))
                 for e in verified:
@@ -440,6 +445,14 @@ if outmode=='ptt':
                                 print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[2])
 
 if outmode=='pl':
+        if typemode=='m':
+                print '%s number of mRNAs:%s'%('%',len(mRNAs))
+                for e in mRNAs:
+                        if e[3]<4:
+                                print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'+\'',e[3],'[]')
+                        else:
+                                print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'-\'',e[3],'[]')
+
         if typemode=='mv':
                 print '%s number of verified mRNAs:%s'%('%',len(verified))
                 for e in verified:
