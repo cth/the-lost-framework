@@ -1,13 +1,19 @@
+/** Module interface
+
+Module that defines main predicates of the framework.
+*/
+
+% API used
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% run_lost_model/2
+
+%% run_lost_model(+Model,+Goal)
+%
 % Can be called as,
-% run_model_model(Model, Goal)
-% or
-% Goal @ Model
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ==
+% run_model(Model, Goal)
+% ==
 %
 % Model: The name of the model to be run
 %
@@ -48,6 +54,8 @@ run_model(Model,Goal) :-
 % Check declared options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% verify_models_options_declared(+Model,+Goal,+Options)
+%
 % Fail if a given option is undeclared.
 verify_model_options_declared(Model,Goal,Options) :-
 	declared_model_options(Model,Goal,DeclaredOptions),
@@ -60,6 +68,8 @@ option_is_declared([Option|Rest], DeclaredOptions) :-
 	member(DeclaredOptionMatcher,DeclaredOptions),
 	option_is_declared(Rest,DeclaredOptions).
 
+%% expand_model_options(+Model,+Goal,+Options,-ExpandedOptions)
+%
 % Expand the set of given options to contain options with default
 % values as declared by the model
 expand_model_options(Model, Goal, Options, ExpandedOptions) :-
@@ -88,6 +98,10 @@ expand_options([lost_option(_,OptionName,DefaultValue,_)|Ds],Options,[DefaultOpt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TODO: Eventually we should have some
 
+%% get_option(+Options,-OptionNameValue)
+%% get_option(+Options,+OptionName,-Value)
+%
+% Predicate to get the value of an option OptionName
 get_option(Options, KeyValue) :-
 	member(KeyValue, Options).
 
@@ -103,6 +117,8 @@ lost_required_option(Options, Key, Value) :-
 % Launching a PRISM process
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% launch_prism_process(+PrismPrologFile,+Goal)
+%
 % Launch a prism process that first consults
 % the file named by PrismPrologFile and then
 % execute the goal Goal.
@@ -131,6 +147,11 @@ launch_prism_process(PrismPrologFile, Goal) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Launching Help for a model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% help_model(+Model)
+%
+% Help predicate for defined model of the framework. If Model iss not defined, help_model
+% print out a list of defined models
 
 help_model(Model) :-
         nl,
@@ -162,7 +183,8 @@ help_model(Model) :-
         ).
 
 
-% help_information(+Term_Input,+Term_Output,+Term_Option,-Predicates)
+%% help_information(+Term_Input,+Term_Output,+Term_Option,-Predicates)
+%
 % Compute a list of informations for each defined predicate of the models
 
 help_information(Term_Input,Term_Output,Term_Option,Predicates) :-
@@ -183,7 +205,8 @@ help_information_rec([PredName|Rest],Term_Input,Term_Output,Term_Option,[Predica
         Predicate =.. [PredName,Formats_In,List_Options,Formats_Out],
         help_information_rec(Rest,Term_Input,Term_Output,Term_Option,Rest_Predicates).
 
-% print_predicates_help(++Predicates)
+%% print_predicates_help(+Predicates)
+%
 % Predicate that writes information of the defined predicates on the standart output
 
 print_predicates_help([]) :-
@@ -260,7 +283,10 @@ print_options([[OptName,Default,Description]|Rest]) :-
         
         
 
-
+%% print_available_model
+%
+% This predicate prints on the default output a list
+% of available models
   
         
 print_available_model :-
@@ -285,62 +311,74 @@ print_available_model_rec([Name|Rest]) :-
 % Directory and file management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-lost_utilities_directory(UtilsDir) :-
-        lost_config(lost_base_directory,BaseDir),!,
-        atom_concat(BaseDir,'/utilities/',UtilsDir).
-
+%% lost_models_directory(-TmpDir)
 lost_tmp_directory(TmpDir) :-
         lost_config(lost_base_directory,BaseDir),!,
         atom_concat(BaseDir,'/tmp/', TmpDir).
 
+%% lost_models_directory(-ModelsDir)
 lost_models_directory(ModelsDir) :-
 	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir, '/models/', ModelsDir).
 
+%% lost_data_directory(-Dir)
 lost_data_directory(Dir) :-
 	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir,'/data/',Dir).
 
+%% lost_model_directory(+Model,-ModelDir)
 lost_model_directory(Model,ModelDir) :-
 	lost_models_directory(ModelsDir),
 	atom_concat(ModelsDir,Model,ModelDir1),
 	atom_concat(ModelDir1,'/',ModelDir).
 
+%% lost_model_parameters_directory(+Model,-Dir)
 lost_model_parameters_directory(Model,Dir) :-
 	lost_model_directory(Model, ModelDir),
 	atom_concat(ModelDir, 'parameters/',Dir).
 
+%% lost_model_annotations_directory(+Model,-Dir)
 lost_model_annotations_directory(Model,Dir) :-
 	lost_model_directory(Model, ModelDir),
 	atom_concat(ModelDir, 'annotations/',Dir).
 
+%% lost_model_interface_file(+Model,-ModelFile)
 lost_model_interface_file(Model,ModelFile) :-
 	lost_model_directory(Model,ModelDir),
 	atom_concat(ModelDir, 'interface.pl',ModelFile).
 
+%% lost_model_parameter_index_file(+Model,-IndexFile)
 lost_model_parameter_index_file(Model,IndexFile) :-
 	lost_model_parameters_directory(Model,Dir),
 	atom_concat(Dir,'parameters.idx',IndexFile).
 
+%% lost_model_parameter_file(+Model,+ParameterId,-ParameterFile)
+%
 % FIXME: This one is likely to change
 lost_model_parameter_file(Model,ParameterId,ParameterFile) :-
 	lost_model_parameters_directory(Model,Dir),
 	atom_concat(Dir,ParameterId,ParameterFile1),
 	atom_concat(ParameterFile1,'.prb',ParameterFile).
 
+%% lost_data_index_file(-IndexFile)
 lost_data_index_file(IndexFile) :-
 	lost_data_directory(AnnotDir),
 	atom_concat(AnnotDir,'annotations.idx',IndexFile).
 
+%% lost_data_file(+SequenceId, -SequenceFile)
 lost_data_file(SequenceId, SequenceFile) :-
 	lost_data_directory(D),
 	atom_concat(SequenceId,'.seq', Filename),
 	atom_concat(D, Filename, SequenceFile).
 
+%% lost_sequence_file(+SequenceId, -SequenceFile)
 lost_sequence_file(SequenceId, SequenceFile) :-
 	lost_data_file(SequenceId, SequenceFile).
 
-
+%% is_generated_file(+File)
+%
+% is_generateted_file(File) is true iff File is a file generated by one of the model
+% of the framework
 is_generated_file(File_Path) :-
         lost_data_directory(D),
         atom_concat(D,Name_File,File_Path),
@@ -602,6 +640,9 @@ timestamp_to_list(time(Year,Mon,Day,Hour,Min,Sec), [Year,Mon,Day,Hour,Min,Sec]).
 % Some utilitites
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% rm_gen
+%
+% This predicate deletes *.gen files in $LOST/data repertory
 rm_gen :-
 	lost_data_directory(D),
 	atom_concat(D,'*.gen',FileGlobPattern),
@@ -609,6 +650,9 @@ rm_gen :-
 	write(Command),nl,
 	system(Command).
 
+%% rm_tmp
+%
+% This predicate deletes *.gen files in $LOST/tmp repertory
 rm_tmp :-
 	lost_tmp_directory(D),
 	atom_concat(D,'*',FileGlobPattern),
@@ -616,6 +660,8 @@ rm_tmp :-
 	write(Command),nl,
 	system(Command).
 
+%% move_data_file(+OldFilename,-NewFilename)
+%
 % Move a generated data file somewhere else and update the annotation index
 move_data_file(X,X) :- !.
 move_data_file(OldFilename, NewFilename) :-
@@ -632,13 +678,19 @@ move_data_file(OldFilename, NewFilename) :-
 
 %lost_model_is_of_type(Model,InputFiles,Options,OutputFormat) :-
 
+%% list_lost_models_to_file(File)
+%
+% Write in File the list of lost models
 list_lost_models_to_file(File) :-
 	open(File,write,OStream),
 	list_lost_models(Models),
 	write(OStream,lost_models(Models)),
 	write(OStream,'.\n'),
 	close(OStream).
-	
+
+%% list_lost_models(-Models)
+%
+% Compute the list of models available
 list_lost_models(Models) :-
 	lost_models_directory(ModelsDir),
         getcwd(C),
@@ -670,7 +722,8 @@ write_model_options(OStream, [Option1|Rest]) :-
 	write_model_options(OStream,Rest).
 
 
-%%%
+%% lost_model_input_formats_to_file(+Model,+Goal,+OutputFile)
+%
 % Write the input formats of a Model called with Goal to the file OutputFile
 %
 lost_model_input_formats_to_file(Model,Goal,OutputFile) :-

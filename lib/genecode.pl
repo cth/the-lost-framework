@@ -1,7 +1,12 @@
-/**********************************************
-* genecode.pl
-*  table 11 : bacterial
-**********************************************/
+/** <module> Genecode Table
+ genecode.pl
+table 11 : bacterial
+*/
+
+%% genecode(+TableNum,?Codon,?AA)
+%
+% This predicate defines the relationship between amino acids and codon with respect
+% to TableNum
 
 genecode(11,[t,t,t],f).
 genecode(11,[t,c,t],s).
@@ -68,6 +73,10 @@ genecode(11,[g,c,g],a).
 genecode(11,[g,a,g],e).
 genecode(11,[g,g,g],g).
 
+%% genecode_start_codon(+TableNum,-StartCodon)
+%
+% This predicate specifies StartCodon given a TableNum
+
 genecode_start_codon(11,[t,t,g]).
 genecode_start_codon(11,[c,t,g]).
 genecode_start_codon(11,[a,t,t]).
@@ -76,12 +85,24 @@ genecode_start_codon(11,[a,t,a]).
 genecode_start_codon(11,[a,t,g]).
 genecode_start_codon(11,[g,t,g]).
 
-genecode_stop_codon(N,Codon) :-
-	genecode(N,Codon,'*').
 
+%% genecode_start_codons(+TableNum,-StartCodons)
+%
+% This predicate computes a list of start codon given a TableNum
+	
 genecode_start_codons(GeneCode,StartCodons) :-
 	findall(Codon,genecode_start_codon(GeneCode,Codon),StartCodons).
 
+
+%% genecode_stop_codon(+TableNum,-StopCodon)
+%
+% This predicate specifies Stop codon given a TableNum
+genecode_stop_codon(N,Codon) :-
+	genecode(N,Codon,'*').
+
+%% genecode_stop_codons(+TableNum,-StopCodons)
+%
+% This predicate computes the list of stop codon given a TableNum
 genecode_stop_codons(GeneCode,StopCodons) :-
 	findall(Codon,genecode(GeneCode,Codon,'*'),StopCodons).
 

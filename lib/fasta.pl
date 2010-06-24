@@ -1,13 +1,14 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This file includes some utilities for working with the FASTA format
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/** <module> FASTA Module
+This file includes some utilities for working with the FASTA format
+*/
 
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
+%% fasta_load_sequence(+InputFile,+SequenceIdentifier,-FastaHeaderLine,-Sequence)
 %
-% fasta_load_sequence(++InputFile,++SequenceIdentifier,--FastaHeaderLine,--Sequence)
-% 
+% From a FASTA file, this predicate transforms the header and data lines in
+% in a Prolog format
 fasta_load_sequence(InputFile,SequenceIdentifier,FastaHeaderLine,Sequence) :-
 	readFile(InputFile,FileContents),
 	write('after read file'),nl,
@@ -16,6 +17,12 @@ fasta_load_sequence(InputFile,SequenceIdentifier,FastaHeaderLine,Sequence) :-
 	nth1(SequenceIdentifier, FastaEntries, [FastaHeaderLine,SequenceCodes]),
 	map(upper_lower, SequenceCodes, SequenceCodesLowerCase),
 	atom_code_list(SequenceCodesLowerCase, Sequence).
+
+%% fasta_save_sequence(+OutputFile,+SequenceData,+Header)
+%
+% Given a header and a sequence of data, this predicate
+% writes in Outputfile SequenceData and Header in the fasta
+% format.
 
 fasta_save_sequence(OutputFile,SequenceData,Header) :-
 	open(OutputFile,write,OS),
