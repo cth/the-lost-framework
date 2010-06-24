@@ -3,6 +3,10 @@
 % 100621
 % 6-state hmm with hidden frame state and observed frame state
 
+% PRISM flags
+:- set_prism_flag(log_scale,on).
+:- set_prism_flag(learn_mode,both).
+
 data('~/data/frames/k12_frames.dat').
 
 % load settings:
@@ -46,7 +50,6 @@ recursion_frame(frame,frame(F),[X|R]):-
      msw(trans(F),N),
      recursion_frame(N,R).
 
-
 recursion_delete(frame(F),[X|R]):-
    msw(emit(delete), X),
    msw(goto_delete,GotoDel),
@@ -55,4 +58,3 @@ recursion_delete(frame(F),[X|R]):-
         ;
         recursion_frame(frame(F),R)
    ).
-
