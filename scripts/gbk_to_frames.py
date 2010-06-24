@@ -375,19 +375,19 @@ contiguous_verified=[]
 i=0
 while i < len(annot):
         if annot[i] in verified:
-                k=str(annot[i][4])
+                k=[]
+                k.append((annot[i][0],annot[i][1],str(annot[i][4])))
                 i=i+1
                 while annot[i] in verified:
-                        k+=str(annot[i][4])
+                        k.append((annot[i][0],annot[i][1],str(annot[i][4])))
                         i=i+1
-#                print i
-#                print k
                 if len(k)>1:
                         contiguous_verified.append(k)
         else:
                 i=i+1
 
 #print '%s len contiguous verified:%s'%('%',len(contiguous_verified))
+#print contiguous_verified
 
 
 ################ frames:
@@ -407,11 +407,13 @@ if outmode=='f':
         if typemode=='mvc':
                 print '%s %s contiguous verified mRNAs'%('%',len(contiguous_verified))
                 for e in contiguous_verified:
-                        frame_seq=e[0]
-                        for j in e[1:]:
-                                frame_seq+=','+j
+                        print '%s pos %s..%s'%('%',e[0][0],e[-1][1])
+                        frame_seq=e[0][2]
+                        for j in e:
+                                frame_seq+=','+j[2]
                         print 'model([%s]).'%frame_seq
-        
+
+
 ##### print ptt:
 
 if outmode=='p':
@@ -419,6 +421,16 @@ if outmode=='p':
                 print '%s number of verified mRNAs:%s'%('%',len(verified))
                 for e in verified:
                         print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[3])
+
+        if typemode=='mvc':
+                y=0
+                for j in contiguous_verified:
+                        for g in j:
+                                y=y+1
+                print '%s number of verified mRNAs:%s'%('%',y)
+                #for i in contiguous_verified:
+                #        for e in i:
+                #                print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[2])
 
 
 
