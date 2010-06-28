@@ -1,0 +1,27 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{genecode.pl}
+
+\label{sec:genecode}
+
+\begin{description}
+    \predicate{genecode}{3}{+TableNum, ?Codon, ?AA}
+This predicate defines the relationship between amino acids and codon with respect
+to \arg{TableNum}
+
+    \predicate{genecode_start_codon}{2}{+TableNum, -StartCodon}
+This predicate specifies \arg{StartCodon} given a \arg{TableNum}
+
+    \predicate{genecode_start_codons}{2}{+TableNum, -StartCodons}
+This predicate computes a list of start codon given a \arg{TableNum}
+
+    \predicate{genecode_stop_codon}{2}{+TableNum, -StopCodon}
+This predicate specifies Stop codon given a \arg{TableNum}
+
+    \predicate{genecode_stop_codons}{2}{+TableNum, -StopCodons}
+This predicate computes the list of stop codon given a \arg{TableNum}
+\end{description}
+
