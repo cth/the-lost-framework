@@ -93,7 +93,7 @@ refs=intro.split('REFERENCE')
 intro=refs[0].split('\n')
 
 ####### PRINT:
-print '%s from gbk_to_dat.py %s %s'%('%',outmode,typemode)
+print '%s from gbk_to_frames.py %s %s'%('%',outmode,typemode)
 print '%s organism:%s'%('%',info_list_2[0])
 print '%s strain:%s'%('%',info_list_2[2])
 print '%s sub_strain:%s'%('%',info_list_2[3])
@@ -408,20 +408,21 @@ if outmode=='d':
                         print '%s pos %s..%s, frame: %s, strand: %s'%('%',e[0]+1,e[1]+1,e[4],e[3])
                         if e[3]=='+':
                                 seq=genome_str[e[0]]
-                                for x in genome_str[e[0]+1:e[1]]:
+                                for x in genome_str[e[0]+1:e[1]+1]:
                                         seq+=','+x
                                 print 'model([%s]).'%seq
                         if e[3]=='-':
-                                w=rc(genome_str[e[0]:e[1]])
+                                w=rc(genome_str[e[0]+1:e[1]+1])
                                 seq=w[0]
                                 for x in w[1:]:
                                         seq+=','+x
                                 print 'model([%s]).'%seq
 
         if typemode=='mv':
-                print '%s %s verified mRNAs'%('%',len(verified))
+                print '%s %s verified mRNAs in frame: all'%('%',len(verified))
+                print 'data:'
                 for e in verified:
-                        print '%s pos %s..%s, frame: %s, strand: %s'%('%',e[0]+1,e[1]+1,e[4],e[3])
+                        print '%s pos %s..%s, frame: %s, strand: %s'%('%',e[0]+1,e[1],e[4],e[3])
                         #seq=genome_str[e[0]]
                         #for x in genome_str[e[0]+1:e[1]]:
                         #        seq+=','+x
@@ -496,13 +497,15 @@ if outmode=='f':
 if outmode=='ptt':
         if typemode=='m':
                 print '%s number of mRNAs:%s'%('%',len(mRNAs))
+                print 'Genes:'
                 for e in mRNAs:
-                        print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[3])
+                        print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0]+1,e[1],e[3])
 
         if typemode=='mv':
                 print '%s number of verified mRNAs:%s'%('%',len(verified))
+                print 'Genes:'
                 for e in verified:
-                        print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[3])
+                        print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0]+1,e[1],e[3])
 
         if typemode=='mvc':
                 y=0
@@ -511,26 +514,27 @@ if outmode=='ptt':
                                 y=y+1
                 print '%s %s contiguous regions'%('%',len(contiguous_verified))
                 print '%s number of contiguous verified mRNAs:%s'%('%',y)
+                print 'Genes:'
                 for i in contiguous_verified:
                         for e in i:
-                                print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0],e[1],e[2])
+                                print '%s..%s\t%s\t x \t x \t x \t x \t x \t x \t x '%(e[0]+1,e[1],e[2])
 
 if outmode=='pl':
         if typemode=='m':
                 print '%s number of mRNAs:%s'%('%',len(mRNAs))
                 for e in mRNAs:
                         if e[4]<4:
-                                print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'+\'',e[4],'[]')
+                                print 'gb(%s,%s,%s,%s,%s).'%(e[0]+1,e[1],'\'+\'',e[4],'[]')
                         else:
-                                print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'-\'',e[4],'[]')
+                                print 'gb(%s,%s,%s,%s,%s).'%(e[0]+1,e[1],'\'-\'',e[4],'[]')
 
         if typemode=='mv':
                 print '%s number of verified mRNAs:%s'%('%',len(verified))
                 for e in verified:
                         if e[4]<4:
-                                print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'+\'',e[4],'[]')
+                                print 'gb(%s,%s,%s,%s,%s).'%(e[0]+1,e[1],'\'+\'',e[4],'[]')
                         else:
-                                print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'-\'',e[4],'[]')
+                                print 'gb(%s,%s,%s,%s,%s).'%(e[0]+1,e[1],'\'-\'',e[4],'[]')
 
         if typemode=='mvc':
                 y=0
@@ -541,9 +545,9 @@ if outmode=='pl':
                 for i in contiguous_verified:
                         for e in i:
                                 if e[2]<4:
-                                        print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'+\'',e[2],'[]')
+                                        print 'gb(%s,%s,%s,%s,%s).'%(e[0]+1,e[1],'\'+\'',e[2],'[]')
                                 else:
-                                        print 'gb(%s,%s,%s,%s,%s).'%(e[0],e[1],'\'-\'',e[2],'[]')
+                                        print 'gb(%s,%s,%s,%s,%s).'%(e[0]+1,e[1],'\'-\'',e[2],'[]')
 
 
 
