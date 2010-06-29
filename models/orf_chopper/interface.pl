@@ -10,7 +10,7 @@ lost_output_format(annotate, _Options, text(prolog(ranges(gene)))).
 lost_option(annotate,direction,'+','+ for forward strand and - for reverse strand').
 lost_option(annotate,frame,1,'Reading frame: 1,2 or 3').
 lost_option(annotate,minimal_length,undefined,'Specified a minimal length for the generated ORF').
-lost_option(annotate,maxiimal_length,undefined,'Specified a maximal length for the generated ORF').
+lost_option(annotate,maximal_length,undefined,'Specified a maximal length for the generated ORF').
 
 lost_option_values(annotate,direction,['+','-']).
 lost_option_values(annotate,frame,[1,2,3]).

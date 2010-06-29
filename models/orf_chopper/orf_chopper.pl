@@ -231,8 +231,8 @@ dna_chop_init(S,SeqStartPos,Dir,Frame,Min_Length,Max_Length,Length,Id,ChunkFileO
 	dna_chop(FirstState,Dir,Frame,S4-[],LeftPos, RightPos,Id,Min_Length,Max_Length,ChunkFileOutStream).
 
 
-dna_chop(end,_Dir,_Frm,S-S,P,P,_Id,Min_Length,Max_Length,_Chunk).
-dna_chop(This,Dir,Frame,S1-S2,P1, P2, Id,ChunkFileOutStream):-
+dna_chop(end,_Dir,_Frm,S-S,P,P,_Id,_Min_Length,_Max_Length,_Chunk).
+dna_chop(This,Dir,Frame,S1-S2,P1, P2, Id,Min_Length,Max_Length,ChunkFileOutStream):-
 	This \= end,
 	sub_parse(This,Dir,S1-S3,P1, P3, Begins-[],Ends-[]), % emit a sequence of type This
 	(Dir = 1 ->
@@ -242,7 +242,7 @@ dna_chop(This,Dir,Frame,S1-S2,P1, P2, Id,ChunkFileOutStream):-
         ),
 	report(Id,P1,P3,S1,Dir_symbol,Frame,Begins,Ends,Min_Length,Max_Length,ChunkFileOutStream),
 	nonprob_msw(trans(This),Next),
-	dna_chop(Next,Dir,Frame,S3-S2,P3,P2,Id,ChunkFileOutStream).
+	dna_chop(Next,Dir,Frame,S3-S2,P3,P2,Id,Min_Length,Max_Length,ChunkFileOutStream).
 
 %======================================================================================
 % Tools
