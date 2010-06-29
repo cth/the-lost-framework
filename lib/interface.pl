@@ -293,9 +293,10 @@ print_available_model :-
         lost_models_directory(ModelsDir),
         getcwd(Current),
         cd(ModelsDir),
-        directory_files('.',['.','..'|List_Name]), % B-Prolog build-in
+        directory_files('.',Directories), % B-Prolog build-in
+        subtract(Directories,['.','..'],Models),
         cd(Current),
-        print_available_model_rec(List_Name).
+        print_available_model_rec(Models).
 
 
 print_available_model_rec([]) :-
