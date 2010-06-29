@@ -419,7 +419,7 @@ if outmode=='d':
                                 print 'model([%s]).'%seq
 
         if typemode=='mv':
-                print '%s %s verified mRNAs'%('%',len(verified))
+                print '%s %s verified mRNAs in frame: all'%('%',len(verified))
                 print 'data:'
                 for e in verified:
                         print '%s pos %s..%s, frame: %s, strand: %s'%('%',e[0]+1,e[1],e[4],e[3])
