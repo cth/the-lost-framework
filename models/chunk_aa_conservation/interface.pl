@@ -56,12 +56,13 @@ annotate([Chunk_File],Options,Chunk_Conservation_File) :-
 
 annotate([InputFile],Options,OutputFile) :-
 	get_option(Options,optimized,true),
+        !,
 	subtract(Options,[optimized(true)],NewOptions1),
 	append([optimized(false)], NewOptions1, NewOptions2),
 	terms_to_file('options.pl',[original_options(NewOptions2)]),
 	lost_tmp_directory(Tmp),
 	atom_concat(Tmp,'conservation_chunk',Prefix),
-	split_file(InputFile, 100, Prefix, '.pl'),
+	split_file_fasta(InputFile, 100, Prefix, '.pl',_),
 	atom_concat(Tmp,'conservation_chunk*pl',InputFilePattern),
 	atom_concat_list(['sh parallel_predict.sh ', OutputFile, ' ', InputFilePattern], Cmd),
 	system(Cmd).
