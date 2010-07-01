@@ -1,21 +1,22 @@
 #!/bin/sh
 #
 # Trains on a number of training files simultaneously
-#
 
-NUM_PROCESSORS=14
-PRISM2="~/prism/bin/prism"
-TRAINING_FILES=
-#for i in `seq 1 10`
-#do
-#    TRAINING_FILES="$TRAINING_FILES data/training_data_$i.pl.100"
-#done
+NUM_CLUSTERS=$1
+shift
+NUM_PROCESSORS=$1
+shift
+OUTPUT_FILE=$1
+shift
+TRAINING_FILES=$@
 
-for file in data2/split*pl
+echo "------- TRAINING DATA FILES ----"
+for i in $TRAINING_FILES
 do
-    TRAINING_FILES="$TRAINING_FILES $file"
+        echo -en "\t$i\n"
 done
 
+# Create and array of "free" processors of specified size 
 init_processors() {
     i=1
     while [ $i -le $NUM_PROCESSORS ]
@@ -44,6 +45,7 @@ is_running() {
     ps -eo pid |grep -c "$1"
 }
 
+# Display information about running processes
 show_running_processes() {
     echo "-- Running processes: " >&2
     for i in `seq $NUM_PROCESSORS`
@@ -95,11 +97,10 @@ do
     processor_id=`find_free_processor` # blocks!
     echo "found free processor: $processor_id"
     goals_file=`tempfile`
-    echo "prism(clustgf),['clustgf.psm'],[erf_learn],erf_learn_file_count_only('$f'),save_counts_file('$f.counts')." > $goals_file
-    echo "running prism with goals: "
-    cat $goals_file
+    goals="['../../lost.pl'],lost_include_api(autoAnnotations),prismAnnot(clustgf,direct),['clustgfEX.psm'],assert(coding_clusters($NUM_CLUSTERS)),!, lost_include_api(viterbi_learn),viterbi_learn_file_count_only('$f'),write('here'),nl,save_counts_file('$f.counts')."
+    echo "running prism with goals: $goals"
     echo "-----"
-    exec $PRISM2 -l < $goals_file &> output_${processor_id}.txt & pid=$!
+    exec prism -g "$goals" & pid=$!
     PROCESSOR[$processor_id]=$pid
     echo "Started process pid=$pid on processor $processor_id"
     COUNT_FILES="$COUNT_FILES '$f.counts'"
@@ -118,8 +119,7 @@ done
 COUNT_FILES=`echo $COUNT_FILES|tr " " ","`
 
 # Merge training sessions
-goals_file=`tempfile`
-echo "prism(clustgf),['clustgf.psm'],[erf_learn],add_pseudo_counts,merge_counts_files([$COUNT_FILES]),set_switches_from_counts,save_counts_file('all.counts'),save_sw('final_switches.prb')." > $goals_file
-cat $goals_file
+goals="['../../lost.pl'],lost_include_api(autoAnnotations),prismAnnot(clustgf),['clustgfEX.psm'],assert(coding_clusters($NUM_CLUSTERS)),lost_include_api(viterbi_learn),!,add_pseudo_counts,merge_counts_files([$COUNT_FILES]),set_switches_from_counts,save_sw('$OUTPUT_FILE')."
 
-exec $PRISM2 -l < $goals_file
+
+prism -g "$goals"

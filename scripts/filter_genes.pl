@@ -63,3 +63,13 @@ run_ecoli_filters :-
         write('Filtering genes which from the description seem uncertain:'),nl,
         filter_uncertain_genes(Genes,Genome,Certain),
         write('Results written to file: '), write(Certain), nl.
+
+
+% For Ecoli
+filter_genes_range(RangeMin,RangeMax,Filtered) :-
+        Options = [range([RangeMin,RangeMax])],
+        lost_sequence_file('U00096',Genome),
+        lost_sequence_file('U00096_ptt',PTT),
+	parser_ptt(PTT,Genes),
+        run_model(gene_filter,annotate([Genes,Genome], Options,Filtered)).
+        

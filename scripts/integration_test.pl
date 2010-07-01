@@ -6,7 +6,7 @@
 test_genemark :-
 	lost_sequence_file('U00096_fna',SeqFile),
 	run_model(genemark,
-                  annotate([SeqFile],[parameters('Escherichia_coli_K12')],OutFile),
+                  annotate([SeqFile],[parameters('Escherichia_coli_K12')],OutFile)),
    	write('Results are stored in: '),
 	write(OutFile),
 	nl.

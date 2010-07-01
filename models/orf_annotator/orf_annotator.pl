@@ -2,7 +2,6 @@
 
 
 orf_annotation(Input_File,Output_File) :-
-        write('test'),nl,
         terms_from_file(Input_File,Terms),
         write('start annotation'),nl,
         term2annotation(Terms,Terms_Annotation),
@@ -64,7 +63,7 @@ gen_annotation('-',Left,Right,Starts,Annotation) :-
 % +
 gen_annotation_rec('+',_Left,Right,First_Start,[],Annotation) :-
         !,
-        Length is Right-First_Start,
+        Length is Right-First_Start-5,
         makelist(Length,'-',Annot),
         append(['<','<','<'|Annot],['>','>','>'],Annotation).
 
@@ -106,11 +105,6 @@ gen_annotation_rec('-',Left,Right,Start,[First_Start|Rest_Starts],Annotation) :-
         append(Annot,['<','<','<'],Annot2),
         append(Annot2,Rest_Annot,Annotation),
         gen_annotation_rec('-',Left,Right,First_Start,Rest_Starts,Rest_Annot).
-
-
-        
-
-
 
 
 

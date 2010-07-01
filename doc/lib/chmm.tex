@@ -1,0 +1,24 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{chmm.pl}
+
+\label{sec:chmm}
+
+\begin{description}
+    \predicate{init_store}{0}{}
+Initialization of constraints added on the model
+
+    \predicate{forward_store}{1}{?S}
+The predicate get the current store or remove it
+
+    \predicate{get_store}{1}{S}
+Get the current store
+
+    \predicate{init_constraint_stores}{2}{+Constraints, -Store}
+Recursive predicate that gets every initial \arg{Store} associated
+with each constraint of \arg{Constraints}
+\end{description}
+

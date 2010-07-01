@@ -6,7 +6,9 @@ lost_option(annotate,use_parameter_file,yes,'Load parameters from the parameter 
 	    
 % Some ideas for specification of input & output formats...
 lost_input_formats(annotate, [text(prolog(sequence)),text(prolog(prism_switches))]).
+lost_input_formats(train,[text(prolog(sequence))]).
 lost_output_format(annotate, _, text(prolog(sequence))).
+lost_output_format(train, _, text(prolog(prism_swithches))).
 
 % This is what is used to get the best annotation
 annotate([InputFile,ParamFile],Options,OutputFile) :-
@@ -43,3 +45,4 @@ train([TrainingDataFile],_Options,ParametersFile) :-
 		      error(could_not_save_parameter_to_file(ParametersFile))),
 	write('Pameters was saved to file: '),
 	write(ParametersFile),nl.
+

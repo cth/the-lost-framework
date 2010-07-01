@@ -63,6 +63,21 @@ lost_option(annotate,
 	    no,
 	    'When this option is set to \'yes\', then the filtered genes will appear in the output instead of non-filtered genes').
 
+lost_option(annotate,
+            left,
+            min,
+            'An integer value denoting the left-most nucleotide to include in results. The default value (min) refers to the left-most nucleotide in the input data').
+
+lost_option(annotate,
+            right,
+            max,
+            'An integer value denoting the right-most nucleotide to include in results. The default value (min) refers to the right-most nucleotide in the input data').
+
+lost_option(annotate,
+            range,
+            [default,default],
+            'A range [RangeMin,RangeMax] used to filter genes with a length in this range').
+            
 lost_option_values(annotate,match_protein_coding, [yes,no]).
 lost_option_values(annotate,gene_code,[11]). % FIXME: add more..
 lost_option_values(annotate,insert_results,[yes,no]).
@@ -71,11 +86,29 @@ annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
 	write('gene_filter: annotate called.'),nl,
 	terms_from_file(GeneListFile,GeneTerms),
 
+        length(GeneTerms,NumTerms),nl,
+        write('before filtering: '), write(NumTerms), nl,
+        report_number_filtered(GeneTerms),nl, 
+        
+        % Filter by Left position 
+        get_option(Options,left,Left),
+	write('filtering genes with left end < '), write(Left),nl,
+        left_range_filter(Left,GeneTerms,RangeFilteredLeft),
+        !,
+	report_number_filtered(RangeFilteredLeft),
+
+        % Filter by right position
+        get_option(Options,right,Right),
+	write('filtering genes with right end > '), write(Right),nl,
+        right_range_filter(Right,RangeFilteredLeft,RangeFilteredLeftRight),
+        !,
+	report_number_filtered(RangeFilteredLeftRight),
+
 	% Filter genes not matching specified frames
 	get_option(Options,match_frames,MatchFrames),
 	write('filtering genes which not in frame(s) '), write(MatchFrames),nl,
 	!,
-	filter_by_frames(MatchFrames,GeneTerms,GeneTermsMatchFrame),
+	filter_by_frames(MatchFrames,RangeFilteredLeftRight,GeneTermsMatchFrame),
 	report_number_filtered(GeneTermsMatchFrame),
 
 	% Filter genes no matching specified strands
@@ -85,11 +118,18 @@ annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
 	filter_by_strands(MatchStrands,GeneTermsMatchFrame,GeneTermsMatchStrand),
 	report_number_filtered(GeneTermsMatchStrand),
 
+        % Filter genes with a length in a specified Range
+        get_option(Options,range,Range),
+	write('filtering genes which a length in '), write(Range),nl,
+	!,
+	filter_by_length(Range,GeneTermsMatchStrand,GeneTermsFilterRange),
+	report_number_filtered(GeneTermsFilterRange),
+        
 	% Filter out any genes that do not match all of the specified
 	% regular expressions in match_extra_fields
 	write('Filtering genes not matching match_extra_fields'),nl,
 	get_option(Options,regex_match_extra_fields,NoMatchRegexExtraFields),
-	regex_filter_non_matching(NoMatchRegexExtraFields,GeneTermsMatchStrand,MatchRegexNo),
+	regex_filter_non_matching(NoMatchRegexExtraFields,GeneTermsFilterRange,MatchRegexNo),
 	report_number_filtered(MatchRegexNo),	
 
 	% Filter out genes matching any of the regular expressions
@@ -123,13 +163,49 @@ annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
                ;
                FinalResults=MatchAll
         ),
-
 	% Write genes that where not filtered out to the output file:
 	terms_to_file(OutFile,FinalResults).
 
 report_number_filtered(GeneTerms) :-
 	length(GeneTerms,L),
 	write(L), write(' genes left unfiltered'),nl.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% left_range_filter(+Left,+Unfiltered,-Filtered)
+
+left_range_filter(min,Terms,Terms).
+
+left_range_filter(_,[],[]).
+
+left_range_filter(Left,[Gene|Us],Fs) :-
+        integer(Left),
+	Gene =.. [ _functor, GeneLeft, _end, _strand, _frame, _extra ],
+        Left > GeneLeft, 
+        !,
+        left_range_filter(Left,Us,Fs).
+        
+left_range_filter(Left,[Gene|Us],[Gene|Fs]) :-
+        !,
+        left_range_filter(Left,Us,Fs).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% right_range_filter(+Right,+Unfiltered,-Filtered)
+
+right_range_filter(max,Terms,Terms).
+
+right_range_filter(_,[],[]).
+
+right_range_filter(Right,[Gene|Us],Fs) :-
+        integer(Right),
+	Gene =.. [ _functor, _Left, GeneRight, _strand, _frame, _extra ],
+        Right < GeneRight, 
+        !,
+        right_range_filter(Right,Us,Fs).
+        
+right_range_filter(Right,[Gene|Us],[Gene|Fs]) :-
+        !,
+        right_range_filter(Right,Us,Fs).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % filter_by_strands(+GoodStrands,+GeneTermsIn,-GeneTermsOut)
@@ -174,12 +250,12 @@ filter_by_frames(GoodFrames,[_|TermsRest],MatchedRest) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % filter_by_length(+MinLength,+MaxLength,+GeneTermsIn,-GeneTermsOut)
 
-filter_by_length(default,default,GeneTerms,GeneTerms) :- 
+filter_by_length([default,default],GeneTerms,GeneTerms) :- 
         write('filter_by_length: No filtering performed'),nl,!.
 
-filter_by_length(_,_,[],[]).
+filter_by_length(_Range,[],[]).
 
-filter_by_length(MinLength,MaxLength,[G|GRest],[G|MRest]) :-
+filter_by_length([MinLength,MaxLength],[G|GRest],[G|MRest]) :-
 	G =.. [ _functor, Start, End, _strand, _frame, _extra ],
         ((End > Start) ->
                 Length is (End - Start) + 1 
@@ -189,10 +265,10 @@ filter_by_length(MinLength,MaxLength,[G|GRest],[G|MRest]) :-
         Length >= MinLength,
         Length =< MaxLength,
         !,
-        filter_by_length(MinLength,MaxLength,GRest,MRest).
+        filter_by_length([MinLength,MaxLength],GRest,MRest).
 
-filter_by_length(MinLength,MaxLength,[_|GRest],MRest) :-
-        filter_by_length(MinLength,MaxLength,GRest,MRest).
+filter_by_length([MinLength,MaxLength],[_|GRest],MRest) :-
+        filter_by_length([MinLength,MaxLength],GRest,MRest).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,77 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{accuracy.pl}
+
+\label{sec:accuracy}
+
+\begin{description}
+    \predicate{accuracy_stats}{5}{+RefFunctor, +PredFunctor, +Start, +End, +OutputFile}
+Overall report the accuracy statistics for a particular predictor.
+
+    \predicate{sensivity}{3}{+TP, +TN, -SN}
+Computation of the sensity
+
+\begin{code}
+SN is TP/(TP+FN) or undefined
+\end{code}
+
+    \predicate{specificity}{3}{+TP, +FP, -SP}
+Computation of the specificity
+
+\begin{code}
+SP is TP/(TP+FN) or undefined
+\end{code}
+
+    \predicate{specificity_traditional}{3}{+TN, +FP, -SP}
+Computation of the tradional specificity
+
+\begin{code}
+SP is TN / (TN + FP)
+\end{code}
+
+    \predicate{correlation_coefficient}{5}{+TP, +FP, +TN, +FN, -CC}
+Computation of correlation coefficient
+
+Note: 0.0 is add to make numbers floats instead of ints.
+Ints are not allowed to be larger than 268435455 in bprolog which
+would otherwise cause this predicate to overflow for realistic data sizes
+
+    \predicate{simple_matching_coefficient}{5}{+TP, +FP, +TN, +FN, -SMC}
+Computation of the simple matching coefficient
+
+\begin{code}
+SMC is (TP + TN) / (TP + FN + FP + TN)
+\end{code}
+
+    \predicate{average_conditional_probability}{5}{+TP, +FP, +TN, +FN, -ACP}
+Computation of the average condtional probability
+
+    \predicate{approximate_correlation}{5}{+TP, +FP, +TN, +FN, -AC}
+Computation of the average correlation
+
+    \predicate{gene_difficulty_score}{3}{+NumGeneFinders, +NumFoundGene, -DifficultyScore}
+\arg{DifficultyScore} is computed given the following formula
+
+\begin{code}
+DifficultyScore is 1 - ( NumFoundGene / NumGeneFinders)
+\end{code}
+
+    \predicate{report_nstats}{4}{+ReferenceAnnotFunctor, +PredictionAnnotFunctor, +Start, +End}
+This predicate computes and prints in the standart output: True Positive,
+True Negative, False Positive, False Negative
+If I am right, \arg{Start} and \arg{End} specified a sub-part of the genome where this
+computation is performed
+
+    \predicate{nucleotide_level_accuracy_counts}{8}{+Begin, +End, +RefAnnot, +PredAnnot, -TP, -FP, -TN, -FN}
+Compute some statistics at the nucleotide level.
+
+    \predicate{strand}{1}{+Strand}
+\arg{Strand} in \{+,-\}
+
+    \predicate{reading_frame}{1}{+Frame}
+\arg{Frame} in \{1,2,3\}
+\end{description}
+

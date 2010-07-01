@@ -1,3 +1,21 @@
+/** <module> Module of Constrained Hidden Markov Model
+
+This module is an implementation of Constrained Hidden Markov Models in PRISM. The implementation includes
+a few well-known global constraints which may be used with the model.  The implementation is described in detail in
+ICLP 2010 paper:
+
+Henning Christiansen, Christian Theil Have, Ole Torp Lassen and Matthieu Petit
+"Inference with Constrained Hidden Markov Models in PRISM".
+Abstract: A Hidden Markov Model (HMM) is a common statistical model which is widely used for analysis
+of biological sequence data and other sequential phenomena. In the present paper we show how HMMs can
+be extended with side-constraints and present constraint solving techniques for efficient inference.
+Defining HMMs with side-constraints in Constraint Logic Programming have advantages in terms of more compact
+expression and pruning opportunities during inference. We present a PRISM-based framework for extending HMMs
+with side-constraints and show how well-known constraints such as cardinality and all_different are integrated.
+We experimentally validate our approach on the biologically motivated problem of global pairwise alignment.
+*/
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Constraint Integration part
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -5,6 +23,10 @@
 % supports using either local and global constraint stores
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%% init_store
+%
+% Initialization of constraints added on the model
 
 init_store :-
         findall(Check, constraint(Check), Checks),
@@ -14,14 +36,24 @@ init_store :-
 	assert(constraint_store([])),
 	forward_store(IndvStores).
 
+%% forward_store(?S)
+%
+% The predicate get the current store or remove it
+
 forward_store(S) :-
 	asserta(store(S))
 	;
 	retract(store(S)).
 
+%% get_store(S)
+%
+% Get the current store
 get_store(S) :- !, store(S).
 
-
+%% init_constraint_stores(+Constraints,-Store)
+%
+% Recursive predicate that gets every initial Store associated
+% with each constraint of Constraints
 init_constraint_stores([],[]).
 init_constraint_stores([Check|CheckRest],[Store|StoreRest]) :-
 	init_constraint_store(Check,Store),
@@ -100,6 +132,7 @@ init_constraint_store(alldifferent,[]).
 
 init_constraint_store(subseq_alldifferent(_WindowSize),Q) :- empty_queue(Q).
 
+init_constraint_store(duration,Duration) :- duration(Duration).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Implementation of constraint checker rules 
@@ -235,6 +268,17 @@ constraint_check(fix_alignment(S1From,S2From,_),[State,Emit],
 
 % If the list for the alignment becomes empty then it has succesfully been checked:
 constraint_check(fix_alignment(_,_,_),_,[S1,S2,[]],[S1,S2,[]]).
+
+
+
+% Duration: constraint check
+constraint_check(duration,State,StoreBefore,StoreAfter) :-
+        StoreAfter is StoreBefore-1,
+        (StoreAfter > 0 ->
+            State = c
+        ;
+            State = stop
+        ).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

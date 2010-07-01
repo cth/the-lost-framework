@@ -1,0 +1,20 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{fasta.pl}
+
+\label{sec:fasta}
+
+\begin{description}
+    \predicate{fasta_load_sequence}{4}{+InputFile, +SequenceIdentifier, -FastaHeaderLine, -Sequence}
+From a FASTA file, this predicate transforms the header and data lines in
+in a Prolog format
+
+    \predicate{fasta_save_sequence}{3}{+OutputFile, +SequenceData, +Header}
+Given a header and a sequence of data, this predicate
+writes in Outputfile \arg{SequenceData} and \arg{Header} in the fasta
+format.
+\end{description}
+

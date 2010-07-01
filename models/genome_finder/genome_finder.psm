@@ -1,0 +1,60 @@
+% genome_finder_4.psm
+% S/ren M/rk
+% 100621
+% 6-state hmm with hidden frame state and observed frame state
+
+% PRISM flags
+:- set_prism_flag(log_scale,on).
+:- set_prism_flag(learn_mode,both).
+
+data('~/data/frames/k12_frames.dat').
+
+% load settings:
+%:-['~/settings/default.pl'].
+
+% parameters of model: 
+values(trans(_),[frame(1),frame(2),frame(3),frame(4),frame(5),frame(6),end]).
+
+values(emit(1),[1]).
+values(emit(2),[2]).
+values(emit(3),[3]).
+values(emit(4),[4]).
+values(emit(5),[5]).
+values(emit(6),[6]).
+values(emit(delete),[1,2,3,4,5,6]).
+
+values(goto_delete,[yes,no]).
+
+% Initiation:
+model(O):-
+   msw(trans(begin),S),
+   recursion_frame(S,O).
+
+% termination:
+recursion_frame(end,[]).
+
+% recursion structure:
+recursion_frame(frame(F),XR):-
+   msw(goto_delete,GotoDel),
+   ((GotoDel == yes) ->
+        recursion_frame(delete,frame(F),XR)
+        ;
+        recursion_frame(frame,frame(F),XR)
+   ).
+
+recursion_frame(delete,frame(F),XR):-
+     recursion_delete(frame(F),XR).
+
+recursion_frame(frame,frame(F),[X|R]):-
+     msw(emit(F), X),
+     msw(trans(F),N),
+     recursion_frame(N,R).
+
+recursion_delete(frame(F),[X|R]):-
+   msw(emit(delete), X),
+   msw(goto_delete,GotoDel),
+   ((GotoDel == yes) ->
+        recursion_delete(frame(F),R)
+        ;
+        recursion_frame(frame(F),R)
+   ).
