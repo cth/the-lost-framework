@@ -38,15 +38,18 @@ blast_command(Cmd) :-
         blast_database(Database),
         atom_concat('tblastn -db ', Database, FirstPart),
         atom_concat(FirstPart, ' -outfmt 5 -db_gencode 11 -use_sw_tback',Cmd).
-
+/* All done in interface now
+%  ============================
 blast_output_file(Blast_Output_File) :-
         lost_tmp_directory(Tmp),
-        atom_concat(Tmp,'tblastn.aln',Blast_Output_File).
+        blast_output_name(BlastOutName),
+        atom_concat(Tmp,BlastOutName,Blast_Output_File).
 
 blast_input_file(Blast_Input_File) :-
         lost_tmp_directory(Tmp),
-        atom_concat(Tmp,'tblastn.faa',Blast_Input_File).
-
+        blast_input_name(BlastInName),
+        atom_concat(Tmp,BlastInName,Blast_Input_File).
+*/
 
 %------
 % conservation(++Chunk_Stream,++Counter,++Dir,++Frame,++Aln_Stream,++Cons_Stream)

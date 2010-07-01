@@ -13,6 +13,7 @@ lost_option(annotate,mismatch_score,1,'Non Gap Mismatch Score').
 lost_option(annotate,direction,''). %+ for forward strand and - for reverse strand').
 lost_option(annotate,frame,'Reading frame: 1,2 or 3').
 lost_option(annotate,optimized,false,'Set a parallel compputation of the prediction').
+lost_option(annotate,blast_file_name,tblastn,'Common name for temporary blast-files, w/o extensions. Default is tblastn'). 
 
 % TODO: output best alignment = record in a separate file the best alignment /TODO 
 
@@ -35,7 +36,18 @@ annotate([Chunk_File],Options,Chunk_Conservation_File) :-
 	;
 			assert(output_alignments(no))
 	),
+	lost_tmp_directory(Path),
+	get_option(Options,blast_file_name,BlastFileName),
+	atom_concat(Path,BlastFileName,BlastFileNameWithPath),
+	
+	atom_concat(BlastFileNameWithPath,'.faa',BlastInFile),
+	assert(blast_input_file(BlastInFile)),
+	
+	atom_concat(BlastFileNameWithPath,'.aln',BlastOutFile),
+	assert(blast_output_file(BlastOutFile)),
+	
 	%(output_alignments(yes) -> writeln('yes interface'); true),
+	
 	assert(nongap_mismatch_score(Mismatch_Score)),
 	open(Chunk_File,read,Chunk_Stream,[alias(chunk_in)]),
 	open(Chunk_Conservation_File,write,Cons_Stream,[alias(cons_out)]),
@@ -43,6 +55,8 @@ annotate([Chunk_File],Options,Chunk_Conservation_File) :-
 	nl(user_output), writeln(user_output,'...'),
 	close(Cons_Stream),
 	close(Chunk_Stream),
+	retractall(blast_input_name(_)),
+	retractall(blast_output_name()_),
 	retractall(nongap_mismatch_score(_)),
 	(member(alignements(AlnFile),Options) ->
             retractall(output_alignments(_)),
