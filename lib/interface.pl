@@ -317,6 +317,10 @@ lost_tmp_directory(TmpDir) :-
         lost_config(lost_base_directory,BaseDir),!,
         atom_concat(BaseDir,'/tmp/', TmpDir).
 
+lost_utilities_directory(UtilsDir) :-
+        lost_config(lost_base_directory,BaseDir),!,
+        atom_concat(BaseDir,'/utilities/', UtilsDir).
+
 %% lost_models_directory(-ModelsDir)
 lost_models_directory(ModelsDir) :-
 	lost_config(lost_base_directory, Basedir),!,

@@ -2,6 +2,7 @@
 %
 
 :- ['../lost.pl'].
+:- lost_include_api(interface).
 :- lost_include_api(io).
 :- lost_include_api(misc_utils).
 :- lost_include_api(prism_parallel).
