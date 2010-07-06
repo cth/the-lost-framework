@@ -138,9 +138,42 @@ testgoal:-run_chunk_conservation('U00096',[direction(+),frame(1),mismatch_score(
 
 
 
-test_optimization :-
+sequential_conservation :-
 	lost_sequence_file('U00096',Sequence),
         run_model(orf_chopper,annotate([Sequence],[direction(+),frame(1)],OrfChunk_File)),
         run_model(chunk_translator,annotate([OrfChunk_File],[mode(0),genecode(11)],Orf_FASTA)),
-        run_model(chunk_aa_conservation,annotate([Orf_FASTA],[optimized(true),direction(+),frame(1),mismatch_score(1)],_Conservation)).
+        split_file_fasta(Orf_FASTA,1000,split_fasta,'seq',R),
+        sequenctial_conservation_rec(R).
 
+sequential_conservation_rec([]).
+
+sequenctial_conservation_rec([File|Rest]) :-
+        run_model(chunk_aa_conservation,annotate([File],[mismatch_score(1)],_Conservation)),
+        sequenctial_conservation_rec(Rest).
+
+
+
+parallel_conservation :-
+	lost_sequence_file('U00096',Sequence),
+        run_model(orf_chopper,annotate([Sequence],[direction(+),frame(1)],OrfChunk_File)),
+        run_model(chunk_translator,annotate([OrfChunk_File],[mode(0),genecode(11)],Orf_FASTA)),
+        split_file_fasta(Orf_FASTA,4000,split_fasta,'seq',R),
+        open('parallel.sh',write,Stream),
+        write(Stream,'#!/bin/sh'),nl(Stream),
+        parallel_conservation_rec(Stream,R,0).
+
+parallel_conservation_rec(Stream,[],_) :-
+        close(Stream).
+
+parallel_conservation_rec(Stream,[File|Rest],Num) :-
+        number_codes(Num,Code),
+        atom_codes(AtomNum,Code),
+        atom_concat_list(['tblastn',AtomNum],Blast_Name),
+        Goal = run_model(chunk_aa_conservation,annotate([File],[blast_file_name(Blast_Name),mismatch_score(1)],_Conservation)),
+        term2atom(consult(consorf),Consult),
+        term2atom(Goal,Atom_Goal),
+        atom_concat_list([Consult,',',Atom_Goal,'.'],Prism_Cmd),
+        atom_concat_list(['(prism -g ','"',Prism_Cmd,'"', '& )'],Cmd),
+        write(Stream,Cmd),nl(Stream),
+        Num1 is Num+1,
+        parallel_conservation_rec(Stream,Rest,Num1).
