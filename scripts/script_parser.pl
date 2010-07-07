@@ -123,6 +123,24 @@ parser_blast(XML_File,List_Ids2,All_alignments) :-
 
 
 
+parser_blast(XML_File,XML_Out,List_Ids2,All_alignments) :-
+        remove_2_lines(XML_File,XML_File2),
+        save_run_model(parser_blastxml,
+                  annotate([XML_File2],
+                           [],
+                           XML_Out)),
+        consult(XML_Out),
+        blast(_Query_Id,_,Data),
+        (Data = [] ->  % No Hits Founds
+            List_Ids2 = [],
+            All_alignments = []
+        ;
+            findall(Id,blast(_,Id,_),List_Ids),
+            remove_dups(List_Ids,List_Ids2),
+            build_uplets(All_alignments)
+        ).
+
+
 % build_uplets
 
 
