@@ -1,60 +1,62 @@
-% genome_finder_4.psm
-% S/ren M/rk
-% 100621
-% 6-state hmm with hidden frame state and observed frame state
+% PRISM flags (PRISM v. 1.xx)
 
-% PRISM flags
-:- set_prism_flag(log_scale,on).
-:- set_prism_flag(learn_mode,both).
+:-set_prism_flag(log_scale,on).
+%:-set_prism_flag(log_viterbi,on).
+:-set_prism_flag(learn_mode,both).  
 
-data('~/data/frames/k12_frames.dat').
+frames([1,2,3,4,5,6]).
 
-% load settings:
-%:-['~/settings/default.pl'].
+%% For learning with a single switch at a time
+dummy_pgoal(SwName,Outcome) :-
+        msw(SwName,Outcome).
 
 % parameters of model: 
-values(trans(_),[frame(1),frame(2),frame(3),frame(4),frame(5),frame(6),end]).
+values(trans(_),Frames) :-
+        frames(Frames).
 
-values(emit(1),[1]).
-values(emit(2),[2]).
-values(emit(3),[3]).
-values(emit(4),[4]).
-values(emit(5),[5]).
-values(emit(6),[6]).
-values(emit(delete),[1,2,3,4,5,6]).
+% The score is emitted from the frame
+values(emit(F), SC) :- 
+        frames(Frames),
+        member(F,Frames),
+        score_categories(SC).
+        
+values(emit(delete),Outcomes) :-
+        score_categories(SC),
+        frames(Frames),
+        findall((F,S), (member(F,Frames), member(S,SC)), Outcomes).
 
 values(goto_delete,[yes,no]).
 
-% Initiation:
-model(O):-
-   msw(trans(begin),S),
-   recursion_frame(S,O).
+% Should be approx 1/N, where N is the observation length
+values(terminate,[yes,no]).
 
-% termination:
-recursion_frame(end,[]).
+% Initiation:
+model(Observations):-
+   % select initial frame:
+   % Can probably just have uniform probability
+   recursion(begin,Observations). 
 
 % recursion structure:
-recursion_frame(frame(F),XR):-
-   msw(goto_delete,GotoDel),
-   ((GotoDel == yes) ->
-        recursion_frame(delete,frame(F),XR)
+recursion(F,XR) :-
+   % Terminate recursion?
+   msw(terminate,T),
+   ((T==yes) -> 
+        XR = [] 
         ;
-        recursion_frame(frame,frame(F),XR)
-   ).
+        % Visit delete state?
+        msw(goto_delete,GotoDel),
+        ((GotoDel == yes) -> 
+            recursion_delete(F,XR) 
+            ;
+            recursion_frame(F,XR)
+        )).
 
-recursion_frame(delete,frame(F),XR):-
-     recursion_delete(frame(F),XR).
+recursion_frame(F,[(NextFrame,Score)|R]) :-
+     msw(trans(F), NextFrame),
+     msw(emit(NextFrame),Score),
+     recursion(NextFrame,R).
 
-recursion_frame(frame,frame(F),[X|R]):-
-     msw(emit(F), X),
-     msw(trans(F),N),
-     recursion_frame(N,R).
-
-recursion_delete(frame(F),[X|R]):-
+% Arg1: previous frame
+recursion_delete(F,[X|R]) :-
    msw(emit(delete), X),
-   msw(goto_delete,GotoDel),
-   ((GotoDel == yes) ->
-        recursion_delete(frame(F),R)
-        ;
-        recursion_frame(frame(F),R)
-   ).
+   recursion(F,R).
