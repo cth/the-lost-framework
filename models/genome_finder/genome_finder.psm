@@ -30,6 +30,10 @@ values(goto_delete,[yes,no]).
 % Should be approx 1/N, where N is the observation length
 values(terminate,[yes,no]).
 
+toggle_disable_delete(S) :-
+        retractall(disable_delete(_)),
+        assert(disable_delete(S)).
+
 % Initiation:
 model(Observations):-
    % select initial frame:
@@ -44,12 +48,15 @@ recursion(F,XR) :-
         XR = [] 
         ;
         % Visit delete state?
-        msw(goto_delete,GotoDel),
+        catch(disable_delete(DisableDelete),_,DisableDelete=no),
+        ((DisableDelete==yes) ->
+                GotoDel = no 
+                ;
+                msw(goto_delete,GotoDel)),
         ((GotoDel == yes) -> 
-            recursion_delete(F,XR) 
-            ;
-            recursion_frame(F,XR)
-        )).
+                recursion_delete(F,XR) 
+                ;
+                recursion_frame(F,XR))).
 
 recursion_frame(F,[(NextFrame,Score)|R]) :-
      msw(trans(F), NextFrame),
@@ -58,5 +65,6 @@ recursion_frame(F,[(NextFrame,Score)|R]) :-
 
 % Arg1: previous frame
 recursion_delete(F,[X|R]) :-
+   write('in delete state'),nl,
    msw(emit(delete), X),
    recursion(F,R).

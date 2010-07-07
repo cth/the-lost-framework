@@ -83,20 +83,19 @@ gb_file(GeneFileProlog) :-
 pred_file('best_predictions.pl').
 
 test_l1 :-
-       prism(genome_finder2),
+       prism(genome_finder),
        gb_file(GeneFileProlog),
        learn_frame_transitions(GeneFileProlog).
 test_l3 :-
         gb_file(GF),
         pred_file(PF),
-        prism(genome_finder2),
+        prism(genome_finder),
         learn_emission_probabilities(GF,PF),
         show_sw.
 
 test_l4 :-
         gb_file(GF),
         pred_file(PF),
-        prism(genome_finder2),
         learn([GF,PF],_,_).
 
 test_l2 :-
@@ -129,7 +128,7 @@ elements_with_functor(F,[_|ERest],CRest) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
-       prism(genome_finder2),
+       prism(genome_finder),
        terms_from_file(GenbankFile,RefGenes),
        terms_from_file(PredictionsFile,Predictions),
        write('::: learning frame transitions...'),nl,
@@ -165,14 +164,15 @@ learn_terminate_probability(Predictions) :-
 learn_frame_transitions(GenbankTerms) :-
         % first, fix delete prob and score categories probs to zero 
         % in order to learn transition probabilities only
-        fix_sw(goto_delete, [0,1]),
+        toggle_disable_delete(yes),
+        %fix_sw(goto_delete, [0,1]),
   %      terms_from_file(GenbankFile,GenbankTerms),
         frame_list_from_genbank_terms(GenbankTerms,FrameList),
         assert(score_categories([0])),
         map(add_unit_score,FrameList,ObservationList),
         learn([model(ObservationList)]),
         retract(score_categories(_)).
-        unfix_sw(goto_delete).
+        toggle_disable_delete(no).
 % where:
         add_unit_score(E,(E,0)).
 
