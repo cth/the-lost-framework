@@ -10,6 +10,7 @@
 % like this from anywhere..
 :- lost_include_api(interface).
 :- lost_include_api(utils_parser_report).
+:- lost_include_api(prism_parallel).
 :- [script_parser].
 :- [filter_genes].
 
@@ -138,9 +139,49 @@ testgoal:-run_chunk_conservation('U00096',[direction(+),frame(1),mismatch_score(
 
 
 
-test_optimization :-
+sequential_conservation :-
 	lost_sequence_file('U00096',Sequence),
         run_model(orf_chopper,annotate([Sequence],[direction(+),frame(1)],OrfChunk_File)),
         run_model(chunk_translator,annotate([OrfChunk_File],[mode(0),genecode(11)],Orf_FASTA)),
-        run_model(chunk_aa_conservation,annotate([Orf_FASTA],[optimized(true),direction(+),frame(1),mismatch_score(1)],_Conservation)).
+        split_file_fasta(Orf_FASTA,1000,split_fasta,'seq',R),
+        sequenctial_conservation_rec(R).
+
+sequential_conservation_rec([]).
+
+sequenctial_conservation_rec([File|Rest]) :-
+        run_model(chunk_aa_conservation,annotate([File],[mismatch_score(1)],_Conservation)),
+        sequenctial_conservation_rec(Rest).
+
+
+
+parallel_conservation :-
+	lost_sequence_file('U00096',Sequence),
+        run_model(orf_chopper,annotate([Sequence],[direction(+),frame(1)],OrfChunk_File)),
+        run_model(chunk_translator,annotate([OrfChunk_File],[mode(0),genecode(11)],Orf_FASTA)),
+        split_file_fasta(Orf_FASTA,500,split_fasta,'seq',InFileParts),
+        map(out_file_name,InFileParts,OutFileParts),
+        write(OutFileParts),nl,
+        create_goals(InFileParts,OutFileParts,1,FilePartGoals),
+        prism_parallel(FilePartGoals).
+
+
+out_file_name(InFile,OutFile) :-
+        atom_concat(InFile,'.processed',OutFile).
+
+
+create_goals([],[],_Num,[]) :-
+        !.
+
+create_goals([FileIn|RestIn],[FileOut|RestOut],Num,[Goal|Rest_Goal]) :-
+        Goal = (
+                 
+                 [consorf],
+                 number_codes(Num,Code),
+                 atom_codes(AtomNum,Code),
+                 atom_concat_list(['tblastn',AtomNum],Blast_Name),
+                 safe_run_model(chunk_aa_conservation,annotate([FileIn],[blast_file_name(Blast_Name),mismatch_score(1)],FileOut))
+                 ),
+        Num1 is Num+1,
+        create_goals(RestIn,RestOut,Num1,Rest_Goal).
+
 

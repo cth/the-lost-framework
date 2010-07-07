@@ -317,7 +317,7 @@ report(Id,First_Pos,Pos_After,S1,Dir,Frame,Starts_Positions,Stop_Position,Min_Le
             Right is First_Pos  
 	),        
 	nFirst(N,S1,S,_),
-        (kept_orf(Min_Length,Max_Length,N) -> % test to konw if the orf is kept or not
+        (kept_orf(Min_Length,Max_Length,N) -> % test to know if the orf is kept or not
             (Dir = '+' ->
                 S2 = S
             ;
@@ -373,7 +373,7 @@ orf_chop_main(data(Id,StartPos,_,S),Dir,Frame,FileInStream,ChunkFileOutStream):-
 % When one or  two variables are undefined, the test is true
 
 
-kept_orf(undefined,undefined,N) :-
+kept_orf(undefined,undefined,_N) :-
         !.
         
 kept_orf(Min_Length,undefined,N) :-

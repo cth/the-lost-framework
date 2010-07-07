@@ -25,10 +25,25 @@ Module that defines main predicates of the framework.
 using(Goal,ModelName) :- run_lost_model(ModelName,Goal).
 
 
-      
+safe_run_model(Model,Goal) :-
+      	writeq(run_lost_model(Model,Goal)),nl,
+	Goal =.. [ Functor, Inputs, Options, Filename ],
+	lost_model_interface_file(Model, ModelFile),
+	check_valid_model_call(Model,Functor,3,Options),
+	expand_model_options(Model, Functor, Options, ExpandedOptions),
+	sort(ExpandedOptions,ExpandedSortedOptions),
+        check_or_fail(ground(Filename),
+                      interface_error("File must be ground")),
+        CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
+        term2atom(CallGoal,GoalAtom),
+        write(launch_prism_process(ModelFile,GoalAtom)),nl,
+        launch_prism_process(ModelFile,GoalAtom),
+        check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))).
+
+
 % Run a Lost Model
 run_model(Model,Goal) :-
-	write(run_lost_model(Model,Goal)),nl,
+	writeq(run_lost_model(Model,Goal)),nl,
 	Goal =.. [ Functor, Inputs, Options, Filename ],
 	lost_model_interface_file(Model, ModelFile),
 	check_valid_model_call(Model,Functor,3,Options),
@@ -316,6 +331,10 @@ print_available_model_rec([Name|Rest]) :-
 lost_tmp_directory(TmpDir) :-
         lost_config(lost_base_directory,BaseDir),!,
         atom_concat(BaseDir,'/tmp/', TmpDir).
+
+lost_utilities_directory(UtilsDir) :-
+        lost_config(lost_base_directory,BaseDir),!,
+        atom_concat(BaseDir,'/utilities/', UtilsDir).
 
 %% lost_models_directory(-ModelsDir)
 lost_models_directory(ModelsDir) :-
