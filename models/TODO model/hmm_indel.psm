@@ -1,0 +1,37 @@
+% indel_hmm.psm
+% S/ren M/rk
+% 100519
+
+% singel sequence indel HMM É 
+
+
+data('../data/training/k12_p_rcmvmRNAs.dat')
+
+% parameters:
+values(transition(begin),[state(match)]).
+values(transition(state(match)), [state(match),state(insert),state(delete), end]).
+values(transition(state(delete)), [state(match)]).
+values(transition(state(insert)), [state(match)]).
+
+values(emission(state(match)),[a,c,g,t]).
+
+model(O):-
+   msw(transition(begin),S),
+   recursion(S,O).
+
+recursion(end,[]):-!.
+
+recursion(state(match),[X|R]):-
+   msw(emission(state(match)),X),
+   msw(transition(state(match)),N),
+   recursion(N,R).
+
+recursion(state(delete),R):-
+   msw(transition(state(delete)),N),
+   recursion(N,R).
+
+recursion(state(insert),[X|[Y|R]]):-
+   msw(emission(state(match)),X),
+   msw(emission(state(match)),Y),
+   msw(transition(state(insert)),N),
+   recursion(N,R).

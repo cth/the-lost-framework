@@ -1,0 +1,77 @@
+% frame_p_e3.psm
+% S/ren M/rk
+% 100302
+% from frame_f.psm
+
+% only plus strand...pmRNAs
+
+% "triplets"
+% two first emissions on i
+% third emission on state tuple and 3 previous emissions [for fewer
+% parameters!]
+% transitions on states, 2 previous and present emission...
+
+% use to get "stop" transitions for both frames for frames_g.psm
+% use to get coding and overlapping i/j emissions for frames_g.psm
+
+% combines with frame_i.psm to get (i,i) emissions and i/j "start" transitions
+
+% only eats 5.6%mem for all 4156 checked k12 mRNAs
+
+data('../data/training/k12_p_rcmvmRNAs.dat')
+
+
+% parameters:
+values(emission(_,_,_,_,_),[a,c,g,t]).
+
+values(transition(i,a,t,g),[s(p),s(i)]).
+values(transition(i,c,t,g),[s(p),s(i)]).
+values(transition(i,g,t,g),[s(p),s(i)]).
+values(transition(i,t,t,g),[s(p),s(i)]).
+values(transition(i,_,_,_),[s(i)]).
+
+values(transition(p,t,a,a),[end]).
+values(transition(p,t,a,g),[end]).
+values(transition(p,t,g,a),[end]).
+values(transition(p,_,_,_),[s(p)]).
+
+values(transition(j,c,t,a),[s(m),s(j)]).
+values(transition(j,t,c,a),[s(m),s(j)]).
+values(transition(j,t,t,a),[s(m),s(j)]).
+values(transition(j,_,_,_),[s(j)]).
+
+values(transition(m,c,a,a),[s(m),end]).
+values(transition(m,c,a,c),[s(m),end]).
+values(transition(m,c,a,g),[s(m),end]).
+values(transition(m,c,a,t),[s(m),end]).
+values(transition(m,_,_,_),[s(m)]).
+
+%values(transition(c(c)),[c(c),end]).
+
+% termination:
+recursion(end,_,_,_,_,[]):-!.
+recursion(_,end,_,_,_,[]):-!.
+
+% recursion:
+recursion(s(P),s(M),X,Y,Z,[Q|[V|[W|R]]]):-
+        msw(emission(i,j,X,Y,Z),Q),
+        msw(emission(i,j,Y,Z,Q),V),
+        msw(emission(p,j,Z,Q,V),W),
+        msw(transition(P,Q,V,W),N1),
+        msw(transition(M,Q,V,W),N2),
+        %msw(transition(c(c)),C),
+        recursion(N1,N2,Q,V,W,R).
+
+% initiation:
+model(Obs):-
+        recursion(s(i),s(j),s,s,s,Obs).
+
+% fixing "start" transitions to empirical frequencies:
+%:-fix_sw(transition(i,a,t,g),[0.65,0.35]).
+%:-fix_sw(transition(i,g,t,g),[0.87,0.13]).
+%:-fix_sw(transition(i,t,t,g),[0.89,0.11]).
+%:-fix_sw(transition(j,c,t,a),[0.85,0.15]).
+%:-fix_sw(transition(j,t,c,a),[0.82,0.18]).
+%:-fix_sw(transition(j,t,t,a),[0.69,0.31]).
+
+

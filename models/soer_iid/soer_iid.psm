@@ -1,0 +1,39 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NAME :
+%      iid.psm
+%
+% FUNCTION :
+%        Simple HMM used as Null Model
+%
+% HISTORIQUE :
+%      S.M  18/05/2010: creation 
+%      M.P  07/07/2010: Integration in the LOST framework
+%  
+% DESCRIPTION :
+%          Single state hmm for use as null model
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+:-set_prism_flag(scaling,log_exp).
+:-set_prism_flag(log_viterbi,on).
+
+
+% Switches definition
+values(transition(begin),[state]).
+values(transition(state), [state, end]).
+values(emission(state),[a,c,g,t]).
+
+% HMM process run
+iid(Observations):-
+   msw(transition(begin),State),
+   iid_rec(State,Observations).
+
+iid_rec(end,[]):-
+        !.
+
+iid_rec(State,[Obs|Rest_Observations]):-
+        State \= end,
+        msw(emission(State),Obs),
+        msw(transition(State),New_State),
+        iid_rec(New_State,Rest_Observations).
+
+

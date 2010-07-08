@@ -1,0 +1,181 @@
+% hmm_indel_aa_md.psm
+% S/ren M/rk
+% 100530
+% aa model with hmm_indel.psm parser
+
+% with match and delete only...
+
+% with triplet insertion mode instead of same same "double emissions"
+
+% Motivation:
+% Genefinders are average genes 
+% Genes are similar because they share environment, function and ancestry.
+% Genes arise through geneduplication and change though substitution and % indels (and modular copy)
+% Hence a single sequence genefinder with "indel" modes can parse "typical" higher ordered patterns that are disrupted by single indels via 1: skipping a conditioning (insert[w.r.t. ancestral sequence]) through conditioning i-2 instead of i-1 or 2: conditioning on an unobserved "ghoststate" (delete[w.r.t. ancestral sequence]) generated with the typical transition probabilities. 
+% the genefinder model is one with an underlying aa state sequence to accommodate synonymous substitutions.
+data('../data/training/k12_p_rcmvmRNAs.dat')
+%data('../data/training/k12_pvmRNAs.dat')
+%data('results/hmm_indel_aa_3_k12_p_rcmvmRNAs.dat')
+%data('aa_test.dat').
+
+%:-set_prism_flag(data_source,data/1).
+
+:-set_prism_flag(scaling,log_exp).
+:-set_prism_flag(log_viterbi,on).
+
+%:-set_prism_flag(init,random).
+%:-set_prism_flag(max_iterate,2).
+%:-set_prism_flag(epsilon,1.0e-4).
+%:-set_prism_flag(restart,10).
+
+%:-set_prism_flag(daem,on).
+%:-set_prism_flag(itemp_init,0.1).
+%:-set_prism_flag(itemp,rate,1.5).
+
+:-set_prism_flag(learn_mode,both).
+:-set_prism_flag(default_sw_h,uniform).
+%:-set_prism_flag(params_after_vbem,max).
+:-set_prism_flag(viterbi_mode,hparams).
+
+prism_main([Sw_out_name]):-
+        learn,
+        parse_atom(Sw_out_name, Sw_out),
+        save_sw(Sw_out).
+
+
+prism_main([Sw_out_name,Sw_h_out_name]):-
+        learn,
+        parse_atom(Sw_out_name, Sw_out),
+        parse_atom(Sw_h_out_name,Sw_h_out),
+        save_sw(Sw_out),
+        save_sw_h(Sw_h_out).
+
+
+prism_main([Sw_in_name, Sw_h_in_name, Decoding_set_name]):-
+         parse_atom(Sw_in_name, Sw_in),
+         restore_sw(Sw_in),
+         parse_atom(Sw_h_in_name, Sw_h_in),
+         restore_sw_h(Sw_h_in),
+         parse_atom(Decoding_set_name, Decoding_set),
+         viterbif_file(Decoding_set,Ps,Swis),
+         writeln(Ps),
+         writeln(Swis).
+
+viterbif_file(F,Ps,Swis):-
+         get_goals(F,Gs),
+         viterbif_gs(Gs,Ps,Swis).
+
+get_goals(F,Gs):-
+         see(F),
+         read(First),
+         get_terms(First,Gs),
+         seen.
+
+get_terms(end_of_file,[]).
+
+get_terms(G, [G|Gs]):-
+         G \= end_of_file,
+         read(Next),
+         get_terms(Next,Gs).
+
+viterbif_gs([],[],[]).
+
+viterbif_gs([G|RGs],[P|Ps],[Swi|RSwi]):-
+         viterbif(G,P,Expl),
+         viterbi_switches(Expl,Swi),
+         viterbif_gs(RGs,Ps,RSwi).
+
+
+
+% Model:
+target(model,1).
+
+%transition probabilities:
+
+% match, and indel
+values(transition(match),[match,delete]).
+values(transition(delete),[match]).
+values(transition(insert),[match]).
+
+% aa:
+values(transition(begin),[state(start)]).
+
+%values(transition(state(stop)),[end]).
+
+values(transition(state(_)),[state(ala),state(arg),state(asn),state(asp),state(cys),state(gln),state(glu),state(gly),state(his),state(ile),state(leu),state(lys),state(met),state(phe),state(pro),state(ser),state(thr),state(trp),state(tyr),state(val),state(stop),end]).
+
+values(emission(insert),[
+                                (a,a,a),(c,a,a),(g,a,a),
+                                (a,c,a),(c,c,a),(g,c,a),(t,c,a),
+                                (a,g,a),(c,g,a),(g,g,a),
+                                (a,t,a),(c,t,a),(g,t,a),(t,t,a),
+
+                                (a,a,c),(c,a,c),(g,a,c),(t,a,c),
+                                (a,c,c),(c,c,c),(g,c,c),(t,c,c),
+                                (a,g,c),(c,g,c),(g,g,c),(t,g,c),
+                                (a,t,c),(c,t,c),(g,t,c),(t,t,c),
+
+                                (a,a,g),(c,a,g),(g,a,g),
+                                (a,c,g),(c,c,g),(g,c,g),(t,c,g),
+                                (a,g,g),(c,g,g),(g,g,g),(t,g,g),
+                                (a,t,g),(c,t,g),(g,t,g),(t,t,g),
+
+                                (a,a,t),(c,a,t),(g,a,t),(t,a,t),
+                                (a,c,t),(c,c,t),(g,c,t),(t,c,t),
+                                (a,g,t),(c,g,t),(g,g,t),(t,g,t),
+                                (a,t,t),(c,t,t),(g,t,t),(t,t,t)
+                                ]).
+
+
+values(emission(start),[(a,t,g),(c,t,g),(g,t,g),(t,t,g)]).
+
+values(emission(ala),[(g,c,a),(g,c,c),(g,c,g),(g,c,t)]).
+values(emission(arg),[(a,g,a),(a,g,g),(c,g,a),(c,g,c),(c,g,g),(c,g,t)]).
+values(emission(asn),[(a,a,c),(a,a,t)]).
+values(emission(asp),[(g,a,c),(g,a,t)]).
+values(emission(cys),[(t,g,c),(t,g,t)]).
+values(emission(gln),[(c,a,a),(c,a,g)]).
+values(emission(glu),[(g,a,a),(g,a,g)]).
+values(emission(gly),[(g,g,a),(g,g,c),(g,g,g),(g,g,t)]).
+values(emission(his),[(c,a,c),(c,a,t)]).
+values(emission(ile),[(a,t,a),(a,t,c),(a,t,t)]).
+values(emission(leu),[(c,t,a),(c,t,c),(c,t,g),(c,t,t),(t,t,a),(t,t,g)]).
+values(emission(lys),[(a,a,a),(a,a,g)]).
+values(emission(met),[(a,t,g)]).
+values(emission(phe),[(t,t,c),(t,t,t)]).
+values(emission(pro),[(c,c,a),(c,c,c),(c,c,g),(c,c,t)]).
+values(emission(ser),[(a,g,c),(a,g,t),(t,c,a),(t,c,c),(t,c,g),(t,c,t)]).
+values(emission(thr),[(a,c,a),(a,c,c),(a,c,g),(a,c,t)]).
+values(emission(trp),[(t,g,g)]).
+values(emission(tyr),[(t,a,c),(t,a,t)]).
+values(emission(val),[(g,t,a),(g,t,c),(g,t,g),(g,t,t)]).
+values(emission(stop),[(t,a,a),(t,a,g),(t,g,a)]).
+
+
+
+%parser:
+
+% initiation:
+model(O):-
+   msw(transition(begin),S),
+   recursion(match,S,O).
+
+recursion(_,end,[]):-!.
+
+recursion(match,state(S),[X|[Y|[Z|R]]]):-	
+   msw(emission(S),(X,Y,Z)),
+   msw(transition(state(S)),N),
+   msw(transition(match),M),	
+   recursion(M,N,R).
+
+recursion(insert,S,[X|[Y|[Z|R]]]):-
+   msw(emission(insert),(X,Y,Z)),
+   msw(transition(insert),M),
+   recursion(M,S,R).
+
+recursion(delete,state(S),R):-
+   msw(transition(state(S)),N),
+   msw(transition(delete),M),
+   recursion(M,N,R).
+
+
