@@ -14,8 +14,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
-
+:-set_prism_flag(scaling,log_exp).
+:-set_prism_flag(log_viterbi,on).
 
 
 %transition probabilities:
@@ -452,3 +452,7 @@ next(NS,2,g,NS,3).
 next(NS,3,_,NS,3).
 
 
+
+
+test(P) :-
+        viterbi(ecoparse_adph([a,t,g,a,a,a,c,g,c,a,t,t,a,g,c,a,c,c,a,c,c,a,t,t,a,c,c,a,c,c,a,c,c,a,t,c,a,c,c,a,t,t,a,c,c,a,c,a,g,g,t,a,a,c,g,g,t,g,c,g,g,g,c,t,g,a]),P).

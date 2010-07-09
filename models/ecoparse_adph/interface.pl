@@ -6,10 +6,6 @@
 % WARNING: TOFIX option data_available no not supported yet.
 
 
-:-set_prism_flag(scaling,log_exp).
-:-set_prism_flag(log_viterbi,on).
-
-
 
 % Input Format Specification
 lost_input_formats(annotate,[text(prolog(ranges(_)))]).
@@ -19,7 +15,7 @@ lost_output_format(annotate,_,text(prolog(ranges(_)))).
 
 % Option declaration
 % Annotate options
-lost_option(annotate,use_parameter_file,yes,'Load parameters from the parameter file'). Not usefull for this model
+lost_option(annotate,use_parameter_file,yes,'Load parameters from the parameter file').
 lost_option(annotate,data_available,yes,'Specify if the sequence data is available or not in Extra info of the terms that composed the Input file').
 lost_option(annotate,data_functor,sequence,'Specify the name of the functor associated with the sequence data').
 
