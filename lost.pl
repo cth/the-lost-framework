@@ -14,8 +14,8 @@
 
 % Make changes to these three lines:
 lost_config(prism_command,'prism').
-lost_config(lost_base_directory,'D:/petit/Prog/lost/').
-lost_config(platform,'windows').
+lost_config(lost_base_directory,'/change/to/your/local/lost/directory').
+lost_config(platform,'to specify unix or windows').
 lost_config(concurrent_processes,5).
 
 % Do not change below this line
