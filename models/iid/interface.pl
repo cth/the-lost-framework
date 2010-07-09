@@ -27,20 +27,7 @@ lost_option(annotate,data_functor,sequence,'Specify the name of the functor asso
 % 
 annotate([InputFile],Options,OutputFile) :-                                 
 	write('Iid model: '),nl,                                                         
-        prism('soer_iid'), % Load the actual PRISM model                                         
-
-        % Restoration of the switches
-%%%         get_option(Options,use_parameter_file,UseParamFile),
-%%%         (UseParamFile == yes ->
-%%%             atom_concat('./Parameters/','soer_iid.prb',ParamFile),
-%%%             write(restore_sw(ParamFile)),nl,
-%%%             restore_sw(ParamFile),
-%%%             atom_concat('./Parameters/','soer_iid_h.prb',ParamFile_H),
-%%%             write(restore_sw_h(ParamFile)),nl,
-%%%             restore_sw_h(ParamFile_H)
-%%%         ;
-%%%             true),
-      % Building of the Input for the annotations
+        prism('iid'), % Load the actual PRISM model
         get_option(Options,data_available,Data_Available),
         terms_from_file(InputFile,Terms),
         (Data_Available == yes ->
