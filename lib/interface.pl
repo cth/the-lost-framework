@@ -346,6 +346,12 @@ lost_data_directory(Dir) :-
 	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir,'/data/',Dir).
 
+%% lost_data_directory(-Dir)
+lost_tests_directory(Dir) :-
+	lost_config(lost_base_directory, Basedir),!,
+	atom_concat(Basedir,'/data/tests/',Dir).
+
+
 %% lost_model_directory(+Model,-ModelDir)
 lost_model_directory(Model,ModelDir) :-
 	lost_models_directory(ModelsDir),
@@ -394,6 +400,14 @@ lost_data_file(SequenceId, SequenceFile) :-
 %% lost_sequence_file(+SequenceId, -SequenceFile)
 lost_sequence_file(SequenceId, SequenceFile) :-
 	lost_data_file(SequenceId, SequenceFile).
+
+
+%% lost_test_file(+SequenceId, -SequenceFile)
+lost_test_file(SequenceId, SequenceFile) :-
+        lost_tests_directory(D),
+	atom_concat(SequenceId,'.seq', Filename),
+	atom_concat(D, Filename, SequenceFile).
+
 
 %% is_generated_file(+File)
 %
