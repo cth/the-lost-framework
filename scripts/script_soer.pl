@@ -19,6 +19,10 @@ test_logodds(OutputFile) :-
         lost_test_file('DT_soer_models',InputFile),
         logodds_computation(InputFile,ecoparse_adph,iid,[use_parameter_file(no)],[],OutputFile).
 
+test_learn(NameModel,Options,OutputFile) :-
+    lost_test_file('DT_soer_models',InputFile),
+    lost_sequence_file('U00096',RawGenome),
+    run_model(NameModel,learn([InputFile,RawGenome],Options,OutputFile)).
 
 %----
 % logodds computation
