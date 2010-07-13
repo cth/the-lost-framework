@@ -1,0 +1,66 @@
+% adph.psm
+% from frames.psm
+% S/ren M/rk
+% 1006010
+
+% Kroghish lenght modeling...
+% "stay or go now?"= same probs
+% no stop in 1 and 2?
+
+data('../data/training/k12_p_rcmvmRNAs.dat').
+
+% load settings:
+:-['~/settings/default.pl'].
+
+% parameters:
+values(emission(codon),[
+                                (a,a,a),(c,a,a),(g,a,a),
+                                (a,c,a),(c,c,a),(g,c,a),(t,c,a),
+                                (a,g,a),(c,g,a),(g,g,a),
+                                (a,t,a),(c,t,a),(g,t,a),(t,t,a),
+
+                                (a,a,c),(c,a,c),(g,a,c),(t,a,c),
+                                (a,c,c),(c,c,c),(g,c,c),(t,c,c),
+                                (a,g,c),(c,g,c),(g,g,c),(t,g,c),
+                                (a,t,c),(c,t,c),(g,t,c),(t,t,c),
+
+                                (a,a,g),(c,a,g),(g,a,g),
+                                (a,c,g),(c,c,g),(g,c,g),(t,c,g),
+                                (a,g,g),(c,g,g),(g,g,g),(t,g,g),
+                                (a,t,g),(c,t,g),(g,t,g),(t,t,g),
+
+                                (a,a,t),(c,a,t),(g,a,t),(t,a,t),
+                                (a,c,t),(c,c,t),(g,c,t),(t,c,t),
+                                (a,g,t),(c,g,t),(g,g,t),(t,g,t),
+                                (a,t,t),(c,t,t),(g,t,t),(t,t,t)
+                                ]).
+
+values(emission(start),[(a,t,g),(g,t,g),(t,t,g)]).
+
+values(emission(stop),[(t,a,a),(t,a,g),(t,g,a)]).
+
+values(transition(start),[g]).
+values(transition(codon),[s,g]).
+values(transition(stop),[g]).
+
+values(next(start,1,g),[s(codon,1)]).
+values(next(codon,1,s),[s(codon,1)]).
+values(next(codon,1,g),[s(codon,2)]).
+values(next(codon,2,s),[s(codon,2)]).
+values(next(codon,2,g),[s(codon,3)]).
+values(next(codon,3,s),[s(codon,3)]).
+values(next(codon,3,g),[s(stop,1)]).
+values(next(stop,1,g),[end,s(codon,1)]).
+
+% termination:
+recursion(end,[]).
+
+recursion(s(S1,P),[Q|[V|[W|R]]]):-
+        msw(emission(S1),(Q,V,W)),
+        msw(transition(S1),SG),
+        msw(next(S1,P,SG),N1),
+        recursion(N1,R).
+
+% initiation:
+model(Obs):-
+	recursion(s(start,1),Obs).

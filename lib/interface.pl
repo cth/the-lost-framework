@@ -346,6 +346,12 @@ lost_data_directory(Dir) :-
 	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir,'/data/',Dir).
 
+%% lost_data_directory(-Dir)
+lost_tests_directory(Dir) :-
+	lost_config(lost_base_directory, Basedir),!,
+	atom_concat(Basedir,'/data/tests/',Dir).
+
+
 %% lost_model_directory(+Model,-ModelDir)
 lost_model_directory(Model,ModelDir) :-
 	lost_models_directory(ModelsDir),
@@ -394,6 +400,14 @@ lost_data_file(SequenceId, SequenceFile) :-
 %% lost_sequence_file(+SequenceId, -SequenceFile)
 lost_sequence_file(SequenceId, SequenceFile) :-
 	lost_data_file(SequenceId, SequenceFile).
+
+
+%% lost_test_file(+SequenceId, -SequenceFile)
+lost_test_file(SequenceId, SequenceFile) :-
+        lost_tests_directory(D),
+	atom_concat(SequenceId,'.seq', Filename),
+	atom_concat(D, Filename, SequenceFile).
+
 
 %% is_generated_file(+File)
 %
@@ -685,10 +699,10 @@ rm_tmp :-
 % Move a generated data file somewhere else and update the annotation index
 move_data_file(X,X) :- !.
 move_data_file(OldFilename, NewFilename) :-
-	lost_data_index_file(IndexFile),
-	copy_file(OldFilename,NewFilename),
-	delete_file(OldFilename),
-	lost_file_index_move_file(IndexFile,OldFilename,NewFilename).
+        lost_data_index_file(IndexFile),
+        copy_file(OldFilename,NewFilename),
+        delete_file(OldFilename),
+        lost_file_index_move_file(IndexFile,OldFilename,NewFilename).
 	
 % Allows to query for models that support a particular 
 % pattern of InputFiles, Options, and OutputFormat

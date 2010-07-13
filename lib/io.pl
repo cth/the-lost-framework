@@ -1,4 +1,4 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/** <module> Module of Input/Output manipulation
 %  NAME :
 %      io.pl
 %
@@ -19,7 +19,8 @@
 % MODULS USED: misc_utils.pl
 %
 % NOTE TO THE USER : 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*/
+
 :- lost_include_api(utils_parser_report).
 :- lost_include_api(misc_utils).
 
@@ -28,25 +29,25 @@
 % get data or annotation from a file
 %----------------
 
-%%%%%%%%%%%%%%%%%%%%%%
-% get_data_from_file(++File,++Options,--Data)
+
+%% get_data_from_file(+File,+Options,-Data)
+%
 % Description: given of file composed of prolog facts,
 % this predicate generates a list of data given some options
 % By default, data predicate is in the form:
 % Functor(Key,LeftPosition,RightPosition,Data,...)
 % Type of Data is a list
-%%%%%%%%%%%%%%%%%%%%%%
+%
 % Options: - data_position(Pos) specified in which Pos Data is
 %          - left_position(Left) specified in which Pos Leftposition is
 %          - right_position(Righ) specified in which Pos Rightposition is
 %          - left_position(none) = no left position in the term
-
 %          - right_position(none) = no right position in the term
-
 %          - range(Min,Max): extract a range of data
 %          - ranges(List_Ranges): extract a list of data given a list of Range
-%%%%%%%%%%%%%%%%%%%%%
-%:- use_module(library(lists)).   % Debugging SICStus
+%
+
+                                
 
 get_data_from_file(File,Options,Data) :-
         terms_from_file(File,Terms),  % An other way could be to consult the file (other option for later)

@@ -1,0 +1,124 @@
+% ho_aa_hmm_silent.psm
+% S/ren M/rk
+% 100518
+% with emissions conditioned on previous aa
+
+data('../data/training/k12_p_rcmvmRNAs.dat')
+
+%:-set_prism_flag(data_source,data/1).
+
+:-set_prism_flag(scaling,log_exp).
+:-set_prism_flag(log_viterbi,on).
+
+%:-set_prism_flag(init,random).
+%:-set_prism_flag(max_iterate,2).
+%:-set_prism_flag(epsilon,1.0e-4).
+%:-set_prism_flag(restart,10).
+
+%:-set_prism_flag(daem,on).
+%:-set_prism_flag(itemp_init,0.1).
+%:-set_prism_flag(itemp,rate,1.5).
+
+:-set_prism_flag(learn_mode,both).
+:-set_prism_flag(default_sw_h,uniform).
+%:-set_prism_flag(params_after_vbem,max).
+:-set_prism_flag(viterbi_mode,hparams).
+
+prism_main([Sw_out_name]):-
+        learn,
+        parse_atom(Sw_out_name, Sw_out),
+        save_sw(Sw_out).
+
+
+prism_main([Sw_out_name,Sw_h_out_name]):-
+        learn,
+        parse_atom(Sw_out_name, Sw_out),
+        parse_atom(Sw_h_out_name,Sw_h_out),
+        save_sw(Sw_out),
+        save_sw_h(Sw_h_out).
+
+
+prism_main([Sw_in_name, Sw_h_in_name, Decoding_set_name]):-
+         parse_atom(Sw_in_name, Sw_in),
+         restore_sw(Sw_in),
+         parse_atom(Sw_h_in_name, Sw_h_in),
+         restore_sw_h(Sw_h_in),
+         parse_atom(Decoding_set_name, Decoding_set),
+         viterbif_file(Decoding_set,Ps,Swis),
+         writeln(Ps),
+         writeln(Swis).
+
+viterbif_file(F,Ps,Swis):-
+         get_goals(F,Gs),
+         viterbif_gs(Gs,Ps,Swis).
+
+get_goals(F,Gs):-
+         see(F),
+         read(First),
+         get_terms(First,Gs),
+         seen.
+
+get_terms(end_of_file,[]).
+
+get_terms(G, [G|Gs]):-
+         G \= end_of_file,
+         read(Next),
+         get_terms(Next,Gs).
+
+viterbif_gs([],[],[]).
+
+viterbif_gs([G|RGs],[P|Ps],[Swi|RSwi]):-
+         viterbif(G,P,Expl),
+         viterbi_switches(Expl,Swi),
+         viterbif_gs(RGs,Ps,RSwi).
+
+
+
+
+% Model:
+target(model,1).
+
+%transition probabilities:
+values(transition(begin),[(start)]).
+
+values(transition(silent),[(ala),(arg),(asn),(asp),(cys),(gln),(glu),(gly),(his),(ile),(leu),(lys),(met),(phe),(pro),(ser),(thr),(trp),(tyr),(val),stop]).
+
+values(emission(_,start),[(a,t,g),(c,t,g),(g,t,g),(t,t,g)]).
+
+values(emission(_,ala),[(g,c,a),(g,c,c),(g,c,g),(g,c,t)]).
+values(emission(_,arg),[(a,g,a),(a,g,g),(c,g,a),(c,g,c),(c,g,g),(c,g,t)]).
+values(emission(_,asn),[(a,a,c),(a,a,t)]).
+values(emission(_,asp),[(g,a,c),(g,a,t)]).
+values(emission(_,cys),[(t,g,c),(t,g,t)]).
+values(emission(_,gln),[(c,a,a),(c,a,g)]).
+values(emission(_,glu),[(g,a,a),(g,a,g)]).
+values(emission(_,gly),[(g,g,a),(g,g,c),(g,g,g),(g,g,t)]).
+values(emission(_,his),[(c,a,c),(c,a,t)]).
+values(emission(_,ile),[(a,t,a),(a,t,c),(a,t,t)]).
+values(emission(_,leu),[(c,t,a),(c,t,c),(c,t,g),(c,t,t),(t,t,a),(t,t,g)]).
+values(emission(_,lys),[(a,a,a),(a,a,g)]).
+values(emission(_,met),[(a,t,g)]).
+values(emission(_,phe),[(t,t,c),(t,t,t)]).
+values(emission(_,pro),[(c,c,a),(c,c,c),(c,c,g),(c,c,t)]).
+values(emission(_,ser),[(a,g,c),(a,g,t),(t,c,a),(t,c,c),(t,c,g),(t,c,t)]).
+values(emission(_,thr),[(a,c,a),(a,c,c),(a,c,g),(a,c,t)]).
+values(emission(_,trp),[(t,g,g)]).
+values(emission(_,tyr),[(t,a,c),(t,a,t)]).
+values(emission(_,val),[(g,t,a),(g,t,c),(g,t,g),(g,t,t)]).
+values(emission(_,stop),[(t,a,a),(t,a,g),(t,g,a)]).
+
+%parser:
+% Initiation:
+model(Observables):-
+        msw(transition(begin), Hidden_state),
+        hmm(Hidden_state,p,Observables).
+
+% termination:
+hmm(stop,_,[]):-!.
+
+%recursion:
+hmm((S),P,[X|[Y|[Z|R]]]):-
+        (S)\=end,
+        msw(emission(P,S),(X,Y,Z)),
+        msw(transition(silent), N),
+        hmm(N,S,R).
