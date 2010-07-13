@@ -699,10 +699,10 @@ rm_tmp :-
 % Move a generated data file somewhere else and update the annotation index
 move_data_file(X,X) :- !.
 move_data_file(OldFilename, NewFilename) :-
-	lost_data_index_file(IndexFile),
-	copy_file(OldFilename,NewFilename),
-	delete_file(OldFilename),
-	lost_file_index_move_file(IndexFile,OldFilename,NewFilename).
+        lost_data_index_file(IndexFile),
+        copy_file(OldFilename,NewFilename),
+        delete_file(OldFilename),
+        lost_file_index_move_file(IndexFile,OldFilename,NewFilename).
 	
 % Allows to query for models that support a particular 
 % pattern of InputFiles, Options, and OutputFormat

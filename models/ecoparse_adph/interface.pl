@@ -1,7 +1,7 @@
 :- ['../../lost.pl'].                                                                   
 :- lost_include_api(interface).                                                         
 :- lost_include_api(io).                                                                                                                                        
-
+:- lost_include_api(misc_utils).
 
 % WARNING: TOFIX option data_available no not supported yet.
 
@@ -12,7 +12,7 @@ lost_input_formats(annotate,[text(prolog(ranges(_)))]).
 lost_input_formats(learn,[text(prolog(ranges(_)))]).
 % Output Format Specification
 lost_output_format(annotate,_,text(prolog(ranges(_)))).
-lost_output_format(learn,_,).
+lost_output_format(learn,_,text(prolog(prism_swithches))).
 
 % Option declaration
 % Annotate options
@@ -64,12 +64,14 @@ annotate([InputFile],Options,OutputFile) :-
 
 
 learn([InputFile,RawGenome],Options,OutputFile) :-
+        write('ecoparse_adph learning: '),nl,                                                         
+        prism('ecoparse_adph'), % Load the actual PRISM model                                         
         terms_from_file(InputFile,Terms),
         get_option(Options,data_available,Data_Available),
         get_option(Options,terms_number,Num),
         (Data_Available == yes ->
-            % Caes: Data available in InputFile
-            get_option(Options,data_functor,Functor_Name)
+            % Case: Data available in InputFile
+            get_option(Options,data_functor,Functor),
             get_data_from_terms(Terms,Functor,Num,List_Data) % Warning: same name that the one used in io but not the same arity
         ;
             get_ranges_from_terms(Terms,Num,Ranges),
@@ -81,7 +83,6 @@ learn([InputFile,RawGenome],Options,OutputFile) :-
                       error(learning_computation_ecoparse_adph)
                      ),
         save_sw(OutputFile),
-        move_data(OutputFile,'./Parameters/ecoparse_adph.prb'), % Hypothes: current directory is the model directory
         save_sw_h('./Parameters/ecoparse_adph_h.prb').
         
         
@@ -161,13 +162,12 @@ get_data_from_terms([Term|Rest_Terms],Functor,Num,[Data|Rest_Data]) :-
 
 % get_ranges_from_terms(Terms,Functor,Num,List_Data) 
 % Default value for Num = undefined that means all the ranges
-get_ranges_from_terms(Terms,undefined,List_Data) :-
+get_ranges_from_terms(Terms,undefined,List_Ranges) :-
         !,
-       findall([Left,Right],Data,(member(Term,Terms),
-                     Term =.. [_,_Key,Left,Right,_Strand,_Frame,Extra_Info],
-                     Sequence =.. [Functor,Data]
+       findall([Left,Right],(member(Term,Terms),
+                     Term =.. [_,_Key,Left,Right,_Strand,_Frame,_Extra_Info]
                     ),
-                    List_Data
+                    List_Ranges
               ).
 
 % Case: List Terms empty before Num = 0
@@ -180,9 +180,16 @@ get_ranges_from_terms(_Terms,0,[]) :-
         !.
 
 
-get_ranges_from_terms([Term|Rest_Terms],Num,[Range|Rest_Ranges]) :-
+get_ranges_from_terms([Term|Rest_Terms],Num,[[Left,Right]|Rest_Ranges]) :-
         Num > 0,
         !,
-       Term =.. [_,_Key,Left,Right,_Strand,_Frame,Extra_Info],
+       Term =.. [_,_Key,Left,Right,_Strand,_Frame,_Extra_Info],
        Num1 is Num-1,
-       get_ranges_from_terms(Rest_Terms,Functor,Num1,Rest_Data).
+       get_ranges_from_terms(Rest_Terms,Num1,Rest_Ranges).
+
+
+
+% build_learning_terms(+Data,-Learning_Term)
+
+build_learning_terms(Data,Learning_Term) :-
+        Learning_Term =.. [ecoparse_adph,Data].
