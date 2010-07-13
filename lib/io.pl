@@ -1010,7 +1010,8 @@ split_file_fasta(Filename,ChunkSize,OutputFilePrefix,OutputFileSuffix,ResultingF
 split_file_fasta_rec(IStream, ChunkSize, FileNo, OutputFilePrefix,OutputFileSuffix,Firstline,ResultingFiles) :-
         number_codes(FileNo,Code),
         atom_codes(FileNo_Atom,Code),
-	atom_concat_list([OutputFilePrefix,'_',FileNo_Atom,'.',OutputFileSuffix], OutputFile),
+        lost_tmp_directory(Tmp),
+	atom_concat_list([Tmp,OutputFilePrefix,'_',FileNo_Atom,'.',OutputFileSuffix], OutputFile),
 	write('creating split file:'), write(OutputFile),nl,
         open(OutputFile,write,OStream),
 	read_next_n_chunk(Firstline,ChunkSize,IStream,OStream,EOF,LastLine),
