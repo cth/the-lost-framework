@@ -13,9 +13,15 @@
 %          HMM that models essentially the Ecoparse Model with a ADPH length modelling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+% Viterbi flags
 :-set_prism_flag(scaling,log_exp).
 :-set_prism_flag(log_viterbi,on).
+
+% Learning flags
+:-set_prism_flag(learn_mode,both).
+:-set_prism_flag(default_sw_h,uniform).
+%:-set_prism_flag(params_after_vbem,max).
+:-set_prism_flag(viterbi_mode,hparams).
 
 
 %transition probabilities:
