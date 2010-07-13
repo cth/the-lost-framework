@@ -7,6 +7,11 @@
 lost_input_formats(annotate, [text(ptt)]).
 lost_output_format(annotate, _Options, text(prolog(ranges(gene)))).
 
-annotate([InputFile],_Options,OutputFile) :-
+
+% Option
+lost_option(annotate,genome_key,'U00096', 'Specify the genome key of GeneBank.'). % Note: information not available in the PTT file
+
+annotate([InputFile],Options,OutputFile) :-
         consult(ptt_parser),
-        gb_parser(InputFile,OutputFile).
+        get_option(Options,genome_key,Key),
+        gb_parser(InputFile,Key,OutputFile).

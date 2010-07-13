@@ -34,61 +34,61 @@
 % Description: see description of the file header
 %-----------
 
-gb_parser(GB_Input_File,GB_Output_File):-
+gb_parser(GB_Input_File,Genome_Key,GB_Output_File):-
 	open(GB_Input_File, read, Input_Stream,[alias(gb_in)]),
 	open(GB_Output_File, write, Output_Stream,[alias(gb_out)]),
         set_output(Output_Stream),
         readline(Input_Stream,First_Line),
         var(Comment),
-	parser_gb(Input_Stream,Comment,First_Line),
+	parser_gb(Input_Stream,Comment,Genome_Key,First_Line),
 	set_input(user_input),
 	set_output(user_output),
 	close(Input_Stream),
 	close(Output_Stream).
 
 % End of File = readline = [-1]
-parser_gb(_,_Comment,[-1]):-
+parser_gb(_,_Comment,_Genome_Key,[-1]):-
         !.
 
 % Empty Line = readline = []
-parser_gb(Input_Stream,Comment,[]):-
+parser_gb(Input_Stream,Comment,Genome_Key,[]):-
         !,
         readline(Input_Stream,New_Line),
-        parser_gb(Input_Stream,Comment,New_Line).
+        parser_gb(Input_Stream,Comment,Genome_Key,New_Line).
 
 
 % Line that starts with 'Location' (76,111,99,97,116,105,111,110) end of the comments
-parser_gb(Input_Stream,Comment,[76,111,99,97,116,105,111,110|RestComment]):-
+parser_gb(Input_Stream,Comment,Genome_Key,[76,111,99,97,116,105,111,110|RestComment]):-
         var(Comment),
 	!,
 	atom_codes(Comment_Atom,[37,76,111,99,97,116,105,111,110|RestComment]),
 	write(Comment_Atom),nl,
 	readline(Input_Stream,Next_Line),
         Comment = 'end',
-	parser_gb(Input_Stream,Comment,Next_Line).
+	parser_gb(Input_Stream,Comment,Genome_Key,Next_Line).
 
 % Line to comment
-parser_gb(Input_Stream,Comment,Line_Codes):-
+parser_gb(Input_Stream,Comment,Genome_Key,Line_Codes):-
         var(Comment),
 	!,
 	atom_codes(Comment_Atom,[37|Line_Codes]),
 	write(Comment_Atom),nl,
 	readline(Input_Stream,Next_Line),
-	parser_gb(Input_Stream,Comment,Next_Line).
+	parser_gb(Input_Stream,Comment,Genome_Key,Next_Line).
 
 
 % Parse of a data line (Ignored characters = [space,tab,'.'])
-parser_gb(Input_Stream,'end',Entry_Codes):-
+parser_gb(Input_Stream,'end',Genome_Key,Entry_Codes):-
 	parser_line(Entry_Codes,[9,32,46],Entry_Tokens),
-	fact_building_gb(Entry_Tokens),
+	fact_building_gb(Entry_Tokens,Genome_Key),
 	readline(Input_Stream,Next_Line),
-	parser_gb(Input_Stream,'end',Next_Line).
+	parser_gb(Input_Stream,'end',Genome_Key,Next_Line).
 
 
 
 % Tokens to Prolog fact
 
-fact_building_gb(List):-
+fact_building_gb(List,Genome_Key):-
 	List = [ Start, Stop, Dir, Length, PID, Gene, Synonym, Code, COG | ProductList],
 	/*
         nth1(1,List,Start),
@@ -106,7 +106,7 @@ fact_building_gb(List):-
 	add_spaces(ProductList,ProductListSpaced),
 	atomize_list(ProductListSpaced,AtomProductListSpaced),
 	atom_concat_list(AtomProductListSpaced,Product),
-	Cds =.. [gb,Start,Stop,Dir,Frm,[gene_name(Gene),length(Length),pid(PID),synonym(Synonym),code(Code),cog(COG),product(Product)]],
+	Cds =.. [gb,Genome_Key,Start,Stop,Dir,Frm,[gene_name(Gene),length(Length),pid(PID),synonym(Synonym),code(Code),cog(COG),product(Product)]],
 	writeq(Cds),write('.'),nl.
 
 atomize_list([],[]).

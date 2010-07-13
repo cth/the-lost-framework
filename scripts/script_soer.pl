@@ -26,7 +26,7 @@ test_learn(NameModel,Options,OutputFile) :-
 test_learn_ecoparse_adph(OutputFile) :-
         data_learning(InputFile),
         lost_sequence_file('U00096',RawGenome),
-        run_model(ecoparse_adph,learn([InputFile,RawGenome],[data_available(no),data_number(300)],OutputFile)).
+        run_model(ecoparse_adph,learn([InputFile,RawGenome],[data_available(no),data_number(100)],OutputFile)).
 
 %----
 % logodds computation
@@ -50,7 +50,8 @@ logodds_computation(InputFile,NameModel,NameNull,OptionsModel,OptionsNull,Output
 data_learning(OutputFile) :-
         lost_sequence_file('U00096_ptt',PTTFile),
         run_model(parser_ptt,annotate([PTTFile],[],ParsedPTT)),
-        Options = [regex_no_match_extra_fields([
+        Options = [match_strands([+]),   % To avoid the problem in get_data_from_files that works only for the direct strand
+                   regex_no_match_extra_fields([
 			product("^.*(predicted|putative|unknown|possible|hypothetical|probable|bacteriophage|transposon|insertion|reverse transcriptase).*$")
                                                ])
                   ],
