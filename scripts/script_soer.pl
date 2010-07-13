@@ -3,7 +3,6 @@
 
 :- ['../lost.pl'].
 
-
 %----
 % Unit test
 %----
@@ -34,3 +33,29 @@ logodds_computation(InputFile,NameModel,NameNull,OptionsModel,OptionsNull,Output
         run_model(NameNull,annotate([InputFile],OptionsNull,OutputFile_Null)),
         run_model(logodds,annotate([OutputFile_Model,OutputFile_Null],[],OutputFile)).
                   
+
+
+
+%-----
+% Data Learning
+%-----
+
+
+% Dedicated to E.COli
+data_learning(OutputFile) :-
+        lost_sequence_file('U00096_ptt',PTTFile),
+        run_model(parser_ptt,annotate([PTTFile],[],ParsedPTT)),
+        Options = [regex_no_match_extra_fields([
+			product("^.*(predicted|putative|unknown|possible|hypothetical|probable|bacteriophage|transposon|insertion|reverse transcriptase).*$")
+                                               ])
+                  ],
+        lost_sequence_file('U00096',RawGenome),
+        run_model(gene_filter,annotate([ParsedPTT,RawGenome],Options,OutputFile)).
+        
+
+
+
+
+%----
+% Data Prediction
+%----
