@@ -8,10 +8,9 @@
 \title{Lost API documentation}
 \author{Lost Members}
 
-%\makeindex
+\makeindex
 \begin{document}
 \maketitle
-
 
 % Table of Contents
 \addcontentsline{toc}{chapter}{Table of Contents}
@@ -428,9 +427,34 @@ manipulate \texttt{*.seq} files~:
 
 \subsection{Loading information from files}
 
-\index{load\_annotation\_from\_file$\slash$ 4}
 \begin{itemize}
-\item \texttt{load\_annotation\_from\_file(++Type\_Info,++Options,++File,--Annotation)}:
+
+\item \texttt{get\_data\_from\_file(+File,+Options,-Data)}: \index{get\_data\_from\_file$\slash$3}\\
+This predicate aims at efficiency extract data (basically list of nucleotides)
+from a file with a format \texttt{text(prolog(sequence()))}. By default, we suppose
+that \textbf{File} is composed of \texttt{Term}:
+\begin{verbatim}
+Term =.. [Functor,Left,Right,Data].
+\end{verbatim}
+Several options are defined to deals with the format constraint of \texttt{File}:\
+\begin{itemize}
+\item \texttt{data\_position(Pos)} specified what is the position \texttt{Pos} in the term of data;
+\item \texttt{left\_position(Pos)} specified what is the position \texttt{Pos} in the term of the left value;
+\item \texttt{right\_position(Pos)} specified what is the position \texttt{Pos} in the term of the right value;
+\item \texttt{left\_position(none)} tells that no left position information is available in the term;
+\item \texttt{right\_position(none)} tells that no right position information is available in the term;
+\end{itemize}
+By default, the predicate extracts and collects in \texttt{Data} all the data available in \texttt{File}.
+However, two options are available to ask for partial information
+\begin{itemize}
+\item \texttt{range([Min,Max])} allows to extract data between \texttt{Min} and \texttt{Max};
+\item \texttt{ranges([[Min1,Max1],..,[Minn,Maxn]])} allows to extract a list of data defined the different ranges.  
+\end{itemize}
+Note: data extraction is made without taking care about strand specification. Then, data extracted from \texttt{ranges}
+option corresponds always to the data specified in \texttt{File}.
+
+\index{load\_annotation\_from\_file$\slash$ 4}
+\item \texttt{load\_annotation\_from\_file(++Type\_Info,++Options,++File,--Annotation)}: \\
 Generate from \texttt{File} a sequence of \texttt{Annotation}. It is assumed that \texttt{File} is composed
 of terms. \texttt{Type\_Info} is used to specify what format of information into file
 \begin{itemize}
@@ -438,6 +462,7 @@ of terms. \texttt{Type\_Info} is used to specify what format of information into
 \begin{verbatim}
 data(Key_Index,1,10,[a,t,c,c,c..]).
 \end{verbatim}
+\textbf{Note:} an improvement of the predicate (option sequence) is available via the call \texttt{get\_data\_from\_file}. \\
 \item \texttt{db} means that information is represented by a set of range that specified specific zone (coding region for example)
 \begin{verbatim}
 gb(Key_Index,1,10).
@@ -616,13 +641,44 @@ When working with large data files, it can sometimes be practical to split a lar
 file with Prolog facts into multiple files, each having a distinct subset of the facts 
 in the original file.
 The \texttt{io} API contains the predicate \texttt{split\_file/2} for doing this:
-
+\index{split\_file$\slash$ 4}
 \begin{verbatim}
 split_file(+InputFile,+FactsPerFile,
            +OutputFilePrefix, +OutputFileSuffix)
 \end{verbatim}
 
 The $n$ facts in the \texttt{InputFile} will be divided into $m = n / \texttt{FactsPerFile}$ output files. 
+
+In the same idea of split\_file/$slash$ 2, \texttt{split\_file\_fasta}/$slash$5 
+\index{split\_file\_fasta/$slash$5} divide a file in the FASTA format
+into smallest files.  
+\begin{verbatim}
+split_file_fasta(+InputFile,+FastaChunkPerFile,
+           +OutputFilePrefix, +OutputFileSuffix,-ResultFiles)
+\end{verbatim}
+The division is made given the number times that a comment line (line that starts with >)
+is met. For example, given the file
+\begin{verbatim}
+> First chunk
+ABCDEF
+> Second chunk
+GHIJKL
+> Third chunk
+....
+\end{verbatim}
+If \texttt{FastaChunkPerFile} is equals to 2,
+two files will be generated:
+\begin{verbatim}
+> First chunk
+ABCDEF
+> Second chunk
+GHIJKL
+\end{verbatim}
+and
+\begin{verbatim}
+> Third chunk
+....
+\end{verbatim}
 
 \section{The Stats API: \texttt{stats}}
 

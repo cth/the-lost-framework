@@ -416,7 +416,8 @@ check_ranges_and_update_data_rec(Val,[[_Min,Max]|Rest_Ranges],Current_Position,[
 
 %%%%%%%%%%%%%%%%%%%%%%%
 % OLD VERSION
-% load_annotation_from_file(++Type_Info,++Options,++File,--Annotation)
+
+%% load_annotation_from_file(+Type_Info,+Options,+File,-Annotation)
 %
 % Description: given some Options, generate an Annotation from a set of terms contained into File
 %
@@ -428,8 +429,20 @@ check_ranges_and_update_data_rec(Val,[[_Min,Max]|Rest_Ranges],Current_Position,[
 %                               all_lists,range(Min,Max),
 %                               range(Range)
 %                               consult]
-
 % all_lists does not support a range option
+%
+% Type: db
+% Terms in File are composed of Range that delimites a specific region.
+% Options available: Options = [in_db(Letter),not_in_db(Letter),
+%                               range_position(Position),range(Min,Max)]
+% Note: assumption is done on the format of the database. Information is extracted from a list
+% of terms that have a parameter Range to describe a specific region of the genome.
+% By defaut, annotation of the specific region is 1 and 0 when the region is not specific.
+%
+%%%%%%%%%%%%%%%%%%%%%
+
+
+% Type sequence
 %%%%%%%%%
 load_annotation_from_file(sequence,Options,File,Annotation) :-
         (\+ member(consult)),
@@ -444,20 +457,8 @@ load_annotation_from_file(sequence,Options,File,Annotation) :-
 
 
 
-
-
-%%%%%%%%%%%%%%%%%%%%
-% Type: db
-% Terms in File are composed of Range that delimites a specific region.
-% Options available: Options = [in_db(Letter),not_in_db(Letter),
-%                               range_position(Position),range(Min,Max)]
-% Note: assumption is done on the format of the database. Information is extracted from a list
-% of terms that have a parameter Range to describe a specific region of the genome.
-% By defaut, annotation of the specific region is 1 and 0 when the region is not specific.
-%
-%%%%%%%%%%%%%%%%%%%%%
-
-
+% Type db
+%%%%%%%
 load_annotation_from_file(db,Options,File,Annotation) :-
         member(term(Terms),Options),
         !,
