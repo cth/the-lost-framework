@@ -109,7 +109,7 @@ compute_and_save_annotations(Stream,[[Data,Key,Left,Right,Strand,Frame]|Rest_Dat
                      ),
         
         Term =.. [annotation_ecoparse_adph,Key,Left,Right,Strand,Frame,[probability(Proba),viterbi_probability(VProba)]],
-        write(Stream,Term),
+        writeq(Stream,Term),
         write(Stream,'.'),
         nl(Stream),
         compute_and_save_annotations(Stream,Rest_Data).

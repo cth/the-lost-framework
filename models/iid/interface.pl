@@ -65,7 +65,7 @@ compute_and_save_annotations(Stream,[[Data,Key,Left,Right,Strand,Frame]|Rest_Dat
                       error(viterbi_computation_iid)
                      ),
         Term =.. [viterbi_iid,Key,Left,Right,Strand,Frame,[viterbi_probability(Proba)]],
-        write(Stream,Term),
+        writeq(Stream,Term),
         write(Stream,'.'),
         nl(Stream),
         compute_and_save_annotations(Stream,Rest_Data).
