@@ -1,0 +1,37 @@
+% mc_adph.psm
+% S/ren M/rk
+% 100705
+
+
+% 1st order markov chain like model with emissions over ACGT
+
+data('~/data/training/u00096mv.dat').
+
+:-['~/settings/default.pl'].
+
+% parameters:
+values(emission(_,p),[a,c,g,t]).
+values(transition(p),[s,g]).
+
+values(next(p,1,s),[s(p,1)]).
+values(next(p,1,g),[s(p,2)]).
+values(next(p,2,s),[s(p,2)]).
+values(next(p,2,g),[s(p,3)]).
+values(next(p,3,s),[s(p,3)]).
+values(next(p,3,g),[end]).
+
+% termination:
+recursion(end,_,[]).
+
+% initiation:
+model(Obs):-
+        recursion(s(p,1),s,Obs).
+
+recursion(s(S,P),P1,[Xi|R]):-
+        msw(emission(P1,S),Xi),
+        msw(transition(S),SG),
+        msw(next(S,P,SG),N),
+        recursion(N,Xi,R).
+
+
+

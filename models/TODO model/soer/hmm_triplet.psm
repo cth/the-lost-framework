@@ -1,0 +1,29 @@
+% hmm_triplet.psm
+% S/ren M/rk
+% 100518
+
+
+data('../data/training/k12_p_rcmvmRNAs.dat')
+
+% parameters:
+values(transition(begin), [state(1)]).
+values(transition(state(1)),[state(2)]). 
+values(transition(state(2)),[state(3)]). 
+values(transition(state(3)),[state(1),end]).
+
+values(emission(state(1)), [a,c,g,t]).
+values(emission(state(2)), [a,c,g,t]).
+values(emission(state(3)), [a,c,g,t]).
+
+model(O):-
+   msw(transition(begin),S),
+   parse(S,O).
+
+parse(end,[]):-!.
+
+parse(state(H),[Xi|R]):-
+   msw(emission(state(H)),Xi),
+   msw(transition(state(H)),N),
+   parse(N,R).
+
+

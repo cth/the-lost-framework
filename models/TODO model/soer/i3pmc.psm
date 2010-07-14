@@ -1,0 +1,35 @@
+% i3pmc.psm
+% S/ren M/rk
+% 100705
+
+
+% inhomogeneous 3 periodic  markov chain like model with emissions over ACGT
+
+data('~/data/training/u00096mv.dat').
+
+:-['~/settings/default.pl'].
+
+% parameters:
+values(emission(state),[a,c,g,t]).
+values(emission(state,_),[a,c,g,t]).
+values(emission(state,_,_),[a,c,g,t]).
+
+values(transition(begin),[state]).
+values(transition(state),[state,end]).
+
+% termination:
+recursion(end,[]).
+
+% initiation:
+model(Obs):-
+        recursion(state,Obs).
+
+recursion(state,[Xi|[Yi|[Zi|R]]]):-
+        msw(emission(state),Xi),
+        msw(emission(state,Xi),Yi),
+        msw(emission(state,Xi,Yi),Zi),
+        msw(transition(state),N),
+        recursion(N,R).
+
+
+

@@ -1,0 +1,168 @@
+:- set_prism_flag(scaling,log_exp).
+
+:- set_prism_flag(learn_mode,both).
+
+:- set_prism_flag(log_viterbi,on).
+
+values(begin, [nc,start]).
+
+values(trans(nc), [nc,start,end]).
+
+values(trans(start), [c]).
+
+values(trans(c,0), [stop]) :- !.
+
+values(trans(c,A), [c]) :-
+        A>0, !.
+
+values(trans(stop), [end]).
+
+values(emit(nc), [a,c,g,t]).
+
+values(emit(start), [[t,t,g],[c,t,g],[a,t,t],[a,t,c],[a,t,a],[a,t,g],[g,t,g]]).
+
+values(emit(stop), [[t,a,a],[t,g,a],[t,a,g]]).
+
+values(emit(c), A) :-
+        get_list_codons(A).
+
+values(duration(A), B) :-
+        get_domain(A, B), !.
+
+get_list_codons(A) :-
+        A=[[a,a,a],[a,a,t],[a,a,c],[a,a,g],[a,t,a],[a,t,t],[a,t,c],[a,t,g],[a,c,a],[a,c,t],[a,c,c],[a,c,g],[a,g,a],[a,g,t],[a,g,c],[a,g,g],[t,a,t],[t,a,c],[t,t,a],[t,t,t],[t,t,c],[t,t,g],[t,c,a],[t,c,t],[t,c,c],[t,c,g],[t,g,t],[t,g,c],[t,g,g],[c,a,a],[c,a,t],[c,a,c],[c,a,g],[c,t,a],[c,t,t],[c,t,c],[c,t,g],[c,c,a],[c,c,t],[c,c,c],[c,c,g],[c,g,a],[c,g,t],[c,g,c],[c,g,g],[g,a,a],[g,a,t],[g,a,c],[g,a,g],[g,t,a],[g,t,t],[g,t,c],[g,t,g],[g,c,a],[g,c,t],[g,c,c],[g,c,g],[g,g,a],[g,g,t],[g,g,c],[g,g,g]].
+
+hmm_length(A, B) :-
+        msw(begin, C),
+        set_params(B),
+        write(test),
+        nl, !,
+        hmm_length_rec(C, B, _, A).
+
+hmm_length_rec(A, _, _, []) :-
+        A=end, !.
+
+hmm_length_rec(A, B, C, [D,E,F]) :-
+        A=stop, !,
+        msw(emit(A), [D,E,F]),
+        msw(trans(A), G),
+        hmm_length_rec(G, B, C, []).
+
+hmm_length_rec(A, B, C, [D,E,F|G]) :-
+        A=start, !,
+        msw(emit(A), [D,E,F]),
+        msw(duration(B), C),
+        H is C-1,
+        msw(trans(A), I),
+        hmm_length_rec(I, B, H, G).
+
+hmm_length_rec(A, B, C, [D,E,F|G]) :-
+        A=c, !,
+        msw(emit(A), [D,E,F]),
+        msw(trans(A,C), H),
+        I is C-1,
+        hmm_length_rec(H, B, I, G).
+
+hmm_length_rec(A, B, [C|D]) :-
+        A=nc, !,
+        msw(emit(A), C),
+        msw(trans(A), E),
+        hmm_length_rec(E, B, D).
+
+get_epsilon(0.000001).
+
+set_params(A) :-
+        compute_domain_smooth(A, B),
+        normalize(length, B, [([],_,C)]),
+        fix_sw(duration(A), C).
+
+compute_domain(A, B) :-
+        stats_length(A, C),
+        compute_domain_rec(C, 1, B).
+
+compute_domain_rec([], _, []) :- !.
+
+compute_domain_rec([(A,B)|C], D, [(E,B)|F]) :-
+        E is A//3,
+        D=E, !,
+        G is D+1,
+        compute_domain_rec(C, G, F).
+
+compute_domain_rec([(A,B)|C], D, [(D,E)|F]) :- !,
+        get_epsilon(E),
+        G is D+1,
+        compute_domain_rec([(A,B)|C], G, F).
+
+compute_domain_smooth(A, B) :-
+        stats_length(A, []), !,
+        B=[].
+
+compute_domain_smooth(range([A,B]), [(C,D)|E]) :- !,
+        stats_length(range([A,B]), [(F,G)|H]),
+        C is ceiling(A/3),
+        I is F//3,
+        (   C==I ->
+            G=D,
+            J=[C,G],
+            write(get_right(H,K)),
+            nl,
+            get_right(H, K),
+            write(K),
+            nl,
+            L=H
+        ;   L=[(F,G)|H],
+            D=0,
+            J=[C,D],
+            K=[I,G]
+        ),
+        M is C+1,
+        write(J),
+        write('-'),
+        write(K),
+        nl,
+        write(L),
+        nl,
+        compute_domain_smooth_rec(L, M, J, K, E).
+
+compute_domain_smooth(A, [(1,B)|C]) :-
+        stats_length(A, [(D,E)|F]),
+        G is D//3,
+        (   G==1 ->
+            E=B,
+            H=[1,E],
+            get_right(F, I),
+            J=F
+        ;   J=[(D,E)|F],
+            B=0,
+            H=[1,B],
+            I=[G,E]
+        ),
+        compute_domain_smooth_rec(J, 2, H, I, C).
+
+compute_domain_smooth_rec([], _, _, _, []) :- !.
+
+compute_domain_smooth_rec([(A,B)|C], D, _, E, [(F,B)|G]) :-
+        F is A//3,
+        F==D, !,
+        H is D+1,
+        get_right(C, I),
+        write(E),
+        write('-'),
+        write(I),
+        nl,
+        compute_domain_smooth_rec(C, H, E, I, G).
+
+compute_domain_smooth_rec(A, B, [C,D], [E,F], [(B,G)|H]) :-
+        I is C-E,
+        write(I),
+        nl,
+        G is(D-F)/I*B+(C*F-E*D)/I,
+        J is B+1,
+        compute_domain_smooth_rec(A, J, [C,D], [E,F], H).
+
+get_right([], _) :- !.
+
+get_right([(A,B)|_], [C,B]) :- !,
+        C is A//3.
+
+

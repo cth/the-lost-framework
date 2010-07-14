@@ -1,0 +1,52 @@
+% codon.psm
+% S/ren M/rk
+% 091126
+% triplet_emissions...
+
+:-[~/settings/defaull.pl'].
+
+
+data('~/data/training/u00096mv.dat').
+
+
+%transition probabilities:
+values(transition(begin),[state]).
+values(transition(state), [state, end]).
+
+values(emission(state),[
+                                (a,a,a),(c,a,a),(g,a,a),(t,a,a),
+                                (a,c,a),(c,c,a),(g,c,a),(t,c,a),
+                                (a,g,a),(c,g,a),(g,g,a),(t,g,a),
+                                (a,t,a),(c,t,a),(g,t,a),(t,t,a),
+
+                                (a,a,c),(c,a,c),(g,a,c),(t,a,c),
+                                (a,c,c),(c,c,c),(g,c,c),(t,c,c),
+                                (a,g,c),(c,g,c),(g,g,c),(t,g,c),
+                                (a,t,c),(c,t,c),(g,t,c),(t,t,c),
+
+                                (a,a,g),(c,a,g),(g,a,g),(t,a,g),
+                                (a,c,g),(c,c,g),(g,c,g),(t,c,g),
+                                (a,g,g),(c,g,g),(g,g,g),(t,g,g),
+                                (a,t,g),(c,t,g),(g,t,g),(t,t,g),
+
+                                (a,a,t),(c,a,t),(g,a,t),(t,a,t),
+                                (a,c,t),(c,c,t),(g,c,t),(t,c,t),
+                                (a,g,t),(c,g,t),(g,g,t),(t,g,t),
+                                (a,t,t),(c,t,t),(g,t,t),(t,t,t)
+                                ]).
+
+
+% Initiation:
+model(O):-
+   msw(transition(begin),S),
+   recursion(S,O).
+
+recursion(end,[]):-!.
+
+recursion(state,[X|[Y|[Z|R]]]):-
+   msw(emission(state),(X,Y,Z)),
+   msw(transition(state),N),
+   recursion(N,R).
+
+
+

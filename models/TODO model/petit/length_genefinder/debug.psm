@@ -1,0 +1,12 @@
+debug_lost :-
+        ['../../lost.pl'],
+        lost_include_api(autoAnnotations),
+        lost_include_api(interface),
+        lost_include_api(io),
+        lost_include_api(stats),
+        lost_include_api(chmm),
+        consult('./data/domain_U00096.pl'),
+        consult('./data/stats_length_U00096.pl').
+
+
+
