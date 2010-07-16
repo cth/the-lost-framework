@@ -1,4 +1,4 @@
-/**<module> Module for the computation of statistics for data
+/** <module> Module for the computation of statistics for data
 
  NOM ET VERSION :
 
@@ -17,8 +17,8 @@
 :- lost_include_api(interface).
 
 
-%% stats(+Data_Type,+Options,+Data,?Result)
-%% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,?Result)
+%% stats(+Data_Type,+Options,+Data,-Result)
+%% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,-Result)
 %
 % Computation of statistics given a set of Data
 %
