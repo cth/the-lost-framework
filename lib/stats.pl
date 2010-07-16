@@ -14,9 +14,11 @@
 %
 %%%%
 
+:- lost_include_api(interface).
 
-%% stats(+Data_Type,+Options,+Data,??Result).
-%% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,??Result).
+
+%% stats(+Data_Type,+Options,+Data,?Result)
+%% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,?Result)
 %% stats(length,+Ranges,-Result)
 %
 % Computation of statistics given a set of Data
@@ -26,7 +28,7 @@
 % List of AminoAcids for Amino stats
 % List of Ranges for Length stats computation
 % Option = Order
-:- lost_include_api(interface).
+
 
 
 % Type nucleotide, codon, amino_acid

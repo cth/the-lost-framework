@@ -414,14 +414,11 @@ check_ranges_and_update_data_rec(Val,[[_Min,Max]|Rest_Ranges],Current_Position,[
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%
-% OLD VERSION
-
 %% load_annotation_from_file(+Type_Info,+Options,+File,-Annotation)
 %
 % Description: given some Options, generate an Annotation from a set of terms contained into File
 %
-%%%%%%%%%%%%%%%%%%%%%%%%
+%
 % Type_Info: sequence
 % Terms in File are composed of List of data.
 % Annotation is a list
@@ -439,7 +436,7 @@ check_ranges_and_update_data_rec(Val,[[_Min,Max]|Rest_Ranges],Current_Position,[
 % of terms that have a parameter Range to describe a specific region of the genome.
 % By defaut, annotation of the specific region is 1 and 0 when the region is not specific.
 %
-%%%%%%%%%%%%%%%%%%%%%
+
 
 
 % Type sequence
