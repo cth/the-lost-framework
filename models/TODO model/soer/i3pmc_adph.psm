@@ -1,0 +1,43 @@
+% i3pmc_adph.psm
+% S/ren M/rk
+% 100705
+
+
+% inhomogeneous 3 periodic  markov chain like model with emissions over ACGT
+% with ADPH lenght modeling
+
+data('~/data/training/u00096mv.dat').
+
+:-['~/settings/default.pl'].
+
+% parameters:
+values(emission(p),[a,c,g,t]).
+values(emission(_,p),[a,c,g,t]).
+values(emission(_,_,p),[a,c,g,t]).
+
+values(transition(p),[s,g]).
+
+values(next(p,1,s),[s(p,1)]).
+values(next(p,1,g),[s(p,2)]).
+values(next(p,2,s),[s(p,2)]).
+values(next(p,2,g),[s(p,3)]).
+values(next(p,3,s),[s(p,3)]).
+values(next(p,3,g),[end]).
+
+% termination:
+recursion(end,[]).
+
+% initiation:
+model(Obs):-
+        recursion(s(p,1),Obs).
+
+recursion(s(S,P),[Xi|[Yi|[Zi|R]]]):-
+        msw(emission(S),Xi),
+        msw(emission(Xi,S),Yi),
+        msw(emission(Xi,Yi,S),Zi),
+        msw(transition(S),SG),
+        msw(next(S,P,SG),N),
+        recursion(N,R).
+
+
+

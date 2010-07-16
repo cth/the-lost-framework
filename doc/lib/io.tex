@@ -6,3 +6,58 @@
 \section{io.pl}
 
 \label{sec:io}
+
+\begin{description}
+    \predicate{get_data_from_file}{3}{+File, +Options, -Data}
+Description: given of file composed of prolog facts,
+this predicate generates a list of data given some options
+By default, data predicate is in the form:
+Functor(Key,LeftPosition,RightPosition,\arg{Data},...)
+Type of \arg{Data} is a list
+
+\arg{Options}: - data_position(Pos) specified in which Pos \arg{Data} is
+
+\begin{itemize}
+    \item left_position(Left) specified in which Pos Leftposition is
+    \item right_position(Righ) specified in which Pos Rightposition is
+    \item left_position(none) = no left position in the term
+    \item right_position(none) = no right position in the term
+    \item range(Min,Max): extract a range of data
+    \item ranges(List_Ranges): extract a list of data given a list of Range
+\end{itemize}
+
+    \predicate{load_annotation_from_file}{4}{+Type_Info, +Options, +File, -Annotation}
+Description: given some \arg{Options}, generate an \arg{Annotation} from a set of terms contained into \arg{File}
+
+\begin{center}
+\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%
+\arg{Type_Info}: sequence
+Terms in \arg{File} are composed of List of data.
+\arg{Annotation} is a list
+\arg{Options} available: \arg{Options} = [data_position(Position),
+all_lists,range(Min,Max),
+range(Range)
+consult]
+all_lists does not support a range option
+\end{center}
+
+\begin{center}
+Type: db
+Terms in \arg{File} are composed of Range that delimites a specific region.
+\arg{Options} available: \arg{Options} = [in_db(Letter),not_in_db(Letter),
+range_position(Position),range(Min,Max)]
+Note: assumption is done on the format of the database. Information is extracted from a list
+of terms that have a parameter Range to describe a specific region of the genome.
+By defaut, annotation of the specific region is 1 and 0 when the region is not specific.
+\end{center}
+
+\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%
+
+    \predicate{split_file}{4}{+Filename, +ChunkSize, +OutputFilePrefix, +OutputFileSuffix}
+Split a file of terms into multiple files
+
+    \predicate{split_file_fasta}{5}{+Filename, +ChunkSize, +OutputFilePrefix, +OutputFileSuffix, -ResultFiles}
+Split a FASTA composed of several header ($>$ ...) into multiple files. We consider that a chunk
+has been seen each time that the symbol $>$ appears at the beginning of a line
+\end{description}
+

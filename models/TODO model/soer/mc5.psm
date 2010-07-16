@@ -1,0 +1,29 @@
+% mc5.psm
+% S/ren M/rk
+% 100518
+
+
+% 5th order markov chain like model with emissions over ACGT
+
+:-['~/settings/default.pl'].
+
+
+data('~/data/training/u00096mv.dat').
+
+% parameters:
+values(transition(begin),[state]).
+values(transition(state), [state, end]).
+values(emission(_,_,_,_,_,state),[a,c,g,t]).
+
+model(O):-
+   msw(transition(begin),S),
+   recursion(S,s,s,s,s,s,O).
+
+recursion(end,_,_,_,_,_,[]):-!.
+
+recursion(state,P5,P4,P3,P2,P,[Xi|R]):-
+   msw(emission(P5,P4,P3,P2,P,state),Xi),
+   msw(transition(state),N),
+   recursion(N,P4,P3,P2,P,Xi,R).
+
+

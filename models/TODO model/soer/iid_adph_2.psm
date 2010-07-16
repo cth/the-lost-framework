@@ -1,0 +1,42 @@
+% iid_adph_2.psm
+% from iid_adph.psm
+% S/ren M/rk
+% 100614
+
+% an iid model
+% with Kroghish lenght modeling...
+% "stay or go now?"= same probs
+% as lenght corrected null model... 
+% now with multiple forward conncetions...but no backward...
+
+:-['~/settings/default.pl'].
+
+
+data('~/data/training/k12_p_rcmvmRNAs.dat').
+
+% parameters:
+
+values(emission(p),[a,c,g,t]).
+
+values(transition(p),[s,g]).
+
+values(next(p,1,s),[s(p,1)]).
+values(next(p,1,g),[s(p,2),s(p,3),end]).
+values(next(p,2,s),[s(p,2)]).
+values(next(p,2,g),[s(p,3),end]).
+values(next(p,3,s),[s(p,3)]).
+values(next(p,3,g),[end]).
+
+% termination:
+recursion(end,[]):-!.
+
+recursion(s(S,P),[W|R]):-
+        msw(emission(S),W),
+        msw(transition(S),SG),
+        msw(next(S,P,SG),N),
+        recursion(N,R).
+
+% initiation:
+model(Obs):-
+        recursion(s(p,1),Obs).
+

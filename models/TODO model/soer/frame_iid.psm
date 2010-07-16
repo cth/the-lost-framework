@@ -1,0 +1,60 @@
+% frame_iid.psm
+% S/ren M/rk
+% 100517
+% from frame_f.psm
+
+% only plus strand...
+% emits triplets: 1st,2nd,3rd order...
+% transits on triplest (here only to exit...)
+% starts in 1
+% no HO
+
+data('~/data/sim/sim_ORF_99999.dat').
+%data%('../data/training/k12_p_rcmvmRNAs.dat')
+
+% parameters:
+values(emission(_,_,_),[a,c,g,t]).
+values(emission(_,_),[a,c,g,t]).
+values(emission(_),[a,c,g,t]).
+
+values(transition(begin),[s(i),iid]).
+
+values(transition(i,a,t,g),[s(p),s(i)]).
+values(transition(i,c,t,g),[s(p),s(i)]).
+values(transition(i,g,t,g),[s(p),s(i)]).
+values(transition(i,t,t,g),[s(p),s(i)]).
+values(transition(i,_,_,_),[s(i)]).
+
+values(transition(p,t,a,a),[end]).
+values(transition(p,t,a,g),[end]).
+values(transition(p,t,g,a),[end]).
+values(transition(p,_,_,_),[s(p)]).
+
+% termination:
+recursion(end,[]).
+
+% recursion:
+recursion(s(P),[Q|[V|[W|R]]]):-
+        msw(emission(P),Q),
+        msw(emission(P,Q),V),
+        msw(emission(P,Q,V),W),
+        msw(transition(P,Q,V,W),N1),
+        recursion(N1,R).
+
+% initiation:
+model(Obs):-
+        msw(transition(begin),B),
+        recursion(B,Obs).
+
+
+% iid_raw: for concatenation as null...
+
+values(transition(iid), [iid, end]).
+values(emission(iid),[a,c,g,t]).
+
+recursion(iid,[Xi|R]):-
+   msw(emission(iid),Xi),
+   msw(transition(iid),N),
+   recursion(N,R).
+
+

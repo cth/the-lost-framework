@@ -8,10 +8,9 @@
 \title{Lost API documentation}
 \author{Lost Members}
 
-%\makeindex
+\makeindex
 \begin{document}
 \maketitle
-
 
 % Table of Contents
 \addcontentsline{toc}{chapter}{Table of Contents}
@@ -428,9 +427,34 @@ manipulate \texttt{*.seq} files~:
 
 \subsection{Loading information from files}
 
-\index{load\_annotation\_from\_file$\slash$ 4}
 \begin{itemize}
-\item \texttt{load\_annotation\_from\_file(++Type\_Info,++Options,++File,--Annotation)}:
+
+\item \texttt{get\_data\_from\_file(+File,+Options,-Data)}: \index{get\_data\_from\_file$\slash$3}\\
+This predicate aims at efficiency extract data (basically list of nucleotides)
+from a file with a format \texttt{text(prolog(sequence()))}. By default, we suppose
+that \textbf{File} is composed of \texttt{Term}:
+\begin{verbatim}
+Term =.. [Functor,Left,Right,Data].
+\end{verbatim}
+Several options are defined to deals with the format constraint of \texttt{File}:\
+\begin{itemize}
+\item \texttt{data\_position(Pos)} specified what is the position \texttt{Pos} in the term of data;
+\item \texttt{left\_position(Pos)} specified what is the position \texttt{Pos} in the term of the left value;
+\item \texttt{right\_position(Pos)} specified what is the position \texttt{Pos} in the term of the right value;
+\item \texttt{left\_position(none)} tells that no left position information is available in the term;
+\item \texttt{right\_position(none)} tells that no right position information is available in the term;
+\end{itemize}
+By default, the predicate extracts and collects in \texttt{Data} all the data available in \texttt{File}.
+However, two options are available to ask for partial information
+\begin{itemize}
+\item \texttt{range([Min,Max])} allows to extract data between \texttt{Min} and \texttt{Max};
+\item \texttt{ranges([[Min1,Max1],..,[Minn,Maxn]])} allows to extract a list of data defined the different ranges.  
+\end{itemize}
+Note: data extraction is made without taking care about strand specification. Then, data extracted from \texttt{ranges}
+option corresponds always to the data specified in \texttt{File}.
+
+\index{load\_annotation\_from\_file$\slash$ 4}
+\item \texttt{load\_annotation\_from\_file(++Type\_Info,++Options,++File,--Annotation)}: \\
 Generate from \texttt{File} a sequence of \texttt{Annotation}. It is assumed that \texttt{File} is composed
 of terms. \texttt{Type\_Info} is used to specify what format of information into file
 \begin{itemize}
@@ -438,6 +462,7 @@ of terms. \texttt{Type\_Info} is used to specify what format of information into
 \begin{verbatim}
 data(Key_Index,1,10,[a,t,c,c,c..]).
 \end{verbatim}
+\textbf{Note:} an improvement of the predicate (option sequence) is available via the call \texttt{get\_data\_from\_file}. \\
 \item \texttt{db} means that information is represented by a set of range that specified specific zone (coding region for example)
 \begin{verbatim}
 gb(Key_Index,1,10).
@@ -616,13 +641,44 @@ When working with large data files, it can sometimes be practical to split a lar
 file with Prolog facts into multiple files, each having a distinct subset of the facts 
 in the original file.
 The \texttt{io} API contains the predicate \texttt{split\_file/2} for doing this:
-
+\index{split\_file$\slash$ 4}
 \begin{verbatim}
 split_file(+InputFile,+FactsPerFile,
            +OutputFilePrefix, +OutputFileSuffix)
 \end{verbatim}
 
 The $n$ facts in the \texttt{InputFile} will be divided into $m = n / \texttt{FactsPerFile}$ output files. 
+
+In the same idea of split\_file/$slash$ 2, \texttt{split\_file\_fasta}/$slash$5 
+\index{split\_file\_fasta/$slash$5} divide a file in the FASTA format
+into smallest files.  
+\begin{verbatim}
+split_file_fasta(+InputFile,+FastaChunkPerFile,
+           +OutputFilePrefix, +OutputFileSuffix,-ResultFiles)
+\end{verbatim}
+The division is made given the number times that a comment line (line that starts with >)
+is met. For example, given the file
+\begin{verbatim}
+> First chunk
+ABCDEF
+> Second chunk
+GHIJKL
+> Third chunk
+....
+\end{verbatim}
+If \texttt{FastaChunkPerFile} is equals to 2,
+two files will be generated:
+\begin{verbatim}
+> First chunk
+ABCDEF
+> Second chunk
+GHIJKL
+\end{verbatim}
+and
+\begin{verbatim}
+> Third chunk
+....
+\end{verbatim}
 
 \section{The Stats API: \texttt{stats}}
 
@@ -912,7 +968,10 @@ genome information (Genbank key and size of genome).
 
 Output format of the generated terms are:\\
 \texttt{data(Genebank\_Key,Start,End,List\_of\_Data)}.
-Option \texttt{list(Number)} can be used to divide the complete
+
+Two options are available:
+\begin{itemize}
+\item \texttt{list(Number)} can be used to divide the complete
 genome into several lists with a length defined by the parameter
 \texttt{Number}.
 Example with the E.Coli K12 genome:
@@ -933,6 +992,8 @@ data('U00096',1,280,[a,g,c,t,...]).
 data('U00096',281,560,[c,c,c,...]).
 ....
 \end{verbatim}
+\item \texttt{range([Min,Max])} allows to ask for the part of the genome between \texttt{Min} and \texttt{Max}.
+\end{itemize}
 
 \subsection{Parser\_ptt}
 
@@ -945,11 +1006,14 @@ product. The \texttt{parser\_ptt} model parses PTT files and generates
 a Prolog term in the output file for each gene in the input (ptt) file.
 We use the format identifier, \texttt{text(ptt)}, for PTT files, which
 is also the input format of \texttt{parser\_ptt}. The output format is
-\texttt{text(prolog(ranges(gene)))}. The model does not declare any options.
+\texttt{text(prolog(ranges(gene)))}. 
+
+As this information is not available in the PTT file,
+option \texttt{genome\_key} should be used to give the Genbank key of the genome.
 
 \medskip
 \noindent
-Consider the following extract of a PTT file:
+Consider the following extract of a PTT file of E.Coli K12 (GeneBank U00096):
 \begin{verbatim}
 Location	Strand	Length	PID	Gene	Synonym	Code	COG	Product
 190..255	+	21	1786182	thrL	b0001	- - thr operon leader peptide
@@ -960,7 +1024,7 @@ individual fields, but the second is an entry for a particular gene.
 The corresponding Prolog term generated by the parser for this gene is
 then
 \begin{verbatim}
-gb(190,255,'+',1,[
+gb(U00096,190,255,'+',1,[
     gene_name(thrL),length(21),pid(1786182),
     synonym(b0001),code('-'),cog('-'),
     product('thr operon leader peptide')]
@@ -968,7 +1032,7 @@ gb(190,255,'+',1,[
 \end{verbatim}
 
 \noindent
-Additionaly, the file \texttt{\$SCRIPTS/script\_parser.pl} implements two helper
+Additionally, the file \texttt{\$SCRIPTS/script\_parser.pl} implements two helper
 predicates to make it easy to use this parser:\\ 
 \texttt{parser\_ptt(++Name\_PTT\_File)}\index{parser\_ptt$\slash$1} and \\
 \texttt{parser\_ptt(++Name\_PTT\_File,,--OutputFile)}\index{parser\_ptt$\slash$2}.
@@ -997,7 +1061,81 @@ Two scripts are implemented:\\
 \subsection{Parser\_Blast}
 
 This parser translated into Prolog terms the XML report of Tblastn. The parser generates fact for
-each hits detected of the XML report. 
+each hits detected of the XML report. Result of the parser has the following format:
+\begin{verbatim}
+blast(Blast_Output_Query_Def,Hit_Accession,Hsp_info)
+	Hsp_info:
+     [Hsp_bit_score
+     Hsp_score
+     Hsp_evalue
+     Hsp_query_from
+     Hsp_query_to
+     Hsp_hit_from
+     Hsp_hit_to
+     Hsp_pattern-from?
+     Hsp_pattern-to?
+     Hsp_query_frame?
+     Hsp_hit_frame?
+     Hsp_identity?
+     Hsp_positive?
+     Hsp_gaps?
+     Hsp_positive?
+     Hsp_align-len?
+     Hsp_density?
+     Hsp_qseq
+     Hsp_hseq
+     Hsp_midline]
+\end{verbatim}
+
+\section{Data generation and manipulation}
+
+In this section, several models used for data generation and manipulation are presented.
+
+\subsection{genebank\_annotator}
+
+This models is used to produce an annotation of all the ORFs result from \texttt{orf\_chopper} model (see subsection \ref{sec:orfchopper}).
+This annotation is produced given the golden annotation available in the PTT file of Genebank.
+The model takes then as input a file composed of chunk of the genome and a parsed PTT file
+and generated a file with a format \texttt{prolog(sequence(ranges))}. 
+Format of the terms that compose this file is:
+\begin{verbatim}
+Term=.. [genebank_annotation,Key,Left,Right,Strand,Frame,Extra_Info]
+\end{verbatim}
+\verb+Extra_Info+ includes \texttt{seq\_annotation(Annotation)} 
+where annotation of the ORF is composed of 0 or 1 given if the nucleotide
+of ORF is a non-coding or coding given GeneBank. Note that annotation is
+not reversed. That means that coding ORF of the reverse strand starts with 1s.
+
+Note: a script to use the model is available in \texttt{\$LOST/scripts/consorf.pl}. 
+
+\subsection{orf\_chopper}\label{sec:orfchopper}
+
+Description to be done by Ole.
+
+Two options are available to ask for specific length for ORFs: \texttt{minimal\_length} and \texttt{maximal\_length}.
+By default, \texttt{minimal\_length} (resp. \texttt{maximal\_length}) options is set to \texttt{undefined}.
+If a value \texttt{Min} (resp. \texttt{Max}) is given, all the ORF with a length less (resp. greater) or equal
+to \texttt{Min} (resp. \texttt{Max}) are removed.
+
+Note: a script to use the model is available in \texttt{\$LOST/scripts/consorf.pl}. 
+
+\subsection{orf\_annotator}
+
+This model is used to produce an annotation of ORFs computed by \texttt{orf\_chopper }.
+Format of the output is prolog(sequence(ranges)). 
+\begin{verbatim}
+Term=.. [orf_annotation,Key,Left,Right,Strand,Frame,Extra_Info]
+\end{verbatim}
+\verb+Extra_Info+ includes \texttt{seq\_annotation(Annotation)} 
+where annotation of the ORF is represented as follows:
+\begin{itemize}
+\item a dot represents a nucleotide outside  a potential coding region;
+\item a minus represents a nucleotide inside  a potential coding region;
+\item $<,<,<$ represents a potential start codon;
+\item $>,>,>$ represents a potential stop codon.
+\end{itemize}
+
+Note: a script to use the model is available in \texttt{\$LOST/scripts/consorf.pl}. 
 
 
 \section{Models for measurement and statistical reports}
@@ -1210,6 +1348,22 @@ If set to \texttt{yes}, this
  only the otherwise non-filtered results are filtered.
 \end{itemize}
 
+\section{Implementation of well-known HMM architecture}
+
+\subsection{genemark\_genefinder}
+
+This models implements the architecture of HMM described in \cite{SMC99}.
+Thanks to PRISM, two parameters can be set to specify
+the number of codons with a specific frequency after the start codon
+and the number codons with a specific frequency after the start codon.
+Note that these parameters encoded in the PRISM program. However, it
+is possible to define as an option of the model (Not done).
+
+\subsection{hein\_genefinder}
+
+This models implements the architecture of HMM described in \cite{CH06}.
+This model has been used to detect overlap genes in viral genome.
+
 \section{Model that integrate other programs}
 
 \subsection{Genemark}
@@ -1219,6 +1373,58 @@ To be documented...
 \subsection{Glimmer3}
 
 To be documented...
+
+\section{Prediction of Stop codons (Søren Mørk models)}
+
+In this section, we describe several models used for the prediction of stop
+codons. Some scripts available via \$LOST/scripts/script\_soer.pl
+can be used to play with this models
+
+
+
+\subsection{ecoparse\_adph}
+
+This model is a possible model for a coding region.  The model
+is HMM for a coding region that models essentially the Ecoparse Model with a ADPH length modeling.
+
+Annotation process for this models allows associating a set of data with the Viterbi probability
+and the probability to observe a sequence of data.
+Output format of the file is \texttt{prolog(range((genes)))}.
+Terms of this file have the following format
+\begin{verbatim}
+ Term =.. [annotation_ecoparse_adph,Key,Left,Right,Strand,Frame,
+                   [probability(Proba),viterbi_probability(VProba)]]
+\end{verbatim}
+
+Learning process for this models allows to set the parameter of the models
+given a specification of data (\texttt{prolog(range((genes)))}) and
+a raw genome (\texttt{prolog(sequence())}). See \texttt{interface.pl} 
+to see options available.
+
+\subsection{logodds}
+
+Given the computation of Viterbi for a Null model and a model, this simple model
+permits to collapse the result of the two predictions and compute the logodds
+probability for each prediction.
+Output format of the file is \texttt{prolog(range((genes)))}.
+Terms of this file have the following format
+\begin{verbatim}
+Term =.. [Functor_HMM,Key,Left,Right,Strand,Frame,[logodds(LogOdds)|Extra_Term_HMM]],
+\end{verbatim}
+
+\subsection{iid}
+
+This model is used as null model for the computation
+of logodds. It is a simple Markov chain that emits a nucleotide.
+
+Annotation predicate for this models
+allows associating a set of data with the Viterbi probability.
+Output format of the file is \texttt{prolog(range((genes)))}.
+Terms of this file have the following format
+\begin{verbatim}
+Term =.. [viterbi_iid,Key,Left,Right,Strand,Frame,
+                         [viterbi_probability(Proba)]].
+\end{verbatim}
 
 \section{Various models}
 
@@ -1272,6 +1478,21 @@ The model take a number of options:
   and stop codon needs to match. If the value is set to \texttt{stop}
   then only the stop codon needs to match.
 \end{itemize}
+
+
+\section{TODO Model}
+
+\subsection{soer}
+
+Copy paste of *.psm files + usefull files: default.pl and a data file.
+
+\subsection{petit}
+In this repertory, I put two models not included yet in the framework. My Easygene implementation, and length genefinder model.
+I did not have time to finish the second model. The idea of this model is to have a coding region model that
+only looks for gene with a specific length represented by a range. Beside, I expect that the codon frequencies
+differ if we look  for gene with a length 200-400 or 2000-2200 for example.
+
+
 
 \chapter{File formats}
 
@@ -1423,6 +1644,7 @@ subtypes with \texttt{SequenceType}. A ground value for
 \item \texttt{ffa}: fasta amino acid.
 \end{itemize}
 
+
 \chapter{Predicates listing}
 
 \input{libraries} 
@@ -1464,6 +1686,13 @@ Some things that we have discussed, but  decided not to do
  everywhere... (Matthieu).
 \end{itemize}
 
-\printindex
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{alpha}
+\bibliography{thelostframework}
 
+
+\newpage
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+%\addcontentsline{toc}{index}
 \end{document}

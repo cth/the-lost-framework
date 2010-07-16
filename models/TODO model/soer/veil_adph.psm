@@ -1,0 +1,132 @@
+% veil_adph.psm
+% S/ren M/rk
+% 090428
+% spells out all states...4+16+64
+% based on codon_model.psm
+% Essentially the Veil model...
+% from veil.psm with adph parser from ecoparse_adph.psm
+
+:-[settings].
+
+data('~/data/training/u00096mv.dat').
+
+
+%transition probabilities:
+%emission(state probabilities:
+values(emission(state((a))),[a]).
+values(emission(state((c))),[c]).
+values(emission(state((g))),[g]).
+values(emission(state((t))),[t]).
+values(emission(state((a))),[a]).
+values(emission(state((c))),[c]).
+values(emission(state((g))),[g]).
+values(emission(state((t))),[t]).
+values(emission(state((_,a))),[a]).
+values(emission(state((_,c))),[c]).
+values(emission(state((_,g))),[g]).
+values(emission(state((_,t))),[t]).
+values(emission(state((_,_,a))),[a]).
+values(emission(state((_,_,c))),[c]).
+values(emission(state((_,_,g))),[g]).
+values(emission(state((_,_,t))),[t]).
+
+values(emission(stop((a))),[a]).
+values(emission(stop((c))),[c]).
+values(emission(stop((g))),[g]).
+values(emission(stop((t))),[t]).
+values(emission(stop((a))),[a]).
+values(emission(stop((c))),[c]).
+values(emission(stop((g))),[g]).
+values(emission(stop((t))),[t]).
+values(emission(stop((_,a))),[a]).
+values(emission(stop((_,c))),[c]).
+values(emission(stop((_,g))),[g]).
+values(emission(stop((_,t))),[t]).
+values(emission(stop((_,_,a))),[a]).
+values(emission(stop((_,_,c))),[c]).
+values(emission(stop((_,_,g))),[g]).
+values(emission(stop((_,_,t))),[t]).
+
+
+values(transition(begin),[state((a)),state((c)),state((g)),state((t))]).
+
+values(transition(state((a))),[state((a,a)),state((a,c)),state((a,g)),state((a,t))]).
+values(transition(state((c))),[state((c,a)),state((c,c)),state((c,g)),state((c,t))]).
+values(transition(state((g))),[state((g,a)),state((g,c)),state((g,g)),state((g,t))]).
+values(transition(state((t))),[state((t,a)),state((t,c)),state((t,g)),state((t,t))]).
+
+values(transition(state((a,a))),[state((a,a,a)),state((a,a,c)),state((a,a,g)),state((a,a,t))]).
+values(transition(state((a,c))),[state((a,c,a)),state((a,c,c)),state((a,c,g)),state((a,c,t))]).
+values(transition(state((a,g))),[state((a,g,a)),state((a,g,c)),state((a,g,g)),state((a,g,t))]).
+values(transition(state((a,t))),[state((a,t,a)),state((a,t,c)),state((a,t,g)),state((a,t,t))]).
+values(transition(state((c,a))),[state((c,a,a)),state((c,a,c)),state((c,a,g)),state((c,a,t))]).
+values(transition(state((c,c))),[state((c,c,a)),state((c,c,c)),state((c,c,g)),state((c,c,t))]).
+values(transition(state((c,g))),[state((c,g,a)),state((c,g,c)),state((c,g,g)),state((c,g,t))]).
+values(transition(state((c,t))),[state((c,t,a)),state((c,t,c)),state((c,t,g)),state((c,t,t))]).
+values(transition(state((g,a))),[state((g,a,a)),state((g,a,c)),state((g,a,g)),state((g,a,t))]).
+values(transition(state((g,c))),[state((g,c,a)),state((g,c,c)),state((g,c,g)),state((g,c,t))]).
+values(transition(state((g,g))),[state((g,g,a)),state((g,g,c)),state((g,g,g)),state((g,g,t))]).
+values(transition(state((g,t))),[state((g,t,a)),state((g,t,c)),state((g,t,g)),state((g,t,t))]).
+values(transition(state((t,a))),[state((t,a,c)),state((t,a,t))]).
+values(transition(state((t,c))),[state((t,c,a)),state((t,c,c)),state((t,c,g)),state((t,c,t))]).
+values(transition(state((t,g))),[state((t,g,c)),state((t,g,g)),state((t,g,t))]).
+values(transition(state((t,t))),[state((t,t,a)),state((t,t,c)),state((t,t,g)),state((t,t,t))]).
+
+values(transition(state((_,_,_))),[silent]).
+values(transition(silent),[state((a)),state((c)),state((g)),state((t))]).
+
+values(transition(stop),[stop((t))]).
+values(transition(stop((t))),[stop((t,a)),stop((t,g))]).
+values(transition(stop((t,a))),[stop((t,a,a)),stop((t,a,g))]).
+values(transition(stop((t,g))),[stop((t,g,a))]).
+values(transition(stop((t,a,a))),[end]).
+values(transition(stop((t,a,g))),[end]).
+values(transition(stop((t,g,a))),[end]).
+
+values(transition(sg),[s,g]).
+
+%parser:
+% Initiation:
+model(O):-
+        msw(transition(begin),S),
+        recursion(S,pos(1),O).
+
+% termination:
+recursion(end,_,[]).
+
+% recursion:
+recursion(silent,pos(P),R):-
+        msw(transition(silent),N),
+        msw(transition(sg),SG),
+        next(P,SG,NP),
+        recursion(N,NP,R).
+
+recursion(silent,stop,R):-
+        msw(transition(stop),N),
+        %msw(emission(N),Xi),
+        recursion(N,stop,R).
+
+recursion(state(_),stop,R):-
+        msw(transition(stop),N),
+        %msw(emission(N),Xi),
+        recursion(N,stop,R).
+
+recursion(stop(H),stop,[Xi|R]):-
+        msw(transition(stop(H)),N),
+        msw(emission(stop(H)),Xi),
+        recursion(N,stop,R).
+
+recursion(state(H),pos(P),[Xi|R]):-
+        msw(transition(state(H)),N),
+        msw(emission(state(H)),Xi),
+        recursion(N,pos(P),R).
+
+next(1,s,pos(1)).
+next(1,g,pos(2)).
+next(2,s,pos(2)).
+next(2,g,pos(3)).
+next(3,s,pos(3)).
+next(3,g,stop).
+
+
+

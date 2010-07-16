@@ -1,0 +1,255 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  NAME :
+%      easygene.psm
+%
+% VERSION :
+%     0
+%
+% AUTHOR : Matthieu Petit.
+%
+% FUNCTION :
+%      HMM of Easygene [1]
+% 
+% HISTORIC :
+%  07/09: creation of file         MP
+%
+% REMARKS : any problem, contact petit@(without advertissement)ruc.dk
+%
+% NOTE TO THE USER (modifications from EasyGene):
+%  - Simplification of the null model: Shadow states removed;
+%  - Parametric definition of Start and Stop model: length of astart, bstop and astop not fix;
+%  - Addition of a transition from the first Null model to end (parse of an ORF as a non-coding region possible)
+%
+% REFERENCES :
+%  [1] Larsen, T.S. and Krogh, A.: EasyGene - a prokaryotic gene finder that ranks ORFs by statistical significance, in BMC BioInformatics, 2003
+%  [2]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+:- [params_easygene_ecoli].  % TO COMMENT if it is not necessary
+:- set_prism_flag(log_viterbi,on).
+
+%%%%%%%%%%%%%%%%%%%%%%
+% HMM Definition
+%%%%%%%%%%%%%%%%%%%%%%
+
+%------
+% Transitions Model to HS
+%------
+values(begin,[null]).
+values(model(null),[background]).
+values(model(rbs),[rbs(1)]).
+values(model(start),[start(1)]).
+values(model(coding),[coding(1,1)]).
+values(model(stop),[bstop(1,1)]).
+
+%------
+% Transitions HS to HS-Model
+%------
+
+values(trans(background),[background,rbs,start,end]).
+values(trans(gap_rbs(12)),[start]).
+       
+values(trans(astart(3,N)),[coding]) :-
+        get_end(astart,N).
+
+values(trans(coding(3,3)),[coding(1,3),stop]) :-
+        !.
+
+values(trans(astop(3,N)),[null]) :-
+        get_end(astop,N),
+        !.
+
+%------
+% Transitions HS to HS
+%------
+
+% Null: See HS to HS-Model
+
+% RBS Model
+values(trans(rbs(N)),[rbs(N1)]) :-
+        N<7,
+        !,
+        N1 is N+1.
+values(trans(rbs(7)),[gap_rbs(1)]).
+values(trans(gap_rbs(N)),L_Gap) :-
+        N<12,
+        !,
+        build_lgap(N,L_Gap).
+
+% Start Codon
+values(trans(start(1)),[start(2)]).
+values(trans(start(2)),[start(3)]).
+values(trans(start(3)),[astart(1,1)]).
+values(trans(astart(1,N)),[astart(2,N)]).
+values(trans(astart(2,N)),[astart(3,N)]).
+values(trans(astart(3,N)),[astart(1,N1)]) :-
+        get_end(astart,Nmax),
+        N<Nmax,
+        !,
+        N1 is N+1.
+
+% Coding
+
+values(trans(coding(1,N)),[coding(2,N)]).
+values(trans(coding(2,N)),[coding(3,N)]).
+values(trans(coding(3,N)),[coding(1,N),coding(1,N1)]) :-
+        get_end(coding,Nmax),
+        N <Nmax,
+        !,
+        N1 is N+1.
+values(trans(coding(3,N)),[stop]) :-
+        get_end(coding,N).
+
+        
+
+% Stop Codon
+values(trans(bstop(1,N)),[bstop(2,N)]).
+values(trans(bstop(2,N)),[bstop(3,N)]).
+values(trans(bstop(3,N)),[bstop(1,N1)]) :-
+        get_end(bstop,Nmax),
+        N < Nmax,
+        !,
+        N1 is N+1.
+values(trans(bstop(3,N)),[stop(1)]) :-
+        get_end(bstop,N).
+values(trans(stop(1)),[stop(2)]).
+values(trans(stop(2)),[stop(3)]).
+values(trans(stop(3)),[astop(1,1)]).
+values(trans(astop(1,N)),[astop(2,N)]).
+values(trans(astop(2,N)),[astop(3,N)]).
+values(trans(astop(3,N)),[astop(3,N1)]) :-
+        get_end(astop,Nmax),
+        N < Nmax,
+        !,
+        N1 is N+1.
+
+%-----
+% Emissions
+%-----
+
+% Null
+values(emit(background),[a,c,t,g]).
+
+% RBS Model
+values(emit(rbs(_)),[a,c,t,g]).
+values(emit(gap_rbs(_)),[a,c,t,g]).
+
+% Start Model
+
+values(emit(start(_)),[a,c,t,g]).
+values(emit(astart(_,_)),[a,c,t,g]).
+
+% Coding Model
+values(emit(coding(_,_),_),[a,c,t,g]).
+
+% Stop Model
+values(emit(bstop(_,_)),[a,c,t,g]).
+values(emit(stop(_)),[a,c,t,g]).
+values(emit(astop(_,_)),[a,c,t,g]).
+
+        
+
+        
+
+%%%%%%%%%%%%%%%%%
+% Process Definition
+%%%%%%%%%%%%%%%%%
+
+%----
+% Parameters
+%----
+get_end(astart,2):- !.
+get_end(coding,3):- !. 
+get_end(bstop,1):- !.
+get_end(astop,2).
+
+
+%----
+% Process Run
+%----
+
+% Initialization of the process
+easygene(S) :-
+        params('ecoli'), % set the switches for Ecoli (TO COMMENT if it is not necessary)
+        msw(begin,State),
+        easygene_rec(State,[],S).
+
+% End of the Process
+easygene_rec('end',_Past,[]) :-
+        !.
+
+% Transition Model to HS
+easygene_rec(State,Past,S) :-
+        State \= 'end',
+        is_model(State),
+        !,
+        msw(model(State),New_State),
+        easygene_rec(New_State,Past,S).
+
+
+% Process run in Coding Region
+easygene_rec(State,Past,[N|Rest_Seq]) :-
+        State \= 'end',
+        State =.. ['coding',_,_],
+        !,
+        msw(emit(State,Past),N),
+        msw(trans(State),New_State),
+        length(Past,Length),
+        (Length == 4 ->
+            Past = [_|Rest_Past]
+        ;
+            Past = Rest_Past
+        ),
+        append(Rest_Past,[N],New_Past),
+        easygene_rec(New_State,New_Past,Rest_Seq).
+
+
+% Usual Process run
+easygene_rec(State,Past,[N|Rest_Seq]) :-
+        State \= 'end',
+        msw(emit(State),N),
+        msw(trans(State),New_State),
+        (length(Past,4) ->
+            Past = [_|Rest_Past]
+        ;
+            Past = Rest_Past
+        ),
+        append(Rest_Past,[N],New_Past),
+        easygene_rec(New_State,New_Past,Rest_Seq).
+
+
+
+
+
+%%%%%%%%%%%%%%%%%
+% Utils
+%%%%%%%%%%%%%%%%%
+
+%-----
+% build_lgap/2
+%-----
+% pre: N < 12
+build_lgap(11,[gap_rbs(12)]) :-
+        !.
+
+build_lgap(10,[gap_rbs(11)]) :-
+        !.
+
+build_lgap(N,[gap_rbs(N1)|Rest]) :-
+        !,
+        N1 is N+1,
+        build_lgap(N1,Rest).
+        
+
+%------
+% is_model/1
+%------
+
+is_model(null) :-!.
+is_model(rbs) :-!.
+is_model(start) :-!.
+is_model(coding) :-!.
+is_model(stop).
+
+
+%S = [c,t,a,c,g,g,t,c,c,a,c,a,c,t,t,g,g,c,c,c,g,c,t,t,c,g,a,c,t,t,t,c,a,c,t,a,a,a,t,g,t,g,t,t,g,a,g,g,t,g,t,t,a,g,g,a,c,g,g,c,t,a,c,g,g,g,c,g,c,t,a,c,c,a,a,a,c,t,t,g,c,c,t,t,g,a,t,a,t,c,g,t],viterbi(easygene(S),P).

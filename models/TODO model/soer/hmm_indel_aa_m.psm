@@ -1,0 +1,111 @@
+% hmm_indel_aa_m.psm
+% S/ren M/rk
+% 100530
+% aa model with hmm_indel.psm parser
+
+% with match, only
+
+% with triplet insertion mode instead of same same "double emissions"
+
+% Motivation:
+% Genefinders are average genes 
+% Genes are similar because they share environment, function and ancestry.
+% Genes arise through geneduplication and change though substitution and % indels (and modular copy)
+% Hence a single sequence genefinder with "indel" modes can parse "typical" higher ordered patterns that are disrupted by single indels via 1: skipping a conditioning (insert[w.r.t. ancestral sequence]) through conditioning i-2 instead of i-1 or 2: conditioning on an unobserved "ghoststate" (delete[w.r.t. ancestral sequence]) generated with the typical transition probabilities. 
+% the genefinder model is one with an underlying aa state sequence to accommodate synonymous substitutions.
+
+:-['~/settings/default.pl'].
+
+
+data('~/data/sim/sim_ORF_99999.dat').
+%data%('../data/training/k12_p_rcmvmRNAs.dat')
+
+%transition probabilities:
+
+% match, and indel
+values(transition(match),[match]).
+values(transition(delete),[match]).
+values(transition(insert),[match]).
+
+% aa:
+values(transition(begin),[state(start)]).
+
+%values(transition(state(stop)),[end]).
+
+values(transition(state(_)),[state(ala),state(arg),state(asn),state(asp),state(cys),state(gln),state(glu),state(gly),state(his),state(ile),state(leu),state(lys),state(met),state(phe),state(pro),state(ser),state(thr),state(trp),state(tyr),state(val),state(stop),end]).
+
+values(emission(insert),[
+                                (a,a,a),(c,a,a),(g,a,a),
+                                (a,c,a),(c,c,a),(g,c,a),(t,c,a),
+                                (a,g,a),(c,g,a),(g,g,a),
+                                (a,t,a),(c,t,a),(g,t,a),(t,t,a),
+
+                                (a,a,c),(c,a,c),(g,a,c),(t,a,c),
+                                (a,c,c),(c,c,c),(g,c,c),(t,c,c),
+                                (a,g,c),(c,g,c),(g,g,c),(t,g,c),
+                                (a,t,c),(c,t,c),(g,t,c),(t,t,c),
+
+                                (a,a,g),(c,a,g),(g,a,g),
+                                (a,c,g),(c,c,g),(g,c,g),(t,c,g),
+                                (a,g,g),(c,g,g),(g,g,g),(t,g,g),
+                                (a,t,g),(c,t,g),(g,t,g),(t,t,g),
+
+                                (a,a,t),(c,a,t),(g,a,t),(t,a,t),
+                                (a,c,t),(c,c,t),(g,c,t),(t,c,t),
+                                (a,g,t),(c,g,t),(g,g,t),(t,g,t),
+                                (a,t,t),(c,t,t),(g,t,t),(t,t,t)
+                                ]).
+
+
+values(emission(start),[(a,t,g),(c,t,g),(g,t,g),(t,t,g)]).
+
+values(emission(ala),[(g,c,a),(g,c,c),(g,c,g),(g,c,t)]).
+values(emission(arg),[(a,g,a),(a,g,g),(c,g,a),(c,g,c),(c,g,g),(c,g,t)]).
+values(emission(asn),[(a,a,c),(a,a,t)]).
+values(emission(asp),[(g,a,c),(g,a,t)]).
+values(emission(cys),[(t,g,c),(t,g,t)]).
+values(emission(gln),[(c,a,a),(c,a,g)]).
+values(emission(glu),[(g,a,a),(g,a,g)]).
+values(emission(gly),[(g,g,a),(g,g,c),(g,g,g),(g,g,t)]).
+values(emission(his),[(c,a,c),(c,a,t)]).
+values(emission(ile),[(a,t,a),(a,t,c),(a,t,t)]).
+values(emission(leu),[(c,t,a),(c,t,c),(c,t,g),(c,t,t),(t,t,a),(t,t,g)]).
+values(emission(lys),[(a,a,a),(a,a,g)]).
+values(emission(met),[(a,t,g)]).
+values(emission(phe),[(t,t,c),(t,t,t)]).
+values(emission(pro),[(c,c,a),(c,c,c),(c,c,g),(c,c,t)]).
+values(emission(ser),[(a,g,c),(a,g,t),(t,c,a),(t,c,c),(t,c,g),(t,c,t)]).
+values(emission(thr),[(a,c,a),(a,c,c),(a,c,g),(a,c,t)]).
+values(emission(trp),[(t,g,g)]).
+values(emission(tyr),[(t,a,c),(t,a,t)]).
+values(emission(val),[(g,t,a),(g,t,c),(g,t,g),(g,t,t)]).
+values(emission(stop),[(t,a,a),(t,a,g),(t,g,a)]).
+
+
+
+%parser:
+
+% initiation:
+model(O):-
+   msw(transition(begin),S),
+   recursion(match,S,O).
+
+recursion(_,end,[]):-!.
+
+recursion(match,state(S),[X|[Y|[Z|R]]]):-	
+   msw(emission(S),(X,Y,Z)),
+   msw(transition(state(S)),N),
+   msw(transition(match),M),	
+   recursion(M,N,R).
+
+recursion(insert,S,[X|[Y|[Z|R]]]):-
+   msw(emission(insert),(X,Y,Z)),
+   msw(transition(insert),M),
+   recursion(M,S,R).
+
+recursion(delete,state(S),R):-
+   msw(transition(state(S)),N),
+   msw(transition(delete),M),
+   recursion(M,N,R).
+
+

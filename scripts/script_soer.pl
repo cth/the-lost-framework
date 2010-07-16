@@ -23,6 +23,11 @@ test_learn(NameModel,Options,OutputFile) :-
     lost_sequence_file('U00096',RawGenome),
     run_model(NameModel,learn([InputFile,RawGenome],Options,OutputFile)).
 
+test_learn_ecoparse_adph(OutputFile) :-
+        data_learning(InputFile),
+        lost_sequence_file('U00096',RawGenome),
+        run_model(ecoparse_adph,learn([InputFile,RawGenome],[data_available(no),data_number(100)],OutputFile)).
+
 %----
 % logodds computation
 %----
@@ -41,11 +46,12 @@ logodds_computation(InputFile,NameModel,NameNull,OptionsModel,OptionsNull,Output
 %-----
 
 
-% Dedicated to E.COli
+% Dedicated to E.Coli
 data_learning(OutputFile) :-
         lost_sequence_file('U00096_ptt',PTTFile),
         run_model(parser_ptt,annotate([PTTFile],[],ParsedPTT)),
-        Options = [regex_no_match_extra_fields([
+        Options = [match_strands([+]),   % To avoid the problem in get_data_from_files that works only for the direct strand
+                   regex_no_match_extra_fields([
 			product("^.*(predicted|putative|unknown|possible|hypothetical|probable|bacteriophage|transposon|insertion|reverse transcriptase).*$")
                                                ])
                   ],
@@ -53,9 +59,17 @@ data_learning(OutputFile) :-
         run_model(gene_filter,annotate([ParsedPTT,RawGenome],Options,OutputFile)).
         
 
-
-
-
 %----
 % Data Prediction
 %----
+
+% Not exactely the good data
+orf_stop_to_stop(OutputFile) :-
+        lost_sequence_file('U00096',RawGenome),
+        run_model(orf_chopper,annotate([RawGenome],[strand(+),frame(1),minimal_length(30)],ORF_Frame_1)),
+        run_model(orf_chopper,annotate([RawGenome],[strand(+),frame(2),minimal_length(30)],ORF_Frame_2)),
+        run_model(orf_chopper,annotate([RawGenome],[strand(+),frame(3),minimal_length(30)],ORF_Frame_3)),
+        run_model(orf_chopper,annotate([RawGenome],[strand(-),frame(4),minimal_length(30)],ORF_Frame_4)),
+        run_model(orf_chopper,annotate([RawGenome],[strand(-),frame(5),minimal_length(30)],ORF_Frame_5)),
+        run_model(orf_chopper,annotate([RawGenome],[strand(-),frame(6),minimal_length(30)],ORF_Frame_6)),
+        run_model(merge_files,annotate([ORF_Frame_1,ORF_Frame_2,ORF_Frame_3,ORF_Frame_4,ORF_Frame_5,ORF_Frame_6],[],OutputFile)).

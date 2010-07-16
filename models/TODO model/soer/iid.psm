@@ -1,0 +1,27 @@
+% iid.psm
+% S/ren M/rk
+% 100518
+% single(sic!)state hmm for use as null model...
+
+:-['~/settings/default.pl'].
+
+data('~/data/training/u00096mv.dat').
+
+
+% parameters:
+values(transition(begin),[state]).
+values(transition(state), [state, end]).
+values(emission(state),[a,c,g,t]).
+
+model(O):-
+   msw(transition(begin),S),
+   recursion(S,O).
+
+recursion(end,[]):-!.
+
+recursion(state,[Xi|R]):-
+   msw(emission(state),Xi),
+   msw(transition(state),N),
+   recursion(N,R).
+
+

@@ -1,0 +1,52 @@
+% aa_hmm_silent.psm
+% S/ren M/rk
+% 100518
+
+data('../data/training/k12_p_rcmvmRNAs.dat')
+
+% load settings:
+:-['~/settings/default.pl'].
+
+%transition probabilities:
+values(transition(begin),[(start)]).
+
+values(transition(silent),[(ala),(arg),(asn),(asp),(cys),(gln),(glu),(gly),(his),(ile),(leu),(lys),(met),(phe),(pro),(ser),(thr),(trp),(tyr),(val),stop]).
+
+values(emission(start),[(a,t,g),(c,t,g),(g,t,g),(t,t,g)]).
+values(emission(ala),[(g,c,a),(g,c,c),(g,c,g),(g,c,t)]).
+values(emission(arg),[(a,g,a),(a,g,g),(c,g,a),(c,g,c),(c,g,g),(c,g,t)]).
+values(emission(asn),[(a,a,c),(a,a,t)]).
+values(emission(asp),[(g,a,c),(g,a,t)]).
+values(emission(cys),[(t,g,c),(t,g,t)]).
+values(emission(gln),[(c,a,a),(c,a,g)]).
+values(emission(glu),[(g,a,a),(g,a,g)]).
+values(emission(gly),[(g,g,a),(g,g,c),(g,g,g),(g,g,t)]).
+values(emission(his),[(c,a,c),(c,a,t)]).
+values(emission(ile),[(a,t,a),(a,t,c),(a,t,t)]).
+values(emission(leu),[(c,t,a),(c,t,c),(c,t,g),(c,t,t),(t,t,a),(t,t,g)]).
+values(emission(lys),[(a,a,a),(a,a,g)]).
+values(emission(met),[(a,t,g)]).
+values(emission(phe),[(t,t,c),(t,t,t)]).
+values(emission(pro),[(c,c,a),(c,c,c),(c,c,g),(c,c,t)]).
+values(emission(ser),[(a,g,c),(a,g,t),(t,c,a),(t,c,c),(t,c,g),(t,c,t)]).
+values(emission(thr),[(a,c,a),(a,c,c),(a,c,g),(a,c,t)]).
+values(emission(trp),[(t,g,g)]).
+values(emission(tyr),[(t,a,c),(t,a,t)]).
+values(emission(val),[(g,t,a),(g,t,c),(g,t,g),(g,t,t)]).
+values(emission(stop),[(t,a,a),(t,a,g),(t,g,a)]).
+
+%parser:
+% Initiation:
+model(Observables):-
+        msw(transition(begin), Hidden_state),
+        hmm(Hidden_state,Observables).
+
+% termination:
+hmm(stop,[]).
+
+%recursion:
+hmm((S),[X|[Y|[Z|Rest]]]):-
+        (S)\=end,
+        msw(emission(S),(X,Y,Z)),
+        msw(transition(silent), Next_hidden_state),
+        hmm(Next_hidden_state,Rest).

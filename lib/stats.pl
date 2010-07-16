@@ -15,8 +15,12 @@
 %%%%
 
 
-% stats(++Data_Type,++Options,++Data,??Result).
-% stats(++Data_Type,++Options,++Data,++Input_Counting,--Past,??Result).
+%% stats(+Data_Type,+Options,+Data,??Result).
+%% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,??Result).
+%% stats(length,+Ranges,-Result)
+%
+% Computation of statistics given a set of Data
+%
 % Assumption: Data format corresponds to the kind of statistics that you compute
 % List of nucleotids for nucleotids-codon stats
 % List of AminoAcids for Amino stats
@@ -155,10 +159,14 @@ stats_length([[Min,Max]|Ranges],Counting,Result) :-
         stats_length(Ranges,Counting_New,Result).
 
 
+%---
+% Utils stats
+%---
+
 % init_counting
 %--------
 % Remark: Exponential explosion here: take care to select a
-% reasonable order (especially for codon type
+% reasonable order (especially for codon type)
 
 init_counting(Type,0,[([],Init_List)]) :-
         !,
@@ -171,11 +179,11 @@ init_counting(Type,Order,Init_List) :-
 
 init_counting_rec(Type,1,([Past],Init_List)) :-
         !,
-        get(Type,Past),
+        get_past(Type,Past),
         get_init(Type,Init_List).
 
 init_counting_rec(Type,Order,([Past|Rest],Nuc_Init)) :-
-        get(Type,Past),
+        get_past(Type,Past),
         Order1 is Order-1, 
         init_counting_rec(Type,Order1,(Rest,Nuc_Init)).
         
@@ -273,98 +281,98 @@ get_init(amino_acid,[(a,0),(c,0),(d,0),(e,0),
         !.
 
 
-% get(++Type,--Values).
+% get_past(++Type,--Values).
 
-get(nucleotide,a).
-get(nucleotide,c).
-get(nucleotide,g).
-get(nucleotide,t).
+get_past(nucleotide,a).
+get_past(nucleotide,c).
+get_past(nucleotide,g).
+get_past(nucleotide,t).
 
-get(codon,[a,a,a]).
-get(codon,[a,a,c]).
-get(codon,[a,a,g]).
-get(codon,[a,a,t]).
-get(codon,[a,c,a]).
-get(codon,[a,c,c]).
-get(codon,[a,c,g]).
-get(codon,[a,c,t]).
-get(codon,[a,g,a]).
-get(codon,[a,g,c]).
-get(codon,[a,g,g]).
-get(codon,[a,g,t]).
-get(codon,[a,t,a]).
-get(codon,[a,t,c]).
-get(codon,[a,t,g]).
-get(codon,[a,t,t]).
-get(codon,[c,a,a]).
-get(codon,[c,a,c]).
-get(codon,[c,a,g]).
-get(codon,[c,a,t]).
-get(codon,[c,c,a]).
-get(codon,[c,c,c]).
-get(codon,[c,c,g]).
-get(codon,[c,c,t]).
-get(codon,[c,g,a]).
-get(codon,[c,g,c]).
-get(codon,[c,g,g]).
-get(codon,[c,g,t]).
-get(codon,[c,t,a]).
-get(codon,[c,t,c]).
-get(codon,[c,t,g]).
-get(codon,[c,t,t]).
-get(codon,[g,a,a]).
-get(codon,[g,a,c]).
-get(codon,[g,a,g]).
-get(codon,[g,a,t]).
-get(codon,[g,c,a]).
-get(codon,[g,c,c]).
-get(codon,[g,c,g]).
-get(codon,[g,c,t]).
-get(codon,[g,g,a]).
-get(codon,[g,g,c]).
-get(codon,[g,g,g]).
-get(codon,[g,g,t]).
-get(codon,[g,t,a]).
-get(codon,[g,t,c]).
-get(codon,[g,t,g]).
-get(codon,[g,t,t]).
-get(codon,[t,a,a]).
-get(codon,[t,a,c]).
-get(codon,[t,a,g]).
-get(codon,[t,a,t]).
-get(codon,[t,c,a]).
-get(codon,[t,c,c]).
-get(codon,[t,c,g]).
-get(codon,[t,c,t]).
-get(codon,[t,g,a]).
-get(codon,[t,g,c]).
-get(codon,[t,g,g]).
-get(codon,[t,g,t]).
-get(codon,[t,t,a]).
-get(codon,[t,t,c]).
-get(codon,[t,t,g]).
-get(codon,[t,t,t]).
+get_past(codon,[a,a,a]).
+get_past(codon,[a,a,c]).
+get_past(codon,[a,a,g]).
+get_past(codon,[a,a,t]).
+get_past(codon,[a,c,a]).
+get_past(codon,[a,c,c]).
+get_past(codon,[a,c,g]).
+get_past(codon,[a,c,t]).
+get_past(codon,[a,g,a]).
+get_past(codon,[a,g,c]).
+get_past(codon,[a,g,g]).
+get_past(codon,[a,g,t]).
+get_past(codon,[a,t,a]).
+get_past(codon,[a,t,c]).
+get_past(codon,[a,t,g]).
+get_past(codon,[a,t,t]).
+get_past(codon,[c,a,a]).
+get_past(codon,[c,a,c]).
+get_past(codon,[c,a,g]).
+get_past(codon,[c,a,t]).
+get_past(codon,[c,c,a]).
+get_past(codon,[c,c,c]).
+get_past(codon,[c,c,g]).
+get_past(codon,[c,c,t]).
+get_past(codon,[c,g,a]).
+get_past(codon,[c,g,c]).
+get_past(codon,[c,g,g]).
+get_past(codon,[c,g,t]).
+get_past(codon,[c,t,a]).
+get_past(codon,[c,t,c]).
+get_past(codon,[c,t,g]).
+get_past(codon,[c,t,t]).
+get_past(codon,[g,a,a]).
+get_past(codon,[g,a,c]).
+get_past(codon,[g,a,g]).
+get_past(codon,[g,a,t]).
+get_past(codon,[g,c,a]).
+get_past(codon,[g,c,c]).
+get_past(codon,[g,c,g]).
+get_past(codon,[g,c,t]).
+get_past(codon,[g,g,a]).
+get_past(codon,[g,g,c]).
+get_past(codon,[g,g,g]).
+get_past(codon,[g,g,t]).
+get_past(codon,[g,t,a]).
+get_past(codon,[g,t,c]).
+get_past(codon,[g,t,g]).
+get_past(codon,[g,t,t]).
+get_past(codon,[t,a,a]).
+get_past(codon,[t,a,c]).
+get_past(codon,[t,a,g]).
+get_past(codon,[t,a,t]).
+get_past(codon,[t,c,a]).
+get_past(codon,[t,c,c]).
+get_past(codon,[t,c,g]).
+get_past(codon,[t,c,t]).
+get_past(codon,[t,g,a]).
+get_past(codon,[t,g,c]).
+get_past(codon,[t,g,g]).
+get_past(codon,[t,g,t]).
+get_past(codon,[t,t,a]).
+get_past(codon,[t,t,c]).
+get_past(codon,[t,t,g]).
+get_past(codon,[t,t,t]).
 
-get(amino_acid,a).
-get(amino_acid,c).
-get(amino_acid,d).
-get(amino_acid,e).
-get(amino_acid,f).
-get(amino_acid,g).
-get(amino_acid,h).
-get(amino_acid,i).
-get(amino_acid,k).
-get(amino_acid,l).
-get(amino_acid,m).
-get(amino_acid,n).
-get(amino_acid,p).
-get(amino_acid,q).
-get(amino_acid,r).
-get(amino_acid,s).
-get(amino_acid,t).
-get(amino_acid,v).
-get(amino_acid,w).
-get(amino_acid,y).
+get_past(amino_acid,a).
+get_past(amino_acid,c).
+get_past(amino_acid,d).
+get_past(amino_acid,e).
+get_past(amino_acid,f).
+get_past(amino_acid,g).
+get_past(amino_acid,h).
+get_past(amino_acid,i).
+get_past(amino_acid,k).
+get_past(amino_acid,l).
+get_past(amino_acid,m).
+get_past(amino_acid,n).
+get_past(amino_acid,p).
+get_past(amino_acid,q).
+get_past(amino_acid,r).
+get_past(amino_acid,s).
+get_past(amino_acid,t).
+get_past(amino_acid,v).
+get_past(amino_acid,w).
+get_past(amino_acid,y).
 
 
 
@@ -391,8 +399,14 @@ build_past(N,[Elt|Rest],Past1-Past2,Rest_Data) :-
 
 %--------
 % Normalization predicates
-% normalize(++Type,++Counting,--Probabilities)
 %--------
+%% normalize(+Type,+Counting,-Probabilities)
+%
+% Predicate used to normalize the result of a counting
+% Probabilies is a list composed of element with the format
+% ==
+% (Past,(Domain,Distribution))
+% ==
 
 normalize(Type,[],[]) :-
         member(Type,[nucleotide,codon,amino_acid]),
@@ -479,16 +493,16 @@ sum_list([T|Rest],Sum) :-
         Sum is T+Sum1.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% build_stat_facts(+Stats,-StatsFacts)
+
+%% build_stat_facts(+Stats,-StatsFacts)
 % builds a list of facts, one for each statistic
-% e.g. 
+% ==
 % build_stat_facts(
 %	[([a],[(a,0),(c,1),(g,0),(t,0)]),([c],[(a,0),(c,0),(g,0),(t,1)]),([g],[(a,0),(c,0),(g,1),(t,2)]),([t],[(a,1),(c,0),(g,2),(t,1)])],
 %	[stat([a,a],0),stat([a,c],1),stat([a,g],0),stat([a,t],0),stat([c,a],0),stat([c,c],0),stat([c,g],0),
 %	 stat([c,t],1),stat([g,a],0),stat([g,c],0),stat([g,g],1),stat([g,t],2),stat([t,a],1),stat([t,c],0),stat([t,g],2),stat([t,t],1)]
 %	)
-
+% ==
 
 % Version for counts:
 build_stat_facts([],[]).

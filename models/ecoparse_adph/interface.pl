@@ -22,7 +22,7 @@ lost_option(annotate,data_functor,sequence,'Specify the name of the functor asso
 % Learning options
 lost_option(learn,data_available,yes,'Specify if the sequence data is available or not in Extra info of the terms that composed the Input file').
 lost_option(learn,data_functor,sequence,'Specify the name of the functor associated with the sequence data').
-lost_option(learn,terms_number,undefined,'Define the number of terms used to learn the parameters of the models').
+lost_option(learn,data_number,undefined,'Define the number of terms used to learn the parameters of the models').
 
 
 % 
@@ -66,17 +66,16 @@ annotate([InputFile],Options,OutputFile) :-
 learn([InputFile,RawGenome],Options,OutputFile) :-
         write('ecoparse_adph learning: '),nl,                                                         
         prism('ecoparse_adph'), % Load the actual PRISM model                                         
-
         terms_from_file(InputFile,Terms),
         get_option(Options,data_available,Data_Available),
-        get_option(Options,terms_number,Num),
+        get_option(Options,data_number,Num),
         (Data_Available == yes ->
-            % Caes: Data available in InputFile
+            % Case: Data available in InputFile
             get_option(Options,data_functor,Functor),
             get_data_from_terms(Terms,Functor,Num,List_Data) % Warning: same name that the one used in io but not the same arity
         ;
             get_ranges_from_terms(Terms,Num,Ranges),
-            get_data_from_file(RawGenome,[ranges(Ranges)],List_Data)
+            get_data_from_file(RawGenome,[ranges(Ranges)],List_Data)   % Warning: works only for Ranges in the direct strand
         ),
       % Learning process
         map(build_learning_terms,List_Data,Learning_Terms),
@@ -110,7 +109,7 @@ compute_and_save_annotations(Stream,[[Data,Key,Left,Right,Strand,Frame]|Rest_Dat
                      ),
         
         Term =.. [annotation_ecoparse_adph,Key,Left,Right,Strand,Frame,[probability(Proba),viterbi_probability(VProba)]],
-        write(Stream,Term),
+        writeq(Stream,Term),
         write(Stream,'.'),
         nl(Stream),
         compute_and_save_annotations(Stream,Rest_Data).

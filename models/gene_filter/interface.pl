@@ -179,7 +179,7 @@ left_range_filter(_,[],[]).
 
 left_range_filter(Left,[Gene|Us],Fs) :-
         integer(Left),
-	Gene =.. [ _functor, GeneLeft, _end, _strand, _frame, _extra ],
+	Gene =.. [ _functor, _Genome_Key, GeneLeft, _end, _strand, _frame, _extra ],
         Left > GeneLeft, 
         !,
         left_range_filter(Left,Us,Fs).
@@ -198,7 +198,7 @@ right_range_filter(_,[],[]).
 
 right_range_filter(Right,[Gene|Us],Fs) :-
         integer(Right),
-	Gene =.. [ _functor, _Left, GeneRight, _strand, _frame, _extra ],
+	Gene =.. [ _functor, _Genome_Key, _Left, GeneRight, _strand, _frame, _extra ],
         Right < GeneRight, 
         !,
         right_range_filter(Right,Us,Fs).
@@ -218,7 +218,7 @@ filter_by_strands(GoodStrands,GeneTerms,GeneTerms) :-
 filter_by_strands(_,[],[]).
 
 filter_by_strands(GoodStrands,[GeneTerm|TermsRest],[GeneTerm|MatchedRest]) :-
-	GeneTerm =.. [ _functor, _start, _end, Strand, _frame, _extra ],
+	GeneTerm =.. [ _functor,_Genome_Key ,_start, _end, Strand, _frame, _extra ],
 	member(Strand,GoodStrands),
 	!,
 	filter_by_strands(GoodStrands,TermsRest,MatchedRest).
@@ -239,7 +239,7 @@ filter_by_frames(GoodFrames,GeneTerms,GeneTerms) :-
 filter_by_frames(_,[],[]).
 
 filter_by_frames(GoodFrames,[GeneTerm|TermsRest],[GeneTerm|MatchedRest]) :-
-	GeneTerm =.. [ _functor, _start, _end, _strand, Frame, _extra ],
+	GeneTerm =.. [ _functor, _Genome_Key, _start, _end, _strand, Frame, _extra ],
 	member(Frame,GoodFrames),
 	!,
 	filter_by_frames(GoodFrames,TermsRest,MatchedRest).
@@ -256,7 +256,7 @@ filter_by_length([default,default],GeneTerms,GeneTerms) :-
 filter_by_length(_Range,[],[]).
 
 filter_by_length([MinLength,MaxLength],[G|GRest],[G|MRest]) :-
-	G =.. [ _functor, Start, End, _strand, _frame, _extra ],
+	G =.. [ _functor,_Genome_Key, Start, End, _strand, _frame, _extra ],
         ((End > Start) ->
                 Length is (End - Start) + 1 
                 ;
@@ -304,7 +304,7 @@ regex_filter_matching(RegexList,[GeneTerm|GeneTermsRest],[GeneTerm|UnmatchedGene
 % True if the regular expression Regex matches GeneTerm
 regex_match_geneterm(RegexCondition,GeneTerm) :-
 	RegexCondition =.. [ Functor, RegexAtom ],
-	GeneTerm =.. [ _functor, _start, _end, _strand, _frame, ExtraList ],
+	GeneTerm =.. [ _functor, _Genome_Key, _start, _end, _strand, _frame, ExtraList ],
 	FunctorMatcher =.. [ Functor, Data ],
 	member(FunctorMatcher,ExtraList),
 	re_compile(RegexAtom,Regex),!,
@@ -319,7 +319,7 @@ filter_non_protein_coding(_,_,[],[]).
 filter_non_protein_coding(GeneCode,GenomeSeqId,[GeneTerm|GenesRest],[GeneTerm|MatchedRest]) :-
 	%get_gene_nucleotides(GeneTerm,GenomeSeqId,Sequence),
 	get_gene_start_and_stop_sequence(GeneTerm,GenomeSeqId,Sequence),
-	GeneTerm =.. [ _functor, _start, _end, Strand, _frame, _extraList ],
+	GeneTerm =.. [ _functor, _Genome_Key, _start, _end, Strand, _frame, _extraList ],
 	% Get the gene data starting
 	((Strand = '+') ->
 	 SequenceForward = Sequence,
@@ -359,12 +359,12 @@ filter_non_protein_coding(GeneCode,GenomeSeqId,[GeneTerm|GenesRest], [MatchedRes
 	filter_non_protein_coding(GeneCode,GenomeSeqId,GenesRest,MatchedRest).
 
 get_gene_nucleotides(GeneTerm,GenomeSequenceId,NucleotideData) :-
-	GeneTerm =.. [ _functor, Min, Max, _Strand, _frame, _extra ],
+	GeneTerm =.. [ _functor, _Genome_Key, Min, Max, _Strand, _frame, _extra ],
 	get_sequence_range(GenomeSequenceId,Min,Max,NucleotideData).
 
 
 get_gene_start_and_stop_sequence(GeneTerm,GenomeSequenceId,NucleotideData) :-
-	GeneTerm =.. [ _functor, Min, Max, _strand, _frame, _extra ],
+	GeneTerm =.. [ _functor, _Genome_Key, Min, Max, _strand, _frame, _extra ],
 	FirstMax is Min + 2,
 	LastMin is Max - 2,
 	get_sequence_range(GenomeSequenceId,Min,FirstMax,StartCodon),
@@ -375,6 +375,6 @@ get_gene_start_and_stop_sequence(GeneTerm,GenomeSequenceId,NucleotideData) :-
 % Extract the ranges for each gene in list
 gene_ranges([],[]).
 gene_ranges([GeneTerm|GenesRest], [Range|RangesRest]) :-
-	GeneTerm =.. [ _functor, Start, End, _strand, _frame, _extraList ],
+	GeneTerm =.. [ _functor, _Genome_Key, Start, End, _strand, _frame, _extraList ],
 	Range = [ Start, End ],
 	gene_ranges(GenesRest,RangesRest).

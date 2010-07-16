@@ -1,0 +1,46 @@
+% frame_3.psm
+% S/ren M/rk
+% 100517
+% from frame.psm
+
+% only plus strand...
+% emits triplets: 3rd order...
+% transits on triplest (here only to exit...)
+% starts in 1
+% On previous 3 emissions...
+
+data('../data/training/k12_p_rcmvmRNAs.dat')
+
+% load settings:
+:-['~/settings/default.pl'].
+
+% parameters:
+values(emission(_,_,_),[a,c,g,t]).
+
+values(transition(i,a,t,g),[s(p),s(i)]).
+values(transition(i,c,t,g),[s(p),s(i)]).
+values(transition(i,g,t,g),[s(p),s(i)]).
+values(transition(i,t,t,g),[s(p),s(i)]).
+values(transition(i,_,_,_),[s(i)]).
+
+values(transition(p,t,a,a),[end]).
+values(transition(p,t,a,g),[end]).
+values(transition(p,t,g,a),[end]).
+values(transition(p,_,_,_),[s(p)]).
+
+% termination:
+recursion(end,_,_,[]).
+
+% recursion:
+recursion(s(P),Y,Z,[Q|[V|[W|R]]]):-
+        msw(emission(P,Y,Z),Q),
+        msw(emission(P,Z,Q),V),
+        msw(emission(P,Q,V),W),
+        msw(transition(P,Q,V,W),N1),
+        recursion(N1,V,W,R).
+
+% initiation:
+model(Obs):-
+        recursion(s(i),s,s,Obs).
+
+

@@ -1,0 +1,30 @@
+% hmm.psm
+% S/ren M/rk
+% 100518
+% 2-state hmm (simplest possible)
+
+data('~/data/test.dat').
+
+% load settings:
+:-['~/settings/default.pl'].
+
+% parameters of model: 
+values(transition(begin),[state(1),state(2)]).
+values(transition(state(_)), [state(1),state(2), end]).
+values(emission(state(_)),[a,c,g,t]).
+
+% Initiation:
+model(O):-
+   msw(transition(begin),S),
+   recursion(S,O).
+
+% termination:
+recursion(end,[]).
+
+% recursion structure:
+recursion(state(H),[X|R]):-
+   msw(emission(state(H)),X),
+   msw(transition(state(H)),N),
+   recursion(N,R).
+
+

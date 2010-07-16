@@ -1,0 +1,107 @@
+% frames.psm
+% from frames_g_t3e2sg.psm
+% S/ren M/rk
+% 100322
+
+% double strand complete genefinder with intron states...
+
+% with Kroghish lenght modeling...
+% "stay or go now?"= same probs
+% no stop in 1 and 2?
+
+% "triplets"
+% two first emissions on i
+% third emission on state tuple and 2 previous emissions
+% transitions on states, 2 previous and present emission...
+
+% use to get "stop" transitions for both frames for frames_g.psm
+% use to get coding and overlapping i/j emissions for frames_g.psm
+
+% combines with frame_i.psm to get (i,i) emissions and i/j "start" transitions
+
+%data('../data/training/k12_p_rcmvmRNAs.dat').
+data('../data/training/k12_slice_9000.dat').
+
+% parameters:
+values(emission(p,1,_,_,t,a),[c,t]).
+values(emission(p,1,_,_,t,g),[c,g,t]).
+values(emission(p,2,_,_,t,a),[c,t]).
+values(emission(p,2,_,_,t,g),[c,g,t]).
+values(emission(_,_,m,1,_,c),[c,g,t]).
+values(emission(_,_,m,2,_,c),[c,g,t]).
+values(emission(_,_,_,_,_,_),[a,c,g,t]).
+
+values(transition(i,0,a,t,g),[s,g]).
+values(transition(i,0,c,t,g),[s,g]).
+values(transition(i,0,g,t,g),[s,g]).
+values(transition(i,0,t,t,g),[s,g]).
+values(transition(i,0,_,_,_),[s]).
+
+values(transition(p,3,t,a,a),[g]).
+values(transition(p,3,t,a,g),[g]).
+values(transition(p,3,t,g,a),[g]).
+values(transition(p,1,_,_,_),[s,g]).
+values(transition(p,2,_,_,_),[s,g]).
+values(transition(p,3,_,_,_),[s]).
+
+values(transition(j,0,c,t,a),[s,g]).
+values(transition(j,0,t,t,a),[s,g]).
+values(transition(j,0,t,c,a),[s,g]).
+values(transition(j,0,_,_,_),[s]).
+
+values(transition(m,3,c,a,a),[s,g]).
+values(transition(m,3,c,a,c),[s,g]).
+values(transition(m,3,c,a,g),[s,g]).
+values(transition(m,3,c,a,t),[s,g]).
+values(transition(m,1,_,_,_),[s,g]).
+values(transition(m,2,_,_,_),[s,g]).
+values(transition(m,3,_,_,_),[s]).
+
+values(next(i,0,s),[s(i,0)]).
+values(next(i,0,g),[s(p,1)]).
+
+values(next(p,1,s),[s(p,1)]).
+values(next(p,1,g),[s(p,2)]).
+values(next(p,2,s),[s(p,2)]).
+values(next(p,2,g),[s(p,3)]).
+values(next(p,3,s),[s(p,3)]).
+values(next(p,3,g),[s(i,0)]).
+
+values(next(j,0,s),[s(j,0)]).
+values(next(j,0,g),[s(m,1)]).
+
+values(next(m,1,s),[s(m,1)]).
+values(next(m,1,g),[s(m,2)]).
+values(next(m,2,s),[s(m,2)]).
+values(next(m,2,g),[s(m,3)]).
+values(next(m,3,s),[s(m,3)]).
+values(next(m,3,g),[s(j,0)]).
+
+values(continue,[yes,no]).
+
+% termination:
+recursion(no,_,_,_,[]):-!.
+
+recursion(yes,f(s(S1,P1),s(S2,P2),s(S3,P3),s(S4,P4),s(S5,P5),s(S6,P6)),Y,Z,[Q|[V|[W|R]]]):-
+        msw(emission(S1,P1,S4,P4,Y,Z),Q),
+        msw(emission(S2,P2,S5,P5,Z,Q),V),
+        msw(emission(S3,P3,S6,P6,Q,V),W),
+        msw(transition(S1,P1,Q,V,W),SG1),
+        msw(transition(S2,P2,Q,V,W),SG2),
+        msw(transition(S3,P3,Q,V,W),SG3),
+        msw(transition(S4,P4,Q,V,W),SG4),
+        msw(transition(S5,P5,Q,V,W),SG5),
+        msw(transition(S6,P6,Q,V,W),SG6),
+        msw(next(S1,P1,SG1),N1),
+        msw(next(S2,P2,SG2),N2),
+        msw(next(S3,P3,SG3),N3),
+        msw(next(S4,P4,SG4),N4),
+        msw(next(S5,P5,SG5),N5),
+        msw(next(S6,P6,SG6),N6),
+        msw(continue,NC),
+        recursion(NC,f(N1,N2,N3,N4,N5,N6),V,W,R).
+
+% initiation:
+model(Obs):-
+        recursion(yes,f(s(i,0),s(i,0),s(i,0),s(j,0),s(j,0),s(j,0)),s,s,Obs).
+
