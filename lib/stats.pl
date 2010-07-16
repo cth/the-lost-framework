@@ -1,25 +1,24 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% NOM ET VERSION :
-%
-%      stats.pl -- Version 0.0
-%
-% GOAL :
-%       Computation of several statistics 
-%     
-% HISTORIQUE :
-%	M.P	10/03/2010
-%
-% DESCRIPTION :
-%
-%%%%
+/**<module> Module for the computation of statistics for data
+
+ NOM ET VERSION :
+
+      stats.pl -- Version 0.0
+
+ GOAL :
+       Computation of several statistics 
+     
+ HISTORIQUE :
+	M.P	10/03/2010
+
+ DESCRIPTION :
+
+*/
 
 :- lost_include_api(interface).
 
 
 %% stats(+Data_Type,+Options,+Data,?Result)
 %% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,?Result)
-%% stats(length,+Ranges,-Result)
 %
 % Computation of statistics given a set of Data
 %
@@ -28,10 +27,11 @@
 % List of AminoAcids for Amino stats
 % List of Ranges for Length stats computation
 % Option = Order
-
-
-
+%
 % Type nucleotide, codon, amino_acid
+%
+% The predicate has three arguments for length computation
+
 stats(Type,Options,Data,Input_Counting,Result) :-
         member(Type,[nucleotide,codon,amino_acid]),
         var(Input_Counting),
