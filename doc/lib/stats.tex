@@ -6,3 +6,18 @@
 \section{stats.pl}
 
 \label{sec:stats}
+
+\begin{description}
+    \predicate{build_stat_facts}{2}{+Stats, -StatsFacts}
+builds a list of facts, one for each statistic
+
+\begin{code}
+build_stat_facts(
+      [([a],[(a,0),(c,1),(g,0),(t,0)]),([c],[(a,0),(c,0),(g,0),(t,1)]),([g],[(a,0),(c,0),(g,1),(t,2)]),([t],[(a,1),(c,0),(g,2),(t,1)])],
+      [stat([a,a],0),stat([a,c],1),stat([a,g],0),stat([a,t],0),stat([c,a],0),stat([c,c],0),stat([c,g],0),
+       stat([c,t],1),stat([g,a],0),stat([g,c],0),stat([g,g],1),stat([g,t],2),stat([t,a],1),stat([t,c],0),stat([t,g],2),stat([t,t],1)]
+      )
+\end{code}
+
+\end{description}
+

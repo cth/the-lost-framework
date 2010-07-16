@@ -26,6 +26,33 @@ Type of \arg{Data} is a list
     \item ranges(List_Ranges): extract a list of data given a list of Range
 \end{itemize}
 
+    \predicate{load_annotation_from_file}{4}{+Type_Info, +Options, +File, -Annotation}
+Description: given some \arg{Options}, generate an \arg{Annotation} from a set of terms contained into \arg{File}
+
+\begin{center}
+\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%
+\arg{Type_Info}: sequence
+Terms in \arg{File} are composed of List of data.
+\arg{Annotation} is a list
+\arg{Options} available: \arg{Options} = [data_position(Position),
+all_lists,range(Min,Max),
+range(Range)
+consult]
+all_lists does not support a range option
+\end{center}
+
+\begin{center}
+Type: db
+Terms in \arg{File} are composed of Range that delimites a specific region.
+\arg{Options} available: \arg{Options} = [in_db(Letter),not_in_db(Letter),
+range_position(Position),range(Min,Max)]
+Note: assumption is done on the format of the database. Information is extracted from a list
+of terms that have a parameter Range to describe a specific region of the genome.
+By defaut, annotation of the specific region is 1 and 0 when the region is not specific.
+\end{center}
+
+\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%
+
     \predicate{split_file}{4}{+Filename, +ChunkSize, +OutputFilePrefix, +OutputFileSuffix}
 Split a file of terms into multiple files
 
