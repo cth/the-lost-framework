@@ -1,23 +1,20 @@
-/** <module> Module for the computation of statistics for data
-
- NOM ET VERSION :
-
-      stats.pl -- Version 0.0
-
- GOAL :
-       Computation of several statistics 
-     
- HISTORIQUE :
-	M.P	10/03/2010
-
- DESCRIPTION :
-
-*/
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOM ET VERSION :
+%
+%      stats.pl -- Version 0.0
+%
+% GOAL :
+%       Computation of several statistics 
+%     
+% HISTORIQUE :
+%	M.P	10/03/2010
+%
+% DESCRIPTION :
 
 :- lost_include_api(interface).
 
 
-%% stats(+Data_Type,+Options,+Data,-Result)
+%% stats(+Data_Type,+Options,+Data,+Input_Counting,-Result)
 %% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,-Result)
 %
 % Computation of statistics given a set of Data

@@ -3,26 +3,30 @@
 
 
 
-\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%\%
-\%
-\% NOM ET VERSION :
-\%
-\% \file{stats.pl} -- Version 0.0
-\%
-\% GOAL :
-\% Computation of several statistics
-\%
-\% HISTORIQUE :
-\% M.P 10/03/2010
-\%
-\% DESCRIPTION :
-\%
-\%\%\%\%
+/\Spow{} $<$module$>$ Module for the computation of statistics for data
+
+NOM ET VERSION :
+
+\file{stats.pl} -- Version 0.0
+
+\begin{quote}
+GOAL :
+Computation of several statistics
+\end{quote}
+
+\begin{quote}
+HISTORIQUE :
+M.P 10/03/2010
+\end{quote}
+
+DESCRIPTION :
+
+*/
 
 \Sneck{} lost_include_api(interface).
 
-\%\% stats(+Data_Type,+Options,+Data,?Result)
-\%\% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,?Result)
+\%\% stats(+Data_Type,+Options,+Data,-Result)
+\%\% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,-Result)
 \%
 \% Computation of statistics given a set of Data
 \%
@@ -31,9 +35,12 @@
 \% List of AminoAcids for Amino stats
 \% List of Ranges for Length stats computation
 \% Option = Order
+\%
+\% Type nucleotide, codon, amino_acid
+\%
+\% The predicate has three arguments for length computation
 
 \begin{center}
-\% Type nucleotide, codon, amino_acid
 stats(Type,Options,Data,Input_Counting,Result) \Sneck{}
 member(Type,[nucleotide,codon,amino_acid]),
 var(Input_Counting),
