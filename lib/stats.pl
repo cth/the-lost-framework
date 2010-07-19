@@ -1,21 +1,23 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-% NOM ET VERSION :
-%
-%      stats.pl -- Version 0.0
-%
-% GOAL :
-%       Computation of several statistics 
-%     
-% HISTORIQUE :
-%	M.P	10/03/2010
-%
-% DESCRIPTION :
+/** <module> Statistics computation module
+
+NOM ET VERSION :
+
+      stats.pl -- Version 0.0
+
+ GOAL :
+       Computation of several statistics 
+     
+ HISTORIQUE :
+	M.P	10/03/2010
+
+ DESCRIPTION :
+*/
 
 :- lost_include_api(interface).
 
-%%%%
-% stats(+Data_Type,+Options,+Data,+Input_Counting,-Result)
-% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,-Result)
+%% stats(+Data_Type,+Options,+Data,+Input_Counting,-Result)
+%% stats(+Data_Type,+Options,+Data,+Input_Counting,-Past,-Result)
+%% stats(length,+Ranges,-Result)
 %
 % Computation of statistics given a set of Data
 %
@@ -23,12 +25,13 @@
 % List of nucleotids for nucleotids-codon stats
 % List of AminoAcids for Amino stats
 % List of Ranges for Length stats computation
-% Option = Order
+
+% Options = order(N) that computes frequencies given a past with a length N
 %
 % Type nucleotide, codon, amino_acid
 %
 % The predicate has three arguments for length computation
-%%%
+
 
 stats(Type,Options,Data,Input_Counting,Result) :-
         member(Type,[nucleotide,codon,amino_acid]),
@@ -400,13 +403,16 @@ build_past(N,[Elt|Rest],Past1-Past2,Rest_Data) :-
 %--------
 % Normalization predicates
 %--------
-% normalize(+Type,+Counting,-Probabilities)
+
+
+%% normalize(+Type,+Counting,-Probabilities)
 %
 % Predicate used to normalize the result of a counting
 % Probabilies is a list composed of element with the format
-% 
+%
+% ==
 % (Past,(Domain,Distribution))
-% 
+% ==
 
 normalize(Type,[],[]) :-
         member(Type,[nucleotide,codon,amino_acid]),
@@ -494,15 +500,16 @@ sum_list([T|Rest],Sum) :-
 
 
 
-% build_stat_facts(+Stats,-StatsFacts)
-% builds a list of facts, one for each statistic
+%% build_stat_facts(+Stats,-StatsFacts)
 %
+% builds a list of facts, one for each statistic
+% ==
 % build_stat_facts(
 %	[([a],[(a,0),(c,1),(g,0),(t,0)]),([c],[(a,0),(c,0),(g,0),(t,1)]),([g],[(a,0),(c,0),(g,1),(t,2)]),([t],[(a,1),(c,0),(g,2),(t,1)])],
 %	[stat([a,a],0),stat([a,c],1),stat([a,g],0),stat([a,t],0),stat([c,a],0),stat([c,c],0),stat([c,g],0),
 %	 stat([c,t],1),stat([g,a],0),stat([g,c],0),stat([g,g],1),stat([g,t],2),stat([t,a],1),stat([t,c],0),stat([t,g],2),stat([t,t],1)]
 %	)
-%
+% ==
 
 % Version for counts:
 build_stat_facts([],[]).
