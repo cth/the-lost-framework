@@ -10,8 +10,8 @@ lost_input_formats(annotate, [text(fasta(ffa))]).
 lost_output_format(annotate, _Options, text(prolog(ranges(gene)))).
 
 lost_option(annotate,mismatch_score,1,'Non Gap Mismatch Score'). 
-lost_option(annotate,direction,''). %+ for forward strand and - for reverse strand').
-lost_option(annotate,frame,'Reading frame: 1,2 or 3').
+lost_option(annotate,direction,'+','+ for forward strand and - for reverse strand'). %+ for forward strand and - for reverse strand').
+lost_option(annotate,frame,1,'Reading frame: 1,2 or 3').
 lost_option(annotate,optimized,false,'Set a parallel compputation of the prediction').
 lost_option(annotate,blast_file_name,tblastn,'Common name for temporary blast-files, w/o extensions. Default is tblastn.'). 
 
@@ -25,11 +25,14 @@ lost_option_values(annotate,frame,[1,2,3]).
 annotate([Chunk_File],Options,Chunk_Conservation_File) :-
         get_option(Options,optimized,false),
         !,
+
 	write('LoSt chunk AA conservation analysis: '),nl,
         cl('chunk_aa_conservation.pl'), % Load the actual PRISM model
 	get_option(Options,mismatch_score,Mismatch_Score),
 	get_option(Options,direction,Dir),
+write('got option ok'),nl,
 	get_option(Options,frame,Frame),
+
 	(member(alignments(AlnFile),Options) ->  % Måske, not necessary TO CHECK if Option to declare
 			assert(output_alignments(yes)),
 			open(AlnFile, write, Aln_Stream, [alias(alnout)])
@@ -49,7 +52,7 @@ annotate([Chunk_File],Options,Chunk_Conservation_File) :-
 	%(output_alignments(yes) -> writeln('yes interface'); true),
 	
 	assert(nongap_mismatch_score(Mismatch_Score)),
-	
+
 	open(Chunk_File,read,Chunk_Stream,[alias(chunk_in)]),
 	open(Chunk_Conservation_File,write,Cons_Stream,[alias(cons_out)]),
 	conservation(Chunk_Stream,1,Dir,Frame,Aln_Stream,Cons_Stream),
