@@ -106,30 +106,54 @@ run_genebank_annotator(Sequence_File,File_PTT,Options,GeneBank_annot_File) :-
 %--------------------------------------------------------------------------------------------------
 % driving run-predicate for testing and debugging
 %--------------------------------------------------------------------------------------------------
-consorf(InputOrfFile,InputConsFile):-
-	lost_sequence_file(InputOrfFile,LostInputOrfFile), % ,ConsFile),
-	lost_sequence_file(InputConsFile,LostInputConsFile),
-	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
-	run_model(consorf_genefinder,
-			    annotate([LostInputOrfFile,LostInputConsFile],
-			    [parameter_file(ParameterFile)],   
-			    AnnotFile)),
+consorf(OrfFile,ConsFile,Param_File,AnnotFile):-
+	annotate([OrfFile,ConsFile,Param_File],_Options,AnnotFile),	
 	write('Resulting consorf prediction file'),nl,
 	writeln(AnnotFile).
+	
 
 %--------------------------------------------------------------------------------------------------
 % driving run-predicate once required models have been ported to LoSt framework
 %--------------------------------------------------------------------------------------------------
-run_consorf(Sequence_File,Options,Prediction_File):-
+run_consorf(Sequence_File,ParameterFile,Options,Prediction_File):-
   run_orf_annotator(Sequence_File,Options,Input_Orf_File),
 	run_chunk_conservation(Sequence_File,Options,Input_Cons_File),
-	lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
+	%lost_model_parameter_file(consorf_genefinder, consorf_genefinder, ParameterFile),
 	run_model(consorf_genefinder,
-			    annotate([Input_Orf_File,Input_Cons_File], 						
-			    [option(parameter_file,ParameterFile)],   
+			    annotate([Input_Orf_File,Input_Cons_File,ParameterFile], 						
+			    [],   
 			    Prediction_File)),     			
 	write('Resulting consorf prediction file'),nl,
 	writeln(Prediction_File).
+
+%--------------------------------------------------------------------------------------------------
+% driving run-predicate sequential version
+%--------------------------------------------------------------------------------------------------
+	
+sequential_consorf(Sequence_File,ParameterFile,Options,Prediction_File_prefix):-	
+	run_orf_annotator(Sequence_File,Options,Input_Orf_File),
+	run_chunk_conservation(Sequence_File,Options,Input_Cons_File),
+	split_file(Input_Orf_File,1000,orf_in,'seq',Orf_In),
+	split_file(Input_Cons_File,1000,cons_in,'seq',Cons_In),
+	sequential_consorf_rec(1,Orf_In,Cons_In,ParameterFile,Options,Prediction_File_prefix).
+	
+sequential_consorf_rec(_,[],_,_,_,_):-!.
+sequential_consorf_rec(_,_,[],_,_,_):-!.
+
+sequential_consorf_rec(N,[Input_Orf_File|OrfFiles],[Input_Cons_File|ConsFiles],ParameterFile,Options,Prediction_File_prefix):-
+	atom_concat(Prediction_File_prefix,[N],Prediction_File),
+	run_model(consorf_genefinder,
+			    annotate([Input_Orf_File,Input_Cons_File,ParameterFile], 						
+			   Options,   
+			    Prediction_File)),     			
+	write('Resulting consorf prediction file'),nl,
+	writeln(Prediction_File),
+	M is N+1,
+	sequential_consorf_rec(M,[OrfFiles],[ConsFiles],ParameterFile,Options,Prediction_File_prefix)
+	.
+
+	
+
 
 
 
@@ -137,7 +161,14 @@ run_consorf(Sequence_File,Options,Prediction_File):-
 
 testgoal:-run_chunk_conservation('U00096',[direction(+),frame(1),mismatch_score(1),mode(0),genecode(11)],Output), write('Output :'),writeln(Output).				
 
+% conservation computation on one file already slipped
 
+run_conservation_split(Name) :-
+	lost_tmp_directory(Dir),
+	atom_concat(Dir,Name,FileName),
+	run_model(chunk_aa_conservation,annotate([FileName],[mismatch_score(1)],_Conservation)).
+	
+	
 
 sequential_conservation :-
 	lost_sequence_file('U00096',Sequence),

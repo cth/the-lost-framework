@@ -4,16 +4,21 @@
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
-lost_input_formats(annotate, [text(prolog(ranges(gene))),text(prolog(ranges(gene)))]).
+lost_input_formats(annotate, [text(prolog(ranges(gene))),text(prolog(ranges(gene))),text(prolog(prism_switches))]).
 lost_output_format(annotate, _Options, text(prolog(ranges(gene)))).
 
+consorf_beta(OrfFile,ConsFile,Param_File,AnnotFile):-
+	annotate([OrfFile,ConsFile,Param_File],_Options,AnnotFile),	
+	write('Resulting consorf prediction file'),nl,
+	writeln(AnnotFile).
+
+
 % This is what is used to get the best annotation
-annotate([OrfFile,ConsFile],Options,OutputFile) :-
+annotate([OrfFile,ConsFile,ParamFile],_Options,OutputFile) :-
 	write('LoSt consorf genefinder: '),nl,
-				get_option(Options,parameter_file,Paramfile),
-				prismAnnot('consorf_genefinder'), % Load the actual PRISM model
-				restore_sw(ParamFile), % Restore switch values
-				
+			  prismAnnot('consorf_genefinder'), % Load the actual PRISM model
+			  restore_sw(ParamFile), % Restore switch values,
+			  
 			  open(OrfFile, read, OrfIn,[alias(orfin)]),
 			  open(ConsFile, read, ConsIn,[alias(consin)]),
 			  open(OutputFile,write,OutStream,[alias(predout)]),
@@ -31,11 +36,11 @@ consorf_main(OrfInStream,ConsInStream,OutStream):-
 		read(OrfInStream,OrfTerm),
 		read(ConsInStream,ConsTerm),
 		(OrfTerm \= eof, ConsTerm \= eof ->
-                    OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,InputOrf|_],
-                    ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,Cons_Annot|_],
-                    ( Cons_Annot = [] ->
+                    OrfTerm =.. [_,Id,Start,Stop,Dir,Frm,[seq_annotation(InputOrf)|_]],
+                    ConsTerm =.. [_,Id,Start,Stop,Dir,Frm,[cons_annotation(Cons_Annot)|_]],
+                   ( Cons_Annot = [] ->
                         L is Stop - Start + 1, 
-                        makelist(L,0,InpuCons)
+                        makelist(L,0,InputCons)
                     ;
                         InputCons = Cons_Annot
                     ),

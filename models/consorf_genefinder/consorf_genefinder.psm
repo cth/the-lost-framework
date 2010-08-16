@@ -25,12 +25,12 @@
 %=========================================================
 %:-dynamic(genebank_annotation/6).
 %:-dynamic(conservation/6).
-%:- ddynamic(data/1).
+%:- dynamic(data/1).
 :- set_prism_flag(learn_mode,both).
 :- set_prism_flag(log_viterbi,on).
 :- set_prism_flag(scaling,log_exp).
 
-data('trainingTest').
+data('consorf_training_file_+1a.dat').
 values(begin,[c,n]).
 values(trans(_),[c,n,end]).
 values(emit(_),[
@@ -60,7 +60,7 @@ consorf_recursive(end,[],[],--[]).
 /* predicate for building training data from separate existing files
 Make_training_file(Orf_Annot++,Cons_Annot++,Reference_File++,Training_file++)
 where 
--	Orf_Annot is a file of facts :  orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Orf_Annot)]).
+- Orf_Annot is a file of facts :  orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Orf_Annot)]).
 - Cons_Annot is a file of facts :   conservation(Id,Left,Right,Dir,Frame,[cons_annotation(Cons_Annot)|_Rest_Infos2]).
 - Reference_File is a file of facts :         gb(Id,Left,Right,Dir,Frame,Rest_Infos). Ref_Annot is constructed from fact.
 - Training_File is a file of goals : 		 consorf(Orf_Annot,Cons_Annot,Ref_Annot). 
