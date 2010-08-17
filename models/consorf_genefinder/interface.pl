@@ -47,6 +47,7 @@ consorf_main(OrfInStream,ConsInStream,OutStream):-
       % Derive an annotation somehow
                     check_or_fail(viterbiAnnot(consorf(InputOrf,InputCons,OutputAnnotation),_),
                     error(errorpair(InputOrf,InputCons))),
+			!,
                     OutputEntry =.. [consorf_prediction,Id,Start,Stop,Dir,Frm,OutputAnnotation],
                     writeq(OutStream,OutputEntry),writeln(OutStream,'.'),
                     consorf_main(OrfInStream,ConsInStream,OutStream),! % Green cut, tail-recursion optimization
