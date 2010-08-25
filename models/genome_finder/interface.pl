@@ -11,6 +11,14 @@ test_annotate :-
 % annotate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% annotate([GoldStdFile,PredictionsFile],Options,OutputFile)
+% Annotate first initializes the model parameters.
+% Then 
+% - converts input file to a sequence
+% - runs viterbi on the sequence
+% - Extract the sequence of visited states from the viterbi tree
+% - Create a set of predictions from the sequence of visited states
+% - write the set of predictions to OutputFile
 annotate([GenbankFile,PredictionsFile],_Options,OutputFile) :-
         prism(genome_finder),
         init_model(PredictionsFile,pGenbankFile),
@@ -38,6 +46,7 @@ list_from_prediction_file(File,List) :-
         list_from_stream(Stream,List),
         close(Stream).
         
+%% Reads a file with predictions and produces them as a list
 % Fixme: make functor configurable
 % We need a functor name if the file contains multiple types of facts
 list_from_stream(Stream,List) :-
@@ -86,6 +95,7 @@ test_l1 :-
        prism(genome_finder),
        gb_file(GeneFileProlog),
        learn_frame_transitions(GeneFileProlog).
+
 test_l3 :-
         gb_file(GF),
         pred_file(PF),
@@ -111,8 +121,6 @@ test_l2 :-
         split_predictions(Predictions,RefGenes,Correct,Incorrect),
         terms_to_file('incorrect.txt',Incorrect),
         terms_to_file('correct.txt',Correct).
-
-
 
 elements_with_functor(_,[],[]).
 elements_with_functor(F,[E|ERest],[E|CRest]) :-
@@ -217,8 +225,8 @@ learn_delete_emit_probs(FrameScorePairs) :-
         as_dummy_pgoals(emit(delete),FrameScorePairs, PGoals),
         learn(PGoals).
 % where: 
-as_dummy_pgoals(_,[],[]).
-as_dummy_pgoals(SwName,[O|R1],[dummy_pgoal(SwName,O)|R2]) :-
+  as_dummy_pgoals(_,[],[]).
+  as_dummy_pgoals(SwName,[O|R1],[dummy_pgoal(SwName,O)|R2]) :-
       as_dummy_pgoals(SwName,R1,R2).
 
 % Create a list of frames from genbank terms
