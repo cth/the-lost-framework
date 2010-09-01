@@ -45,7 +45,7 @@ list_from_prediction_file(File,List) :-
         open(File,read,Stream),
         list_from_stream(Stream,List),
         close(Stream).
-        
+
 %% Reads a file with predictions and produces them as a list
 % Fixme: make functor configurable
 % We need a functor name if the file contains multiple types of facts
@@ -83,53 +83,7 @@ predictions_from_state_sequence([P|Ps],[S|Ss],[P|Ms]) :-
         !,
         predictions_from_state_sequence(Ps,Ss,Ms).
 
-%%%%%%%%%%%%% Some test stuff %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-gb_file(GeneFileProlog) :-
-       lost_data_file('U00096_ptt',PttFile),
-       run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
-
-pred_file('best_predictions.pl').
-
-test_l1 :-
-       prism(genome_finder),
-       gb_file(GeneFileProlog),
-       learn_frame_transitions(GeneFileProlog).
-
-test_l3 :-
-        gb_file(GF),
-        pred_file(PF),
-        prism(genome_finder),
-        learn_emission_probabilities(GF,PF),
-        show_sw.
-
-test_l4 :-
-        gb_file(GF),
-        pred_file(PF),
-        learn([GF,PF],_,_).
-
-test_l2 :-
-        gb_file(RefGeneFile),
-        terms_from_file(RefGeneFile,RefGenes),
-        pred_file(PFile),
-        terms_from_file(PFile,Predictions1),
-        elements_with_functor(genemark_gene_prediction,Predictions1,Predictions),
-        length(RefGenes,RGL),
-        write('number of reference genes'), write(RGL), nl, 
-        length(Predictions,PL),
-        write('number of predictions'), write(PL), nl,
-        split_predictions(Predictions,RefGenes,Correct,Incorrect),
-        terms_to_file('incorrect.txt',Incorrect),
-        terms_to_file('correct.txt',Correct).
-
-elements_with_functor(_,[],[]).
-elements_with_functor(F,[E|ERest],[E|CRest]) :-
-        E =.. [ F | _ ],
-        !,
-        elements_with_functor(F,ERest,CRest).
-elements_with_functor(F,[_|ERest],CRest) :-
-        !,
-        elements_with_functor(F,ERest,CRest).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % learning of different probability distributions for the model
@@ -158,11 +112,14 @@ learn_delete_transition_probability(RefGenes,Predictions) :-
         write('here:---<<<<<<'),nl,
         write(P_incorrect),nl,
         NoDeleteProb is 1 - P_incorrect,
-
 %        NoDeleteProb is (RefGenesLen / PredictionsLen),
         DeleteProb is 1-NoDeleteProb,
         set_sw(goto_delete,[DeleteProb,NoDeleteProb]).
 
+%%
+% Initialize the probability of termination to be 1 / #predictions
+% Is this really a good way of doing it?
+% For viterbi it does not really matter much...
 learn_terminate_probability(Predictions) :-
        length(Predictions,PredictionsLength),
        TerminateProb is 1 / PredictionsLength,
@@ -232,7 +189,7 @@ learn_delete_emit_probs(FrameScorePairs) :-
 % Create a list of frames from genbank terms
 frame_list_from_genbank_terms([],[]).
 frame_list_from_genbank_terms([T|Ts],[F|Fs]) :-
-        T =.. [ _gb, _start, _stop, Strand, Frame, _ ], 
+        T =.. [ _gb, _identifier, _start, _stop, Strand, Frame, _ ], 
         ((Strand == '+') ->
                 F = Frame
                 ;
@@ -256,17 +213,19 @@ frame_score_list_from_predictions(ScoreFunctor,[T|Ts],[(F,Score)|Fs]) :-
 
 % split predictions into a correct set and a wrong set
 % Correct means that the prediction have a correct stop codon
+% An entry in the list RefGenes is expected to look something like: gb(U00096,190,255,+,1,[...])
 split_predictions([],_,[],[]).
 
 split_predictions([P|PredictionsRest],RefGenes,[P|CorrectRest],Incorrect) :-
-        P =.. [_,L,R,S,F,_],
+        P =.. [_,_,L,R,S,F,_],
         RefGenes = [Ref1|_],
         Ref1 =.. [ RefFunctor | _ ],
         ((S=='+') ->
-                Match =.. [RefFunctor,_,R,S,F,_]
+                Match =.. [RefFunctor,_,_,R,S,F,_]
                 ;
-                Match =.. [RefFunctor,L,_,S,F,_]),
+                Match =.. [RefFunctor,_,L,_,S,F,_]),
         member(Match,RefGenes),
+%		write(Match),nl,
         !,
         split_predictions(PredictionsRest,RefGenes,CorrectRest,Incorrect).
 
@@ -298,7 +257,6 @@ threshold_group_rec(N,[T|TR],Score,Group) :-
         threshold_group_rec(N1,TR,Score,Group).
 threshold_group_rec(N,[T|_],Score,N) :-
         Score =< T.
-
 
 groups_from_count(Count,GroupsList) :-
         rev_groups_from_count(Count,GroupsListRev),
@@ -338,3 +296,103 @@ scores_from_terms([_|Ts],Ss) :-
 score_from_prediction_term(T,S) :-
         T =.. [ _functor, _left, _right, _strand, _frame, Extra],
         member(start_codon_probability(S),Extra).
+
+
+
+%%%%%%%%%%%%% Some test stuff %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+gb_file(GeneFileProlog) :-
+      lost_data_file('U00096_ptt',PttFile),
+      run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
+
+veco_file(GeneFileProlog) :-
+	lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
+    run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
+
+pred_file('best_predictions.pl').
+
+test_l1 :-
+      prism(genome_finder),
+      gb_file(GeneFileProlog),
+   	  write('do I get here?'),
+      learn_frame_transitions(GeneFileProlog).
+
+test_l2 :-
+	gb_file(RefGeneFile),
+	terms_from_file(RefGeneFile,RefGenes),
+	pred_file(PFile),
+	terms_from_file(PFile,Predictions1),
+	elements_with_functor(genemark_gene_prediction,Predictions1,Predictions),
+    length(RefGenes,RGL),
+    write('number of reference genes: '), write(RGL), nl, 
+    length(Predictions,PL),
+    write('number of predictions: '), write(PL), nl,
+    split_predictions(Predictions,RefGenes,Correct,Incorrect),
+	length(Correct,CorrectLen),
+	write('correct predictions: '), write(CorrectLen),nl,
+	length(Incorrect,IncorrectLen),
+	write('Incorrect predictions: '), write(IncorrectLen),nl,
+    terms_to_file('incorrect.txt',Incorrect),
+    terms_to_file('correct.txt',Correct).
+
+test_l3 :-
+	gb_file(GF),
+	pred_file(PF),
+	prism(genome_finder),
+	learn_emission_probabilities(GF,PF),
+	show_sw.
+
+test_l4 :-
+	gb_file(GF),
+	pred_file(PF),
+	learn([GF,PF],_,_).
+
+
+%%%%%%%% Experiment r1: veco_cyc and Soerens gene finder %%%%%%
+
+r1_verified_file(GeneFileProlog) :-
+	lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
+    run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
+
+tt1 :-
+	r1_verified_file(F),
+	terms_from_file(F,Ts),
+	write(Ts),nl,
+	map(calc_len,Ts,Ls),
+	write(Ls).
+% where
+  calc_len([],[]).
+  calc_len(T,Length) :- T =.. [_,_,L,R|_], L > R, !,  Length is L - R.
+  calc_len(T,Length) :-  T =.. [_,_,L,R|_], Length is R - L.
+
+r1_predictions_file('nc000913_2_all_urfs.pl').
+
+r1_learn :-
+	r1_verified_file(RefGeneFile),
+	terms_from_file(RefGeneFile,RefGenes),
+	r1_predictions_file(PFile),
+	terms_from_file(PFile,Predictions1),
+	elements_with_functor(prediction,Predictions1,Predictions),
+    length(RefGenes,RGL),
+    write('number of reference genes: '), write(RGL), nl, 
+    length(Predictions,PL),
+    write('number of predictions: '), write(PL), nl,
+    split_predictions(Predictions,RefGenes,Correct,Incorrect),
+	length(Correct,CorrectLen),
+	write('correct predictions: '), write(CorrectLen),nl,
+	length(Incorrect,IncorrectLen),
+	write('Incorrect predictions: '), write(IncorrectLen),nl,
+    terms_to_file('r1_incorrect.txt',Incorrect),
+    terms_to_file('r1_correct.txt',Correct).
+
+
+%%%
+
+elements_with_functor(_,[],[]).
+	elements_with_functor(F,[E|ERest],[E|CRest]) :-
+	E =.. [ F | _ ],
+	!,
+	elements_with_functor(F,ERest,CRest).
+
+elements_with_functor(F,[_|ERest],CRest) :-
+	!,
+	elements_with_functor(F,ERest,CRest).
