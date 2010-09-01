@@ -19,15 +19,28 @@ test_annotate :-
 % - Extract the sequence of visited states from the viterbi tree
 % - Create a set of predictions from the sequence of visited states
 % - write the set of predictions to OutputFile
-annotate([GenbankFile,PredictionsFile],_Options,OutputFile) :-
+annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
         prism(genome_finder),
-        init_model(PredictionsFile,pGenbankFile),
-        show_sw,
+        get_option(Options,score_functor,ScoreFunctor),
 
-        write('model parameters initialized...'),nl,
-        list_from_prediction_file(PredictionsFile,PredictionFrames),
+        %list_from_prediction_file(PredictionsFile,PredictionFrames),
+
+        % Load gene finder predictions  
+        terms_from_file(PredictionsFile,GeneFinderPredictions),
+        frame_score_list_from_predictions(ScoreFunctor,GeneFinderPredictions,FrameScorePairs),
+        number_of_score_categories(NumScoreGroups),
+        scores_from_terms(ScoreFunctor,GeneFinderPredictions,Scores),
+        threshold_list_from_scores(Scores,NumScoreGroups,ThresholdList),
+        write('ThresholdList: '), nl,
+        write(ThresholdList),nl,
+        threshold_discrete_frame_score_pairs(ThresholdList,FrameScorePairs,FrameScorePairsDiscrete),
+
+        groups_from_count(NumScoreGroups,ScoreCategories),
+        assert(score_categories(ScoreCategories)),
+
+
         write('Runnning viterbi on prediction sequence:'),nl,
-        viterbit(model(PredictionFrames),_,Tree),
+        viterbit(model(FrameScorePairsDiscrete),_,Tree),
         write(done),nl,
         flatten(Tree,TF),findall(S,member(msw(emit(S),_),TF),AllStates),
         write(AllStates),nl,
@@ -36,6 +49,9 @@ annotate([GenbankFile,PredictionsFile],_Options,OutputFile) :-
         write(SelectedPredictions),nl,
         terms_to_file(OutputFile,SelectedPredictions).
 
+
+
+
 list_from_genbank_file(File,List) :-
         open(File,read,Stream),
         read(Stream,model(List)),
@@ -43,20 +59,21 @@ list_from_genbank_file(File,List) :-
 
 list_from_prediction_file(File,List) :-
         open(File,read,Stream),
-        list_from_stream(Stream,List),
+        file_functor(File,Functor),
+        list_from_stream(Functor,Stream,List),
         close(Stream).
 
 %% Reads a file with predictions and produces them as a list
 % Fixme: make functor configurable
 % We need a functor name if the file contains multiple types of facts
-list_from_stream(Stream,List) :-
+list_from_stream(Functor,Stream,List) :-
         read(Stream,Term),
         ((Term == end_of_file) ->
                 List = []
                 ;
                 functor(Term,F,_),
-                ((F=='genemark_gene_prediction') ->
-                    Term =.. [genemark_gene_prediction,_start,_end,Strand,Frame,_],
+                ((F==Functor) ->
+                    Term =.. [F,_id,_start,_end,Strand,Frame,_],
                     ((Strand == '+') ->
                         Frame6 = Frame
                         ;
@@ -65,7 +82,7 @@ list_from_stream(Stream,List) :-
                     ;
                     List = ListRest),
                 !,
-                list_from_stream(Stream,ListRest)).
+                list_from_stream(Functor,Stream,ListRest)).
 
 
 %% predictions_from_state_sequence(P,S,M).
@@ -91,6 +108,7 @@ predictions_from_state_sequence([P|Ps],[S|Ss],[P|Ms]) :-
 
 learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
        prism(genome_finder),
+	   get_option(Options, score_functor, ScoreFunctor),
        terms_from_file(GenbankFile,RefGenes),
        terms_from_file(PredictionsFile,Predictions),
        write('::: learning frame transitions...'),nl,
@@ -100,7 +118,7 @@ learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
        write('::: learning terminate transition probability...'),nl,
        learn_terminate_probability(Predictions),
        write('::: learning emission probabilities...'),nl,
-       learn_emission_probabilities(RefGenes,Predictions).
+       learn_emission_probabilities(ScoreFunctor,RefGenes,Predictions).
 
 
 learn_delete_transition_probability(RefGenes,Predictions) :-
@@ -109,7 +127,6 @@ learn_delete_transition_probability(RefGenes,Predictions) :-
         split_predictions(Predictions,RefGenes,Correct,Incorrect),
         length(Incorrect,IncorrectLen),
         P_incorrect is IncorrectLen /  PredictionsLen,
-        write('here:---<<<<<<'),nl,
         write(P_incorrect),nl,
         NoDeleteProb is 1 - P_incorrect,
 %        NoDeleteProb is (RefGenesLen / PredictionsLen),
@@ -142,20 +159,22 @@ learn_frame_transitions(GenbankTerms) :-
         add_unit_score(E,(E,0)).
 
 % Learning the emission probabilities
-learn_emission_probabilities(RefGenes,Predictions) :-
+learn_emission_probabilities(ScoreFunctor,RefGenes,Predictions) :-
         retractall(score_categories(_)),
         %terms_from_file(GenbankFile,RefGenes),
         %terms_from_file(PredictionsFile,Predictions),
         
         % Discretize scores:
         number_of_score_categories(NumScoreGroups),
-        scores_from_terms(Predictions,Scores),
+        scores_from_terms(ScoreFunctor,Predictions,Scores),
         threshold_list_from_scores(Scores,NumScoreGroups,ThresholdList),
+		write('ThresholdList: '), nl,
+		write(ThresholdList),nl,
 
         split_predictions(Predictions,RefGenes,Correct,Incorrect),
 
-        frame_score_list_from_predictions(average_probability,Correct,CorrectFrameScorePairs),
-        frame_score_list_from_predictions(average_probability,Incorrect,IncorrectFrameScorePairs),
+        frame_score_list_from_predictions(ScoreFunctor,Correct,CorrectFrameScorePairs),
+        frame_score_list_from_predictions(ScoreFunctor,Incorrect,IncorrectFrameScorePairs),
         
         threshold_discrete_frame_score_pairs(ThresholdList,CorrectFrameScorePairs,CorrectFrameScorePairsDiscrete),
         threshold_discrete_frame_score_pairs(ThresholdList,IncorrectFrameScorePairs,IncorrectFrameScorePairsDiscrete),
@@ -201,7 +220,7 @@ frame_list_from_genbank_terms([T|Ts],[F|Fs]) :-
 % create a list of (frame,score) pairs from a list of predictions
 frame_score_list_from_predictions(_, [],[]).
 frame_score_list_from_predictions(ScoreFunctor,[T|Ts],[(F,Score)|Fs]) :-
-        T =.. [ _, _left, _right, Strand, Frame, Extra ], 
+        T =.. [ _ftor,_id, _left, _right, Strand, Frame, Extra ], 
         MatchScore =.. [ ScoreFunctor, Score ],
         member(MatchScore,Extra),
         ((Strand == '+') ->
@@ -217,17 +236,16 @@ frame_score_list_from_predictions(ScoreFunctor,[T|Ts],[(F,Score)|Fs]) :-
 split_predictions([],_,[],[]).
 
 split_predictions([P|PredictionsRest],RefGenes,[P|CorrectRest],Incorrect) :-
-        P =.. [_,_,L,R,S,F,_],
+        P =.. [_,_,L,R,S,_,_],
         RefGenes = [Ref1|_],
         Ref1 =.. [ RefFunctor | _ ],
         ((S=='+') ->
-                Match =.. [RefFunctor,_,_,R,S,F,_]
-                ;
-                Match =.. [RefFunctor,_,L,_,S,F,_]),
-        member(Match,RefGenes),
-%		write(Match),nl,
-        !,
-        split_predictions(PredictionsRest,RefGenes,CorrectRest,Incorrect).
+        	Match =.. [RefFunctor,_,_,R,S,_,_]
+           	;
+            Match =.. [RefFunctor,_,L,_,S,_,_]),
+   		member(Match,RefGenes),
+   		!,
+   		split_predictions(PredictionsRest,RefGenes,CorrectRest,Incorrect).
 
 split_predictions([P|PredictionsRest],RefGenes,Correct,[P|IncorrectRest]) :-
         !,
@@ -239,6 +257,8 @@ split_predictions([P|PredictionsRest],RefGenes,Correct,[P|IncorrectRest]) :-
 % Each range of scores is converted into a symbolic value
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% 
+% 
 threshold_discrete_frame_score_pairs(_,[],[]).
 threshold_discrete_frame_score_pairs(Thresholds,[(F,S)|R1],[(F,DS)|R2]) :-
        threshold_group(Thresholds,S,DS),
@@ -269,7 +289,9 @@ rev_groups_from_count(Count,[Count|GroupsRest]) :-
 
 threshold_list_from_scores(Scores,NumGroups,ThresholdsList) :-
         sort('=<',Scores,SortedScores),
+        NumThresholds is NumGroups - 1,
         length(Scores,NumScores),
+%        GroupSize is round(NumScores / NumThresholds),
         GroupSize is round(NumScores / NumGroups),
         write('group size is '), write(GroupSize),nl,
         mk_threshold_list(GroupSize,SortedScores,ThresholdsList).
@@ -285,18 +307,18 @@ mk_threshold_list(GroupSize,SortedScores,[ThresholdScore|TSRest]) :-
 mk_threshold_list(_,_,[]).
 
 % Extract scores from genemark prediction terms
-scores_from_terms([],[]).
-scores_from_terms([T|Ts],[S|Ss]) :-
-        score_from_prediction_term(T,S),
+scores_from_terms(_,[],[]).
+scores_from_terms(ScoreFunctor,[T|Ts],[S|Ss]) :-
+        score_from_prediction_term(ScoreFunctor,T,S),
         !,
-        scores_from_terms(Ts,Ss).
-scores_from_terms([_|Ts],Ss) :-
-        scores_from_terms(Ts,Ss).
+        scores_from_terms(ScoreFunctor,Ts,Ss).
+scores_from_terms(ScoreFunctor,[_|Ts],Ss) :-
+        scores_from_terms(ScoreFunctor,Ts,Ss).
 
-score_from_prediction_term(T,S) :-
-        T =.. [ _functor, _left, _right, _strand, _frame, Extra],
-        member(start_codon_probability(S),Extra).
-
+score_from_prediction_term(ScoreFunctor,T,S) :-
+        T =.. [ _functor, _id, _left, _right, _strand, _frame, Extra],
+		ScoreMatcher =.. [ ScoreFunctor, S ],
+        member(ScoreMatcher,Extra).
 
 
 %%%%%%%%%%%%% Some test stuff %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -364,9 +386,10 @@ tt1 :-
   calc_len(T,Length) :- T =.. [_,_,L,R|_], L > R, !,  Length is L - R.
   calc_len(T,Length) :-  T =.. [_,_,L,R|_], Length is R - L.
 
-r1_predictions_file('nc000913_2_all_urfs.pl').
+r1_predictions_file('data/nc000913_2_all_urfs_for_real.pl').
+%r1_predictions_file('data/nc000913_2_FN0_mm_3.pl').
 
-r1_learn :-
+r1_learn_steps :-
 	r1_verified_file(RefGeneFile),
 	terms_from_file(RefGeneFile,RefGenes),
 	r1_predictions_file(PFile),
@@ -379,11 +402,29 @@ r1_learn :-
     split_predictions(Predictions,RefGenes,Correct,Incorrect),
 	length(Correct,CorrectLen),
 	write('correct predictions: '), write(CorrectLen),nl,
+%	write(Correct),nl,
 	length(Incorrect,IncorrectLen),
 	write('Incorrect predictions: '), write(IncorrectLen),nl,
     terms_to_file('r1_incorrect.txt',Incorrect),
     terms_to_file('r1_correct.txt',Correct).
+	
+	
+r1_learn :-
+	r1_verified_file(GF),
+	r1_predictions_file(PF),
+	file_functor(PF,PFFunctor),
+	write('prediction functor: '), write(PFFunctor), nl,
+	learn([GF,PF],[score_functor(score)],_),
+	save_sw.
 
+r1_decode :-
+	r1_verified_file(GF),
+	r1_predictions_file(PF),
+	annotate([GF,PF],[score_functor(score)],'r1_predictions.pl').
+
+r1_go :- 
+        r1_learn,
+        r1_decode.
 
 %%%
 
