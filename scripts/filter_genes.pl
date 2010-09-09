@@ -9,17 +9,7 @@ parser_ptt(PTT_File,ParsedPTTFile) :-
 
 % Helper predictate 
 filter_genes(ParsedPTT,RawGenome,Options,Filtered) :-
-        (is_generated_file(ParsedPTT) ->
-            ParsedPTT = ParsedPTT_File
-        ;
-            lost_sequence_file(ParsedPTT,ParsedPTT_File)
-        ),
-        (is_generated_file(RawGenome) ->
-            RawGenome = RawGenome_File
-        ;
-            lost_sequence_file(RawGenome,RawGenome_File)
-        ),
-	run_model(gene_filter,annotate([ParsedPTT,RawGenome], Options,Filtered)).
+        run_model(gene_filter,annotate([ParsedPTT,RawGenome], Options,Filtered)).
 
 filter_y_genes(Genes,Sequence,Filtered) :-
 	Options = [ regex_no_match_extra_fields([ gene_name('^y.*$') ]) ],
@@ -56,12 +46,12 @@ run_ecoli_filters :-
 
         % Filter uncertain genes
         write('Filtering genes which from the description seem uncertain:'),nl,
-        filter_uncertain_genes(Genes,Genome,Certain),
+        filter_uncertain_genes(Genes,Genome,[],Certain),
         write('Results written to file: '), write(Certain), nl,
 
         % Filter y-genes
         write('Filtering genes which from the description seem uncertain:'),nl,
-        filter_uncertain_genes(Genes,Genome,Certain),
+        filter_uncertain_genes(Genes,Genome,[],Certain),
         write('Results written to file: '), write(Certain), nl.
 
 

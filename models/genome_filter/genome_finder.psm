@@ -4,6 +4,8 @@
 %:-set_prism_flag(log_viterbi,on).
 :-set_prism_flag(learn_mode,both).  
 
+max_consequtive_deletes(20).
+
 frames([1,2,3,4,5,6]).
 
 %% For learning with a single switch at a time
@@ -41,7 +43,7 @@ model(Observations):-
    recursion(begin,Observations). 
 
 % recursion structure:
-recursion(F,XR) :-
+recursion(Del,F,XR) :-
    % Terminate recursion?
    msw(terminate,T),
    ((T==yes) -> 
@@ -54,17 +56,20 @@ recursion(F,XR) :-
                 ;
                 msw(goto_delete,GotoDel)),
         ((GotoDel == yes) -> 
-                recursion_delete(F,XR) 
+                recursion_delete(Del,F,XR) 
                 ;
                 recursion_frame(F,XR))).
 
 recursion_frame(F,[(NextFrame,Score)|R]) :-
      msw(trans(F), NextFrame),
      msw(emit(NextFrame),Score),
-     recursion(NextFrame,R).
+     recursion(0,NextFrame,R).
 
 % Arg1: previous frame
-recursion_delete(F,[X|R]) :-
-   write('in delete state'),nl,
+recursion_delete(Del,F,[X|R]) :-
+   max_consequtive_deletes(MaxDel),
+   Del =< MaxDel,
+   NextDel is Del + 1,
+   %write('in delete state'),nl,
    msw(emit(delete), X),
-   recursion(F,R).
+   recursion(NextDel,F,R).
