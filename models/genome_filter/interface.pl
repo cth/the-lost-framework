@@ -1,6 +1,6 @@
 :- ['../../lost.pl'].
 :- lost_include_api(misc_utils).
-:- lost_include_api(chmm).  
+
 
 number_of_score_categories(10).
 
@@ -20,7 +20,9 @@ test_annotate :-
 % - Create a set of predictions from the sequence of visited states
 % - write the set of predictions to OutputFile
 annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
-        prism(genome_finder),
+        prism(genome_finder_nolist),
+        assert(learn_mode(false)),
+        restore_sw,
         get_option(Options,score_functor,ScoreFunctor),
 
         %list_from_prediction_file(PredictionsFile,PredictionFrames),
@@ -38,7 +40,9 @@ annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
         groups_from_count(NumScoreGroups,ScoreCategories),
         assert(score_categories(ScoreCategories)),
 
-
+        write('writing input file...'),nl,
+        %write(FrameScorePairsDiscrete),nl,
+        terms_to_file('input.pl',[input_sequence(FrameScorePairsDiscrete)]),
         write('Runnning viterbi on prediction sequence:'),nl,
         viterbit(model(FrameScorePairsDiscrete),_,Tree),
         write(done),nl,
@@ -48,9 +52,6 @@ annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
         predictions_from_state_sequence(PredictionFrames,AllStates,SelectedPredictions),
         write(SelectedPredictions),nl,
         terms_to_file(OutputFile,SelectedPredictions).
-
-
-
 
 list_from_genbank_file(File,List) :-
         open(File,read,Stream),
@@ -100,16 +101,45 @@ predictions_from_state_sequence([P|Ps],[S|Ss],[P|Ms]) :-
         !,
         predictions_from_state_sequence(Ps,Ss,Ms).
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % learning of different probability distributions for the model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
+       prism(genome_finder_nolist),
+       assert(learn_mode(true)),
+       get_option(Options, score_functor, ScoreFunctor),
+       terms_from_file(GenbankFile,RefGenesUnsorted),
+       write('::: sorting genes in golden standard file'),nl,
+       sort(RefGenesUnsorted,RefGenes),
+       terms_from_file(PredictionsFile,Predictions),
+        number_of_score_categories(NumScoreGroups),
+        scores_from_terms(ScoreFunctor,Predictions,Scores),
+        threshold_list_from_scores(Scores,NumScoreGroups,ThresholdList),
+		write('ThresholdList: '), nl,
+		write(ThresholdList),nl,
+        write('Classifying predictions into true and false positives.'),nl,
+        classify_predictions(Predictions,RefGenes,ClassifiedPredictions),
+        write('Create frame/score input list for model.'),nl,
+        frame_score_list_from_predictions(ScoreFunctor,ClassifiedPredictions,PredictionScorePairs),
+        write('here'),nl,
+        write('Discretizing scores from gene finder.'),nl,
+        threshold_discrete_frame_score_pairs(ThresholdList,PredictionScorePairs,PredictionScorePairsDiscrete),
+        write('Determining number of score categories'),nl,
+        groups_from_count(NumScoreGroups,ScoreCategories),
+        assert(score_categories(ScoreCategories)),
+        terms_to_file('test.file',PredictionScorePairsDiscrete),
+        write('before learning: '),nl,
+        assert(learn_mode(true)),
+        learn([model(PredictionScorePairsDiscrete)]),
+        retractall(learn_mode(_)).
+
+ learn2([GenbankFile,PredictionsFile],Options,OutputFile) :-
        prism(genome_finder),
-	   get_option(Options, score_functor, ScoreFunctor),
-       terms_from_file(GenbankFile,RefGenes),
+       get_option(Options, score_functor, ScoreFunctor),
+       terms_from_file(GenbankFile,RefGenesUnsorted),
+       write('::: sorting genes in golden standard file'),nl,
+       sort(RefGenesUnsorted,RefGenes),
        terms_from_file(PredictionsFile,Predictions),
        write('::: learning frame transitions...'),nl,
        learn_frame_transitions(RefGenes),
@@ -120,6 +150,7 @@ learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
        write('::: learning emission probabilities...'),nl,
        learn_emission_probabilities(ScoreFunctor,RefGenes,Predictions).
 
+      
 
 learn_delete_transition_probability(RefGenes,Predictions) :-
         length(RefGenes,RefGenesLen),
@@ -136,7 +167,7 @@ learn_delete_transition_probability(RefGenes,Predictions) :-
 %%
 % Initialize the probability of termination to be 1 / #predictions
 % Is this really a good way of doing it?
-% For viterbi it does not really matter much...
+% For viterbi it does not really matter much...  
 learn_terminate_probability(Predictions) :-
        length(Predictions,PredictionsLength),
        TerminateProb is 1 / PredictionsLength,
@@ -219,6 +250,13 @@ frame_list_from_genbank_terms([T|Ts],[F|Fs]) :-
 
 % create a list of (frame,score) pairs from a list of predictions
 frame_score_list_from_predictions(_, [],[]).
+
+frame_score_list_from_predictions(ScoreFunctor,[true_positive(T)|Ts],[true_positive(F,Score)|Fs]) :-
+        frame_score_list_from_predictions(ScoreFunctor,[T|Ts],[(F,Score)|Fs]).
+
+frame_score_list_from_predictions(ScoreFunctor,[false_positive(T)|Ts],[false_positive(F,Score)|Fs]) :-
+        frame_score_list_from_predictions(ScoreFunctor,[T|Ts],[(F,Score)|Fs]).
+
 frame_score_list_from_predictions(ScoreFunctor,[T|Ts],[(F,Score)|Fs]) :-
         T =.. [ _ftor,_id, _left, _right, Strand, Frame, Extra ], 
         MatchScore =.. [ ScoreFunctor, Score ],
@@ -229,6 +267,28 @@ frame_score_list_from_predictions(ScoreFunctor,[T|Ts],[(F,Score)|Fs]) :-
                 F is Frame + 3),
         !,
         frame_score_list_from_predictions(ScoreFunctor,Ts,Fs).
+
+
+% tag predictions as true positives or false positives
+
+classify_predictions([],_,[]).
+
+classify_predictions([P|PredictionsRest],RefGenes,[true_positive(P)|TaggedRest]) :-
+        P =.. [_,_,L,R,S,_,_],
+        RefGenes = [Ref1|_],
+        Ref1 =.. [ RefFunctor | _ ],
+        ((S=='+') ->
+        	Match =.. [RefFunctor,_,_,R,S,_,_]
+           	;
+                Match =.. [RefFunctor,_,L,_,S,_,_]),
+        member(Match,RefGenes),
+        !,
+   	classify_predictions(PredictionsRest,RefGenes,TaggedRest).
+
+classify_predictions([P|PredictionsRest],RefGenes,[false_positive(P)|TaggedRest]) :-
+        !,
+        classify_predictions(PredictionsRest,RefGenes,TaggedRest).
+ 
 
 % split predictions into a correct set and a wrong set
 % Correct means that the prediction have a correct stop codon
@@ -260,6 +320,13 @@ split_predictions([P|PredictionsRest],RefGenes,Correct,[P|IncorrectRest]) :-
 %% 
 % 
 threshold_discrete_frame_score_pairs(_,[],[]).
+
+% These two rules are used with annotated (learning) data
+threshold_discrete_frame_score_pairs(Thresholds,[true_positive(F,S)|R1],[true_positive(F,DS)|R2]) :-
+        threshold_discrete_frame_score_pairs(Thresholds,[(F,S)|R1],[(F,DS)|R2]).
+threshold_discrete_frame_score_pairs(Thresholds,[false_positive(F,S)|R1],[false_positive(F,DS)|R2]) :-
+        threshold_discrete_frame_score_pairs(Thresholds,[(F,S)|R1],[(F,DS)|R2]).
+
 threshold_discrete_frame_score_pairs(Thresholds,[(F,S)|R1],[(F,DS)|R2]) :-
        threshold_group(Thresholds,S,DS),
        !,
@@ -320,6 +387,29 @@ score_from_prediction_term(ScoreFunctor,T,S) :-
 		ScoreMatcher =.. [ ScoreFunctor, S ],
         member(ScoreMatcher,Extra).
 
+%%%%%%%%%%%%% Maximal dist between TPs  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+max_tp_distance(_TPs, [], _, 0).
+
+% Case 1: prediction matches a true positive
+max_tp_distance([FirstTP|TPs], [Prediction|PredictionsRest] , CurrentDist, MaxDist) :-  
+    Prediction =.. [ _ftor, _id, L, R, Strand,Frame, _extra], 
+    FirstTP =.. [ _, _, L, R, Strand, Frame, _],
+    !,
+    max_tp_distance(TPs,PredictionsRest,0,MaxDistRest),
+    max(CurrentDist,MaxDistRest,MaxDist).
+
+% Case 3: A missed true positive
+max_tp_distance([FirstTP|TPs], [Prediction|PredictionsRest] , CurrentDist, MaxDist) :-  
+    Prediction =.. [_,_,L1, _,_,_,_], 
+    FirstTP =.. [_,_,L2,_,_,_,_],
+    L1 >= L2,
+    max_tp_distance(TPs,[Prediction|PredictionsRest], CurrentDist, MaxDist).
+
+% Case 3: Prediction does not match a true positive
+max_tp_distance(TPs, [_|PredictionsRest], CurrentDist, MaxDist) :-
+        NextCurrentDist is CurrentDist + 1,
+        max_tp_distance(TPs,PredictionsRest, NextCurrentDist, MaxDist).
 
 %%%%%%%%%%%%% Some test stuff %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 gb_file(GeneFileProlog) :-
@@ -327,8 +417,8 @@ gb_file(GeneFileProlog) :-
       run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
 
 veco_file(GeneFileProlog) :-
-	lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
-    run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
+        lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
+        run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
 
 pred_file('best_predictions.pl').
 
@@ -372,7 +462,8 @@ test_l4 :-
 %%%%%%%% Experiment r1: veco_cyc and Soerens gene finder %%%%%%
 
 r1_verified_file(GeneFileProlog) :-
-	lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
+    %lost_data_file('100k_vecocyc_ptt',PttFile),
+    lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
     run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
 
 tt1 :-
@@ -386,25 +477,26 @@ tt1 :-
   calc_len(T,Length) :- T =.. [_,_,L,R|_], L > R, !,  Length is L - R.
   calc_len(T,Length) :-  T =.. [_,_,L,R|_], Length is R - L.
 
+%r1_predictions_file('data/100k_all_urfs.pl').
 r1_predictions_file('data/nc000913_2_all_urfs_for_real.pl').
 %r1_predictions_file('data/nc000913_2_FN0_mm_3.pl').
 
 r1_learn_steps :-
-	r1_verified_file(RefGeneFile),
-	terms_from_file(RefGeneFile,RefGenes),
-	r1_predictions_file(PFile),
-	terms_from_file(PFile,Predictions1),
-	elements_with_functor(prediction,Predictions1,Predictions),
+    r1_verified_file(RefGeneFile),
+    terms_from_file(RefGeneFile,RefGenes),
+    r1_predictions_file(PFile),
+    terms_from_file(PFile,Predictions1),
+    elements_with_functor(prediction,Predictions1,Predictions),
     length(RefGenes,RGL),
     write('number of reference genes: '), write(RGL), nl, 
     length(Predictions,PL),
     write('number of predictions: '), write(PL), nl,
     split_predictions(Predictions,RefGenes,Correct,Incorrect),
-	length(Correct,CorrectLen),
-	write('correct predictions: '), write(CorrectLen),nl,
+    length(Correct,CorrectLen),
+    write('correct predictions: '), write(CorrectLen),nl,
 %	write(Correct),nl,
-	length(Incorrect,IncorrectLen),
-	write('Incorrect predictions: '), write(IncorrectLen),nl,
+    length(Incorrect,IncorrectLen),
+    write('Incorrect predictions: '), write(IncorrectLen),nl,
     terms_to_file('r1_incorrect.txt',Incorrect),
     terms_to_file('r1_correct.txt',Correct).
 	
@@ -417,10 +509,30 @@ r1_learn :-
 	learn([GF,PF],[score_functor(score)],_),
 	save_sw.
 
+r1_learn2 :-
+	r1_verified_file(GF),
+	r1_predictions_file(PF),
+	file_functor(PF,PFFunctor),
+	write('prediction functor: '), write(PFFunctor), nl,
+	learn2([GF,PF],[score_functor(score)],_),
+	save_sw.
+
 r1_decode :-
 	r1_verified_file(GF),
 	r1_predictions_file(PF),
 	annotate([GF,PF],[score_functor(score)],'r1_predictions.pl').
+
+r1_maxdist :-
+       	r1_verified_file(GF),
+	r1_predictions_file(PF),
+        terms_from_file(GF,GoldenUnsort),
+        terms_from_file(PF,PredictionsUnsort),
+        sort(GoldenUnsort,TPs),
+        sort(PredictionsUnsort,Predictions),
+        max_tp_distance(TPs,Predictions,0,MaxDist),
+        write('The maximal distance is: '),
+        write(MaxDist),nl.
+
 
 r1_go :- 
         r1_learn,
