@@ -11,6 +11,7 @@ annotate([Chunk_File],_Options,Orf_Annot_File) :-
 	write('LoSt orf annotator: '),nl,
         consult('orf_annotator.pl'), % Load the actual PRISM model
         orf_annotation(Chunk_File,Orf_Annot_File),
-        write('Orf annotation succeeds !!').
+        writeln('Orf annotation succeeds !!'),
+	write('wrote file :'), writeln(Orf_Annot_File).
 
 

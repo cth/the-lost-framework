@@ -33,6 +33,7 @@ annotate([OrfFile,ConsFile,ParamFile],_Options,OutputFile) :-
 %
 consorf_main(OrfInStream,ConsInStream,OutStream):-
 		% writeq('read(orfin,OrfTerm)'),nl,
+		initialize_table,
 		read(OrfInStream,OrfTerm),
 		read(ConsInStream,ConsTerm),
 		(OrfTerm \= eof, ConsTerm \= eof ->

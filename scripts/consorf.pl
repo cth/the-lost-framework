@@ -75,7 +75,8 @@ run_chunk_conservation(Sequence_File,Options,Conservation_File) :-
 %-----------
 run_orf_annotator(Sequence_File,Options,Orf_annot_File) :-
         run_orf_chopper(Sequence_File,Options,Chunk_File),
-        run_model(orf_annotator,annotate([Chunk_File],[],Orf_annot_File)).
+       writeln('ok'), 
+	run_model(orf_annotator,annotate([Chunk_File],[],Orf_annot_File)).
 
 %-------------
 % Run Genebank Annotator
@@ -144,7 +145,7 @@ sequential_consorf_rec(N,[Input_Orf_File|OrfFiles],[Input_Cons_File|ConsFiles],P
 	atom_concat(Prediction_File_prefix,[N],Prediction_File),
 	run_model(consorf_genefinder,
 			    annotate([Input_Orf_File,Input_Cons_File,ParameterFile], 						
-			   Options,   
+			    Options,   
 			    Prediction_File)),     			
 	write('Resulting consorf prediction file'),nl,
 	writeln(Prediction_File),
@@ -163,37 +164,60 @@ testgoal:-run_chunk_conservation('U00096',[direction(+),frame(1),mismatch_score(
 
 % conservation computation on one file already slipped
 
-run_conservation_split(Name) :-
-	lost_tmp_directory(Dir),
-	atom_concat(Dir,Name,FileName),
-	run_model(chunk_aa_conservation,annotate([FileName],[mismatch_score(1)],_Conservation)).
+run_conservation_split(Dir,Frame,Name) :-
+	atom_concat(tblastn_,Name,BlastFileName),
+	lost_tmp_directory(TmpDir),
+	atom_concat(TmpDir,Name,FileName),
+	run_model(chunk_aa_conservation,annotate([FileName],[direction(Dir),frame(Frame),blast_file_name(BlastFileName),mismatch_score(1)],_Conservation)).
 	
 	
 
-sequential_conservation :-
-	lost_sequence_file('U00096',Sequence),
-        run_model(orf_chopper,annotate([Sequence],[direction(+),frame(1)],OrfChunk_File)),
-        run_model(chunk_translator,annotate([OrfChunk_File],[mode(0),genecode(11)],Orf_FASTA)),
-        split_file_fasta(Orf_FASTA,1000,split_fasta,'seq',R),
-        sequenctial_conservation_rec(R).
+sequential_conservation(File,Dir,Frame) :-
+	 term2atom(Frame,Frameatom),
+	 lost_sequence_file(File,Sequence),
+	 run_model(
+		orf_chopper,
+		annotate([Sequence],	[direction(Dir), frame(Frame)], OrfChunk_File)
+	 ),
+	 run_model(
+		chunk_translator,annotate([OrfChunk_File], [mode(0),genecode(11)], Orf_FASTA)),
+	 atom_concat(Dir,Frameatom,DirFrame),
+	 atom_concat(File,'_',File_),
+	 atom_concat(File_,DirFrame,File_DirFrame),
+	 atom_concat(split_fasta_,File_DirFrame, Splitfile_Name),    
+	 split_file_fasta(Orf_FASTA,1000,Splitfile_Name,'seq',R),
+	 atom_concat(tblastn_,DirFrame,BlastFileName),
+	 sequential_conservation_rec(Dir,Frame,BlastFileName,R).
 
-sequential_conservation_rec([]).
+sequential_conservation_rec(_,_,_,[]).
 
-sequenctial_conservation_rec([File|Rest]) :-
-        run_model(chunk_aa_conservation,annotate([File],[mismatch_score(1)],_Conservation)),
-        sequenctial_conservation_rec(Rest).
+sequential_conservation_rec(Dir,Frame,BlastFileName,[File|Rest]) :-
+%       term2atom(Frame,Frameatom),
+	 run_model(chunk_aa_conservation,annotate([File],[direction(Dir),frame(Frame),blast_file_name(BlastFileName),mismatch_score(1)],_Conservation_org_file)),
+writeln(her),
+%	 writeln(Conservation_org_file),
+/*	 atom_concat(Dir,Frameatom,DirFrame),
+	 atom_concat(DirFrame,Conservation_org_file,Conservation_new_file),	 
+	 
+	 lost_data_directory(Path),
+	 atom_concat(Path,Conservation_org_file, Org_file),
+	 atom_concat(Path,Conservation_new_file, New_file),
+	 writeq(move_data_file(Org_file,New_file)),
+	 move_data_file(Org_file,New_file),
+*/
+        sequential_conservation_rec(Dir,Frame,BlastFileName,Rest).
 
 
 
 parallel_conservation :-
 	lost_sequence_file('U00096',Sequence),
-        run_model(orf_chopper,annotate([Sequence],[direction(+),frame(1)],OrfChunk_File)),
-        run_model(chunk_translator,annotate([OrfChunk_File],[mode(0),genecode(11)],Orf_FASTA)),
-        split_file_fasta(Orf_FASTA,500,split_fasta,'seq',InFileParts),
-        map(out_file_name,InFileParts,OutFileParts),
-        write(OutFileParts),nl,
-        create_goals(InFileParts,OutFileParts,1,FilePartGoals),
-        prism_parallel(FilePartGoals).
+       run_model(orf_chopper,annotate([Sequence],[direction(+),frame(1)],OrfChunk_File)),
+       run_model(chunk_translator,annotate([OrfChunk_File],[mode(0),genecode(11)],Orf_FASTA)),
+       split_file_fasta(Orf_FASTA,500,split_fasta,'seq',InFileParts),
+       map(out_file_name,InFileParts,OutFileParts),
+       write(OutFileParts),nl,
+       create_goals(InFileParts,OutFileParts,1,FilePartGoals),
+       prism_parallel(FilePartGoals).
 
 
 out_file_name(InFile,OutFile) :-

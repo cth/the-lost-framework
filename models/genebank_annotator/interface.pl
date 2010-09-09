@@ -11,4 +11,5 @@ annotate([Chunk_File,GeneBank_Filtered],_Options,OutputFile) :-
 	write('LoSt Genebank annotator: '),nl,
         consult('genebank_annotator.pl'), % Load the actual PRISM model
         genebank_annotation(Chunk_File,GeneBank_Filtered,OutputFile),
-        write('Genebank annotation succeeds !!').
+        writeln('Genebank annotation succeeds !!'),
+	 write('wrote file :'), writeln(OutputFile).
