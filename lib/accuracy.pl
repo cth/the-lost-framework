@@ -57,7 +57,7 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
         write('true positives: '), write(TP),nl,
         write('false positives: '), write(FP),nl,
         write('true negatives: '), write(TN),nl,
-        write('false negatives: '), write(FP),nl,
+        write('false negatives: '), write(FN),nl,
 	write('sensitivity: '), 
 	write(SN),nl,
 	write('specificity: '),
