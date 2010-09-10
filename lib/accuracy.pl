@@ -506,7 +506,7 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 
 annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
 	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
-	catch(call(Goal),_,fail).
+        catch(call(Goal),_,fail).
 
 annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
 	Goal =.. [ Type,_, From, To, Strand, ReadingFrame, Extra ],
@@ -540,14 +540,15 @@ annotations_as_lists(AnnotType,Start,End,[[Strand,ReadingFrame]|Rest],[L|LR]) :-
 
 % Find the end of the range of an annotation
 db_annotation_max(AnnotType, Strand,ReadingFrame,Max) :-
-	Goal =.. [ AnnotType, _, IncludeTo, Strand, ReadingFrame, _ ],
-	findall(IncludeTo,Goal, ResultList),
+	Goal =.. [ AnnotType, _, _left, IncludeRight, Strand, ReadingFrame, _ ],
+        write(Goal),nl,
+	findall(IncludeRight,Goal, ResultList),
 	list_max(ResultList,Max).
 
 % Find the beginning of the range of an annotation
 db_annotation_min(AnnotType, Strand,ReadingFrame,Max) :-
-	Goal =.. [ AnnotType, _, IncludeTo, Strand, ReadingFrame, _ ],
-	findall(IncludeTo,Goal, ResultList),
+	Goal =.. [ AnnotType, IncludeLeft, _right, Strand, ReadingFrame, _ ],
+	findall(IncludeLeft,Goal, ResultList),
 	list_min(ResultList,Max).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
