@@ -20,7 +20,9 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
 	count_genes(PredFunctor,Start,End,NumberPredictedGenes),!,
 	count_genes(RefFunctor,Start,End,NumberActualGenes),!,
 	number_of_correct_genes(RefFunctor, PredFunctor,Start,End,NumberCorrect),
+	number_of_correct_gene_ends(RefFunctor, PredFunctor,Start,End,NumberCorrectStops),
 	number_of_wrong_genes(RefFunctor, PredFunctor, Start, End, NumberWrong),
+	number_of_wrong_gene_ends(RefFunctor, PredFunctor, Start, End, NumberWrongStops),
 	gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,GSN),!,
 	gene_level_specificity(RefFunctor,PredFunctor,Start,End,GSP),!,
 	wrong_genes(RefFunctor,PredFunctor,Start,End,Wrong),!,
@@ -41,6 +43,8 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
 	write('actual number of genes: '), write(NumberActualGenes), nl,
 	write('number of correctly predicted genes: '), write(NumberCorrect), nl,
 	write('number of wrongly predicted genes: '), write(NumberWrong), nl,
+        write('number of correctly predicted stop codons:'), write(NumberCorrectStops),nl,
+        write('number of wrongly predicted stop codons:'), write(NumberWrongStops),nl,
 	write('sensitivity: '),
 	write(GSN),nl,
 	write('specificity: '),
@@ -122,6 +126,7 @@ correlation_coefficient(TP,FP,TN,FN,CC) :-
 	        CC is Numerator / Denominator
                 ;
                 CC=undefined).
+                
 %% simple_matching_coefficient(+TP,+FP,+TN,+FN,-SMC)
 %
 % Computation of the simple matching coefficient
@@ -169,7 +174,20 @@ count_genes(Functor,Start,End,Count) :-
         % flatten_once merges all these in one list.. 
 	flatten_once(PredAnnot,Flat),
 	length(Flat,Count).
-	
+
+correct_gene_ends(RefFunctor,PredFunctor,Start,End,Correct) :-
+	annotations_as_detailed_list(RefFunctor,Start,End,RefAnnot),
+	annotations_as_detailed_list(PredFunctor,Start,End,PredAnnot),
+        findall(Stop,
+                (member([coding,_,Stop,'+',Frame],PredAnnot),
+                member([coding,_,Stop,'+',Frame],RefAnnot)),
+                StopsForward),
+        findall(Stop,
+                (member([coding,Stop,_,'-',Frame],PredAnnot),
+                member([coding,Stop,_,'-',Frame],RefAnnot)),
+                StopsReverse),
+        union(StopsForward,StopsReverse,Correct).
+
 correct_genes(RefFunctor, PredFunctor, Start, End, Correct) :-
 	annotations_as_detailed_list(RefFunctor,Start,End,RefAnnot),
 	annotations_as_detailed_list(PredFunctor,Start,End,PredAnnot),
@@ -178,9 +196,19 @@ correct_genes(RefFunctor, PredFunctor, Start, End, Correct) :-
 number_of_correct_genes(RefFunctor, PredFunctor, Start, End, NoCorrect) :-
 	correct_genes(RefFunctor, PredFunctor, Start, End, Correct),
 	length(Correct,NoCorrect).
+
+number_of_correct_gene_ends(RefFunctor, PredFunctor, Start, End, NoCorrect) :-
+	correct_gene_ends(RefFunctor, PredFunctor, Start, End, Correct),
+	length(Correct,NoCorrect).
+
 	
 number_of_wrong_genes(RefFunctor, PredFunctor, Start, End, Wrong) :-
 	number_of_correct_genes(RefFunctor,PredFunctor,Start,End,Correct),
+	count_genes(PredFunctor,Start,End,Predicted),
+	Wrong is Predicted - Correct.
+
+number_of_wrong_gene_ends(RefFunctor, PredFunctor, Start, End, Wrong) :-
+	number_of_correct_gene_ends(RefFunctor,PredFunctor,Start,End,Correct),
 	count_genes(PredFunctor,Start,End,Predicted),
 	Wrong is Predicted - Correct.
 
@@ -188,6 +216,12 @@ number_of_missing_genes(RefFunctor, PredFunctor, Start, End, Missing) :-
 	number_of_correct_genes(RefFunctor,PredFunctor,Start,End,Correct),
 	count_genes(RefFunctor,Start,End,Actual),
 	Missing is Actual - Correct.
+
+number_of_missing_gene_ends(RefFunctor, PredFunctor, Start, End, Missing) :-
+	number_of_correct_gene_ends(RefFunctor,PredFunctor,Start,End,Correct),
+	count_genes(RefFunctor,Start,End,Actual),
+	Missing is Actual - Correct.
+
 
 % EN = #correct / #actual
 gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,SN) :-
@@ -506,7 +540,7 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 
 annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
 	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
-        catch(call(Goal),_,fail).
+	catch(call(Goal),_,fail).
 
 annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
 	Goal =.. [ Type,_, From, To, Strand, ReadingFrame, Extra ],
@@ -541,7 +575,6 @@ annotations_as_lists(AnnotType,Start,End,[[Strand,ReadingFrame]|Rest],[L|LR]) :-
 % Find the end of the range of an annotation
 db_annotation_max(AnnotType, Strand,ReadingFrame,Max) :-
 	Goal =.. [ AnnotType, _, _left, IncludeRight, Strand, ReadingFrame, _ ],
-        write(Goal),nl,
 	findall(IncludeRight,Goal, ResultList),
 	list_max(ResultList,Max).
 
