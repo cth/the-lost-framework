@@ -25,6 +25,10 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
 	number_of_wrong_gene_ends(RefFunctor, PredFunctor, Start, End, NumberWrongStops),
 	gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,GSN),!,
 	gene_level_specificity(RefFunctor,PredFunctor,Start,End,GSP),!,
+
+	gene_level_stop_sensitivity(RefFunctor,PredFunctor,Start,End,StopGSN),!,
+	gene_level_stop_specificity(RefFunctor,PredFunctor,Start,End,StopGSP),!,
+
 	wrong_genes(RefFunctor,PredFunctor,Start,End,Wrong),!,
 	missing_genes(RefFunctor,PredFunctor,Start,End,Missing),!,
 	annotations_as_lists(PredFunctor,Start,End,PredAnnot),!,
@@ -45,14 +49,20 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
 	write('number of wrongly predicted genes: '), write(NumberWrong), nl,
         write('number of correctly predicted stop codons:'), write(NumberCorrectStops),nl,
         write('number of wrongly predicted stop codons:'), write(NumberWrongStops),nl,
-	write('sensitivity: '),
+	write('Genes sensitivity (#correct/#actual): '),
 	write(GSN),nl,
-	write('specificity: '),
+	write('Genes specificity: (#correct/#predicted): '),
 	write(GSP),nl,
+	write('(stops) sensitivity  (#correct/#actual): '),
+	write(StopGSN),nl,
+	write('(stops) specificity (#correct/#predicted): '),
+	write(StopGSP),nl,
 	write('wrong genes: '),
 	write(Wrong),nl,
 	write('missing genes: '),
 	write(Missing),nl,
+
+
 	write('--------------- nucleotide level stats -----------------'), nl,
         write('true positives: '), write(TP),nl,
         write('false positives: '), write(FP),nl,
@@ -235,6 +245,17 @@ gene_level_specificity(RefFunctor,PredFunctor,Start,End,SP) :-
 	count_genes(PredFunctor,Start,End,Predicted),
 	SP is Correct / Predicted.
 	
+gene_level_stop_sensitivity(RefFunctor,PredFunctor,Start,End,SN) :-
+	number_of_correct_gene_ends(RefFunctor,PredFunctor,Start,End,Correct),
+	count_genes(RefFunctor,Start,End,Actual),
+	SN is Correct / Actual.
+	
+% SP = #correct / #predicted
+gene_level_stop_specificity(RefFunctor,PredFunctor,Start,End,SP) :-
+	number_of_correct_gene_ends(RefFunctor,PredFunctor,Start,End,Correct),
+	count_genes(PredFunctor,Start,End,Predicted),
+	SP is Correct / Predicted.
+
 % MG = #missing / #actual
 missing_genes(RefFunctor,PredFunctor,Start,End,MG)	:-
 	number_of_missing_genes(RefFunctor,PredFunctor,Start,End,Missing),
