@@ -1,13 +1,14 @@
 :- ['../../lost.pl'].
 :- lost_include_api(misc_utils).
 
+lost_option(annotate,score_functor,score,'A functor that specifies a member of the Extra list in each prediction which has score').
+lost_option(annotate,score_categories,50,'An integer specifying how many discrete groups to divide scores into').
 
-number_of_score_categories(10).
+lost_input_formats(annotate, [text(prolog(ranges(gene))), text(prolog(ranges(gene)))]).
+lost_output_format(annotate, _,text(prolog(ranges(gene)))).
 
-test_annotate :-
-        annotate(['k12_frames_dat','genemark_predictions.pl'],[],'test_result.pl').
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % annotate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -20,37 +21,54 @@ test_annotate :-
 % - Create a set of predictions from the sequence of visited states
 % - write the set of predictions to OutputFile
 annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
-        prism(genome_finder_nolist),
-        assert(learn_mode(false)),
-        restore_sw,
+        write('anntate called'),nl,
+        % Learn is always invoked before annotate (it's fast, so no
+        % worries)
+        run_model(genome_filter,
+                  learn([GenbankFile,PredictionsFile],Options,ParametersFile)),
+
+        % Options hadling:
+        get_option(Options,score_categories,NumScoreGroups),
         get_option(Options,score_functor,ScoreFunctor),
-
-        %list_from_prediction_file(PredictionsFile,PredictionFrames),
-
-        % Load gene finder predictions  
-        terms_from_file(PredictionsFile,GeneFinderPredictions),
+ 
+        % Load model
+        prism(genome_finder_nolist),
+        assert(learn_mode(false)), % Tell model that we want to do predictions now
+       % Load gene finder predictions  
+        terms_from_file(PredictionsFile,GeneFinderPredictionsUnsorted),
+        % Make sure prediction are sorted
+        sort(GeneFinderPredictionsUnsorted,GeneFinderPredictions),
+        % Devise a score thresholding scheme and assign predictions a symbol based on their score
         frame_score_list_from_predictions(ScoreFunctor,GeneFinderPredictions,FrameScorePairs),
-        number_of_score_categories(NumScoreGroups),
         scores_from_terms(ScoreFunctor,GeneFinderPredictions,Scores),
         threshold_list_from_scores(Scores,NumScoreGroups,ThresholdList),
-        write('ThresholdList: '), nl,
+        write('Created thresholding scheme: '), nl,
         write(ThresholdList),nl,
         threshold_discrete_frame_score_pairs(ThresholdList,FrameScorePairs,FrameScorePairsDiscrete),
-
         groups_from_count(NumScoreGroups,ScoreCategories),
-        assert(score_categories(ScoreCategories)),
-
-        write('writing input file...'),nl,
-        %write(FrameScorePairsDiscrete),nl,
-        terms_to_file('input.pl',[input_sequence(FrameScorePairsDiscrete)]),
-        write('Runnning viterbi on prediction sequence:'),nl,
-        viterbit(model(FrameScorePairsDiscrete),_,Tree),
-        write(done),nl,
-        flatten(Tree,TF),findall(S,member(msw(emit(S),_),TF),AllStates),
-        write(AllStates),nl,
-        terms_to_file('states.pl', [states(AllStates)]),nl,
-        predictions_from_state_sequence(PredictionFrames,AllStates,SelectedPredictions),
-        write(SelectedPredictions),nl,
+        retractall(score_categories(_)),
+        assert(score_categories(ScoreCategories)), % Tell prism how many score categories
+        % Restore model parameters
+        restore_sw(ParametersFile),
+        show_sw,
+        % Write model inputs to file:
+        write('- writing model inputs file:'),
+        lost_tmp_directory(TmpDir),
+        atom_concat(TmpDir, 'genome_filter_model_inputs.pl', InputsFile),
+        write(InputsFile),nl,
+        terms_to_file(InputsFile,[input_sequence(FrameScorePairsDiscrete)]),
+        %% Run viterbi on teh (frame,score) sequence of the sorted predictions
+        write('- Runnning viterbi on prediction sequence:'),nl,
+        write('!! Done running viterbi'),nl,
+        viterbif(model(FrameScorePairsDiscrete),_,Expl),
+        viterbi_switches(Expl,ExplSwitches),
+        findall(X,member(msw(emit(X),_),ExplSwitches),AllStates),
+        atom_concat(TmpDir,'genome_filter_model_states.pl',StatesFile),
+        write('Writing model state sequence to file: '), write(StatesFile), nl,
+        terms_to_file(StatesFile, [states(AllStates)]),nl,
+        write('- Extracting predictions from state sequence to file: '),nl,
+        write(OutputFile),nl,
+        predictions_from_state_sequence(GeneFinderPredictions,AllStates,SelectedPredictions),
         terms_to_file(OutputFile,SelectedPredictions).
 
 list_from_genbank_file(File,List) :-
@@ -92,7 +110,7 @@ list_from_stream(Functor,Stream,List) :-
 % the predictions except the ones generated in a delete state
 predictions_from_state_sequence([],[],[]).
 
-predictions_from_state_sequence([_|Ps],[delete|Ss],Ms) :-
+predictions_from_state_sequence([P|Ps],[delete|Ss],Ms) :-
        !,
        predictions_from_state_sequence(Ps,Ss,Ms). 
 
@@ -109,11 +127,11 @@ learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
        prism(genome_finder_nolist),
        assert(learn_mode(true)),
        get_option(Options, score_functor, ScoreFunctor),
+       get_option(Options,score_categories,NumScoreGroups),
        terms_from_file(GenbankFile,RefGenesUnsorted),
        write('::: sorting genes in golden standard file'),nl,
        sort(RefGenesUnsorted,RefGenes),
        terms_from_file(PredictionsFile,Predictions),
-        number_of_score_categories(NumScoreGroups),
         scores_from_terms(ScoreFunctor,Predictions,Scores),
         threshold_list_from_scores(Scores,NumScoreGroups,ThresholdList),
 		write('ThresholdList: '), nl,
@@ -122,7 +140,6 @@ learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
         classify_predictions(Predictions,RefGenes,ClassifiedPredictions),
         write('Create frame/score input list for model.'),nl,
         frame_score_list_from_predictions(ScoreFunctor,ClassifiedPredictions,PredictionScorePairs),
-        write('here'),nl,
         write('Discretizing scores from gene finder.'),nl,
         threshold_discrete_frame_score_pairs(ThresholdList,PredictionScorePairs,PredictionScorePairsDiscrete),
         write('Determining number of score categories'),nl,
@@ -132,11 +149,15 @@ learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
         write('before learning: '),nl,
         assert(learn_mode(true)),
         learn([model(PredictionScorePairsDiscrete)]),
+        show_sw,
+        write('Saving parameters to file: '), write(OutputFile), nl,
+        save_sw(OutputFile),nl,
         retractall(learn_mode(_)).
 
- learn2([GenbankFile,PredictionsFile],Options,OutputFile) :-
+learn2([GenbankFile,PredictionsFile],Options,OutputFile) :-
        prism(genome_finder),
        get_option(Options, score_functor, ScoreFunctor),
+       get_option(Options,score_categories,NumScoreGroups),
        terms_from_file(GenbankFile,RefGenesUnsorted),
        write('::: sorting genes in golden standard file'),nl,
        sort(RefGenesUnsorted,RefGenes),
@@ -148,9 +169,11 @@ learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
        write('::: learning terminate transition probability...'),nl,
        learn_terminate_probability(Predictions),
        write('::: learning emission probabilities...'),nl,
-       learn_emission_probabilities(ScoreFunctor,RefGenes,Predictions).
-
-      
+       learn_emission_probabilities(ScoreFunctor,RefGenes,NumScoreGroups,Predictions),
+       show_sw,
+       write('Saving parameters to file: '), write(OutputFile), nl,
+       save_sw(OutputFile),nl,
+       retractall(learn_mode(_)).
 
 learn_delete_transition_probability(RefGenes,Predictions) :-
         length(RefGenes,RefGenesLen),
@@ -192,29 +215,20 @@ learn_frame_transitions(GenbankTerms) :-
 % Learning the emission probabilities
 learn_emission_probabilities(ScoreFunctor,RefGenes,Predictions) :-
         retractall(score_categories(_)),
-        %terms_from_file(GenbankFile,RefGenes),
-        %terms_from_file(PredictionsFile,Predictions),
-        
-        % Discretize scores:
+       % Discretize scores:
         number_of_score_categories(NumScoreGroups),
         scores_from_terms(ScoreFunctor,Predictions,Scores),
         threshold_list_from_scores(Scores,NumScoreGroups,ThresholdList),
 		write('ThresholdList: '), nl,
 		write(ThresholdList),nl,
-
         split_predictions(Predictions,RefGenes,Correct,Incorrect),
-
         frame_score_list_from_predictions(ScoreFunctor,Correct,CorrectFrameScorePairs),
         frame_score_list_from_predictions(ScoreFunctor,Incorrect,IncorrectFrameScorePairs),
-        
         threshold_discrete_frame_score_pairs(ThresholdList,CorrectFrameScorePairs,CorrectFrameScorePairsDiscrete),
         threshold_discrete_frame_score_pairs(ThresholdList,IncorrectFrameScorePairs,IncorrectFrameScorePairsDiscrete),
-
         groups_from_count(NumScoreGroups,ScoreCategories),
         assert(score_categories(ScoreCategories)),
-
         listing(score_categories/1),
-
         write('learning frame emission probabilities'),nl,
         learn_frame_emit_probs(CorrectFrameScorePairsDiscrete),
         write('learning delete emission probabilities'),nl,
@@ -331,7 +345,6 @@ threshold_discrete_frame_score_pairs(Thresholds,[(F,S)|R1],[(F,DS)|R2]) :-
        threshold_group(Thresholds,S,DS),
        !,
        threshold_discrete_frame_score_pairs(Thresholds,R1,R2).
-       
 
 threshold_group(Thresholds,Score,Group) :-
         threshold_group_rec(1,Thresholds,Score,Group).
@@ -358,8 +371,7 @@ threshold_list_from_scores(Scores,NumGroups,ThresholdsList) :-
         sort('=<',Scores,SortedScores),
         NumThresholds is NumGroups - 1,
         length(Scores,NumScores),
-%        GroupSize is round(NumScores / NumThresholds),
-        GroupSize is round(NumScores / NumGroups),
+        GroupSize is round(0.5 + (NumScores / NumGroups)),
         write('group size is '), write(GroupSize),nl,
         mk_threshold_list(GroupSize,SortedScores,ThresholdsList).
 
@@ -458,85 +470,6 @@ test_l4 :-
 	pred_file(PF),
 	learn([GF,PF],_,_).
 
-
-%%%%%%%% Experiment r1: veco_cyc and Soerens gene finder %%%%%%
-
-r1_verified_file(GeneFileProlog) :-
-    %lost_data_file('100k_vecocyc_ptt',PttFile),
-    lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
-    run_model(parser_ptt,annotate([PttFile],[],GeneFileProlog)).
-
-tt1 :-
-	r1_verified_file(F),
-	terms_from_file(F,Ts),
-	write(Ts),nl,
-	map(calc_len,Ts,Ls),
-	write(Ls).
-% where
-  calc_len([],[]).
-  calc_len(T,Length) :- T =.. [_,_,L,R|_], L > R, !,  Length is L - R.
-  calc_len(T,Length) :-  T =.. [_,_,L,R|_], Length is R - L.
-
-%r1_predictions_file('data/100k_all_urfs.pl').
-r1_predictions_file('data/nc000913_2_all_urfs_for_real.pl').
-%r1_predictions_file('data/nc000913_2_FN0_mm_3.pl').
-
-r1_learn_steps :-
-    r1_verified_file(RefGeneFile),
-    terms_from_file(RefGeneFile,RefGenes),
-    r1_predictions_file(PFile),
-    terms_from_file(PFile,Predictions1),
-    elements_with_functor(prediction,Predictions1,Predictions),
-    length(RefGenes,RGL),
-    write('number of reference genes: '), write(RGL), nl, 
-    length(Predictions,PL),
-    write('number of predictions: '), write(PL), nl,
-    split_predictions(Predictions,RefGenes,Correct,Incorrect),
-    length(Correct,CorrectLen),
-    write('correct predictions: '), write(CorrectLen),nl,
-%	write(Correct),nl,
-    length(Incorrect,IncorrectLen),
-    write('Incorrect predictions: '), write(IncorrectLen),nl,
-    terms_to_file('r1_incorrect.txt',Incorrect),
-    terms_to_file('r1_correct.txt',Correct).
-	
-	
-r1_learn :-
-	r1_verified_file(GF),
-	r1_predictions_file(PF),
-	file_functor(PF,PFFunctor),
-	write('prediction functor: '), write(PFFunctor), nl,
-	learn([GF,PF],[score_functor(score)],_),
-	save_sw.
-
-r1_learn2 :-
-	r1_verified_file(GF),
-	r1_predictions_file(PF),
-	file_functor(PF,PFFunctor),
-	write('prediction functor: '), write(PFFunctor), nl,
-	learn2([GF,PF],[score_functor(score)],_),
-	save_sw.
-
-r1_decode :-
-	r1_verified_file(GF),
-	r1_predictions_file(PF),
-	annotate([GF,PF],[score_functor(score)],'r1_predictions.pl').
-
-r1_maxdist :-
-       	r1_verified_file(GF),
-	r1_predictions_file(PF),
-        terms_from_file(GF,GoldenUnsort),
-        terms_from_file(PF,PredictionsUnsort),
-        sort(GoldenUnsort,TPs),
-        sort(PredictionsUnsort,Predictions),
-        max_tp_distance(TPs,Predictions,0,MaxDist),
-        write('The maximal distance is: '),
-        write(MaxDist),nl.
-
-
-r1_go :- 
-        r1_learn,
-        r1_decode.
 
 %%%
 
