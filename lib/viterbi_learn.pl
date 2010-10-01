@@ -48,6 +48,7 @@ viterbi_learn([]).
 viterbi_learn([G|Gs]) :-
 	clear_counters,
         viterbi_learn_term(G),
+        table_remove0,
         !,
         viterbi_learn(Gs).
 
