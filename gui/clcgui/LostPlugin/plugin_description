@@ -1,0 +1,5 @@
+free
+com.lost.plugins.LostGroup
+com.lost.plugins.runModel.LostRunModelAction
+com.lost.plugins.importAnnotation.LostImportAnnotationAction
+com.lost.plugins.export.SequenceAsPrologExport
