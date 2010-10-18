@@ -2,3 +2,4 @@ dist/*
 bin/*
 package/*
 build/*
+clc_developer_kit/*
