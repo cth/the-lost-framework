@@ -26,6 +26,8 @@ public class LostFrameworkInterface {
 	private Pattern fasta_sequence_format_pattern = Pattern.compile("text\\(fasta.*");
 	
 	public LostFrameworkInterface() {
+		// FIXME: These should be configurable
+		// Maybe implement as preference plugin if possible
 		lost_framework_path = "/Users/cth/code/lost/";
 		prism_bin_path = "/opt/prism2/bin/prism";
 	}
@@ -232,19 +234,24 @@ public class LostFrameworkInterface {
 			optionsBuffer.append("]");
 			
 			String prismGoals = "cl('lost.pl'), " +
-				"lost_include_api(interface), " +
 				"lost_interface_output_format_to_file(" +
 				model + "," +
-				"lost_best_annotation," +
+				"annotate," +
 				optionsBuffer.toString() + "," + 
 				"'" + outputFile.getAbsolutePath() + "').";
 
 			runPrism2(lost_framework_path, prismGoals);
 
+			System.out.println("File path: " + outputFile.getAbsolutePath());
+			
 			FileInputStream fstream = new FileInputStream(outputFile.getAbsolutePath());
 			BufferedReader br = new BufferedReader(new InputStreamReader(new DataInputStream(fstream)));
 			
 			String prologString = br.readLine();
+			if (prologString == null)
+				System.out.println("could not read anything from output format file..");
+			else
+				System.out.println(prologString);
 			
 			Parser p = new Parser();
 			Term prologTerm = p.parseTerm(prologString);
@@ -262,10 +269,10 @@ public class LostFrameworkInterface {
 			File outputFile = File.createTempFile("lost_list_model_output_format", ".pl");
 
 			String prismGoals = "cl('lost.pl'), " + 
-			"lost_include_api(interface), " +
+//			"lost_include_api(interface), " +
 			"lost_model_input_formats_to_file(" +
 			model + "," +
-			"lost_best_annotation" + "," +
+			"annotate" + "," +
 			"'" + outputFile.getAbsolutePath() + "').";
 
 			runPrism2(lost_framework_path, prismGoals);

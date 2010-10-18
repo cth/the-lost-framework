@@ -31,13 +31,36 @@ public class LostAnnotation {
 		try {
 			Parser p = new Parser();
 			Term t = p.parseTerm(termline);
-
+			int firstPos, lastPos, frame, position;
+			String strand;
+			Term extra;
+			
+			if (t.getArity() == 5) // probably old format
+				position = 1;
+			else if (t.getArity() == 6) // probably new format
+				position = 2;
+			else
+				position = -1; // provoke error
+			
+			// Parse leftPos
 			String annotationName = t.getFunctor();
-			int firstPos = Integer.parseInt(t.getTerm(1).toString());
-			int lastPos = Integer.parseInt(t.getTerm(2).toString());
-			String strand = t.getTerm(3).toString();
-			int frame = Integer.parseInt(t.getTerm(4).toString());
-			Term extra = t.getTerm(5);
+			firstPos = Integer.parseInt(t.getTerm(position).toString());
+			
+			// Parse rightPos
+			++position;
+			lastPos = Integer.parseInt(t.getTerm(position).toString());
+			
+			// Parse strand
+			++position;
+			strand = t.getTerm(position).toString();
+				
+			// Parse frame
+			++position;
+			frame = Integer.parseInt(t.getTerm(position).toString());
+
+			// Parse extra list
+			++position;			
+			extra = t.getTerm(position);
 			ArrayList<Term> extraList = new ArrayList<Term>();
 
 			if (extra.getFunctor().equals("."))
