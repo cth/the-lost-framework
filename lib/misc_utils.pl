@@ -243,7 +243,7 @@ check_or_fail(_File,Error) :-
 	throw(Error).
 
 % check_or_warn(Goal,Error):
-% call Goal and throw and exception with error if Goal fails.
+% call Goal and warn with error if Goal fails.
 % Also, never backtrack beyond this point.
 check_or_warn(Check,_Error) :-
 	call(Check),

@@ -11,6 +11,7 @@
 :- lost_include_api(interface).
 :- lost_include_api(utils_parser_report).
 :- lost_include_api(prism_parallel).
+:- lost_include_api(viterbi_learn).
 :- [script_parser].
 :- [filter_genes].
 
@@ -74,7 +75,7 @@ run_chunk_conservation(Sequence_File,Options,Conservation_File) :-
 % where Annot = [.,.,.,.,.,<,<,<,-,-,-,-,>,>,>]
 %-----------
 run_orf_annotator(Sequence_File,Options,Orf_annot_File) :-
-        run_orf_chopper(Sequence_File,Options,Chunk_File),
+       run_orf_chopper(Sequence_File,Options,Chunk_File),
        writeln('ok'), 
 	run_model(orf_annotator,annotate([Chunk_File],[],Orf_annot_File)).
 
@@ -156,6 +157,75 @@ sequential_consorf_rec(N,[Input_Orf_File|OrfFiles],[Input_Cons_File|ConsFiles],P
 	
 
 
+/**************************************************************************************/
+% Recusive call of the prediction routine
+%
+% requ9ires cons-, orf-annotations and params to exist beforehand 
+% options include : direction Dir, that desides which version of the repdicter is to be used. (consorf_genefinder_direct.psm or consorf_genefinder_reverse.psm)
+sequential_consorf_beta(Input_Orf_File,Input_Cons_File,ParameterFile,Options,Prediction_File_Mark):-	
+	lost_tmp_directory(Tmp),
+
+	atom_concat('orf_in_',Prediction_File_Mark,Orf_file_name),
+	atom_concat(Tmp,Orf_file_name, Orf_File_with_Tmpdir),
+	split_file(Input_Orf_File,1000,Orf_File_with_Tmpdir,'.seq',Orf_In),
+
+	atom_concat('cons_in_',Prediction_File_Mark,Cons_file_name),
+	atom_concat(Tmp,Cons_file_name, Cons_File_with_Tmpdir),
+	split_file(Input_Cons_File,1000,Cons_File_with_Tmpdir,'.seq',Cons_In),
+	
+%writeq(sequential_consorf_beta_rec(1,Orf_In,Cons_In,ParameterFile,Options,Prediction_File_Mark)),nl,
+	sequential_consorf_beta_rec(1,Orf_In,Cons_In,ParameterFile,Options,Prediction_File_Mark,PredFiles)
+,
+% collect predictionfiles in to one big one	
+	lost_data_directory(Path),
+	atom_concat('pred_',Prediction_File_Mark,Big_Prediction_File_Name),
+	atom_concat(Big_Prediction_File_Name,'.gen',Big_Prediction_File),
+	atom_concat(Path,Big_Prediction_File,BigPredFile),
+	concat_files(PredFiles,BigPredFile),
+	write('Resulting BIG consorf prediction file'),nl,
+	writeln(BigPredFile)
+
+	.
+	
+	
+sequential_consorf_beta_rec(_,[],_,_,_,_,[]):-!.
+sequential_consorf_beta_rec(_,_,[],_,_,_,[]):-!.
+
+sequential_consorf_beta_rec(N,[Input_Orf_File|OrfFiles],[Input_Cons_File|ConsFiles],ParameterFile,Options,Prediction_File_Mark,[PredFile|RestPredFiles]):-
+	term2atom(N,Atom_N),
+	atom_concat('pred_',Prediction_File_Mark,Prediction_File_Name),
+	(
+	N > 9 ->
+		New_Atom_N = Atom_N
+	;
+		atom_concat('0',Atom_N,New_Atom_N)
+	), 
+	atom_concat(Prediction_File_Name,New_Atom_N,Prediction_File_Abs_Name),
+	atom_concat(Prediction_File_Abs_Name,'.gen',Prediction_File),
+	lost_tmp_directory(Path),
+	atom_concat(Path,Prediction_File,PredFile),
+	writeln('CHECK GOAL'), 
+	writeq(	annotate([Input_Orf_File,Input_Cons_File,ParameterFile], 						
+			    Options,   
+			    PredFile)),nl,nl,
+	safe_run_model(consorf_genefinder_v3,
+					annotate([Input_Orf_File,Input_Cons_File,ParameterFile], 						
+			    Options,   
+			    PredFile)),
+			    !,
+	%initialize_table,
+	table_remove(_), 			
+	write('Resulting consorf prediction file'),nl,
+	writeln(PredFile),
+	M is N+1,
+	sequential_consorf_beta_rec(M,OrfFiles,ConsFiles,ParameterFile,Options,Prediction_File_Mark,RestPredFiles),!
+	.
+
+
+
+
+
+
 
 
 % test predicate
@@ -193,7 +263,7 @@ sequential_conservation_rec(_,_,_,[]).
 
 sequential_conservation_rec(Dir,Frame,BlastFileName,[File|Rest]) :-
 %       term2atom(Frame,Frameatom),
-	 run_model(chunk_aa_conservation,annotate([File],[direction(Dir),frame(Frame),blast_file_name(BlastFileName),mismatch_score(1)],_Conservation_org_file)),
+	 run_model(chunk_aa_conservation,annotate([File],[direction(Dir),frame(Frame),blast_file_name(BlastFileName),mismatch_score(1)],_Conservation_org_file)),!,
 writeln(her),
 %	 writeln(Conservation_org_file),
 /*	 atom_concat(Dir,Frameatom,DirFrame),
@@ -239,4 +309,9 @@ create_goals([FileIn|RestIn],[FileOut|RestOut],Num,[Goal|Rest_Goal]) :-
         Num1 is Num+1,
         create_goals(RestIn,RestOut,Num1,Rest_Goal).
 
+/**************************************************************************************/
+% filter_genebank
+% filterout untrusted annotations
+% 
+% 
 

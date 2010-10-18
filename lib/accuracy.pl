@@ -51,7 +51,7 @@ accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
         write('number of wrongly predicted stop codons:'), write(NumberWrongStops),nl,
 	write('Genes sensitivity (#correct/#actual): '),
 	write(GSN),nl,
-	write('Genes specificity: (#correct/#predicted): '),
+	write('Genes specificity (#correct/#predicted): '),
 	write(GSP),nl,
 	write('(stops) sensitivity  (#correct/#actual): '),
 	write(StopGSN),nl,

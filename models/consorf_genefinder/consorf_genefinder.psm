@@ -25,12 +25,12 @@
 %=========================================================
 %:-dynamic(genebank_annotation/6).
 %:-dynamic(conservation/6).
-%:- dynamic(data/1).
+:- dynamic(data/1).
 :- set_prism_flag(learn_mode,both).
 :- set_prism_flag(log_viterbi,on).
 :- set_prism_flag(scaling,log_exp).
 
-data('consorf_training_file_+1a.dat').
+%data('consorf_training_file_+1a.dat').
 values(begin,[c,n]).
 values(trans(_),[c,n,end]).
 values(emit(_),[
@@ -68,22 +68,68 @@ such that there is one goal for each Id,Left,Right,Dir,Frame in Orf_Annot.
 */
 make_training_file(Orf_Annot,Cons_Annot, Ref_Annot, Training_File):-
 	open(Orf_Annot,read,OrfChunk_Stream,[alias(orfin)]),
+	open(Cons_Annot, read, ConsStream,[alias(consin)]),
+	open(Ref_Annot, read, RefStream,[alias(refin)]),
 	open(Training_File,write,Train_Stream,[alias(trainout)]),
-	cl(Cons_Annot),
-	cl(Ref_Annot),
+	%cl(Cons_Annot),
+	%cl(Ref_Annot),
 	
 	read(OrfChunk_Stream,OrfChunk_Term),
-	make_training_file_rec(OrfChunk_Term, OrfChunk_Stream, Train_Stream),!,	% green cut, for tail-recursion optimization  
+	make_training_file_rec_2(OrfChunk_Term, OrfChunk_Stream, ConsStream, RefStream, Train_Stream),!,	% green cut, for tail-recursion optimization  
 	
 	%abolish(genebank_annotation/6),
 	%abolish(conservation/6),
 	close(Train_Stream),
-	close(OrfChunk_Stream)
+	close(OrfChunk_Stream),
+	close(ConsStream),
+	close(RefStream)
 	.
+
+make_training_file_rec_2(end_of_file,_OrfChunk_Stream,_ConsStream,_RefStream,_Train_Stream).	
+
+make_training_file_rec_2(orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Orf_Annot)]), OrfChunk_Stream, ConsStream, RefStream, Train_Stream):-
+		write(Left), write(' '),
+	read(ConsStream,conservation(Id,Left,Right,Dir,Frame,Extra_Cons_Info)),				% ...or chunk mismatch?
+		write('found cons'), write(' '),
+	member(cons_annotation(Cons),Extra_Cons_Info),					% ...or missing annotation?
+	(
+	Cons = [] -> 																						% in case no conservation was reported from blast, replace [] by a list of L 0's
+		L is Right - Left + 1, 
+		makelist(L,0,Cons_Annot)	
+	;
+		Cons_Annot = Cons
+	),	
+	read(RefStream,genebank_annotation(Id,Left,Right,Dir,Frame,Extra_Ref_Info)),	% ...or chunk mismatch?
+		write('found ref'), write(' '),
+	member(seq_annotation(Ref_Annot),Extra_Ref_Info),							% ...or missing annotation?
+	
+	Training_Goal =.. [consorf,Orf_Annot,Cons_Annot,Ref_Annot],
+	
+	write(Train_Stream,Training_Goal),
+	write(Train_Stream,'.'),
+	nl(Train_Stream),
+		write('wrote goal'), writeln(' '),
+	read(OrfChunk_Stream,Next_OrfChunk_Term),
+	make_training_file_rec_2(Next_OrfChunk_Term,OrfChunk_Stream,Train_Stream),!.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 make_training_file_rec(end_of_file,_OrfChunk_Stream,_Train_Stream).	
 
 make_training_file_rec(orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Orf_Annot)]), OrfChunk_Stream, Train_Stream):-
+	
+	writeln(Left),
 	conservation(Id,Left,Right,Dir,Frame,Extra_Cons_Info),				% ...or chunk mismatch?
 	member(cons_annotation(Cons),Extra_Cons_Info),					% ...or missing annotation?
 	(
@@ -103,7 +149,7 @@ make_training_file_rec(orf_annotation(Id,Left,Right,Dir,Frame,[seq_annotation(Or
 	nl(Train_Stream),
 	
 	read(OrfChunk_Stream,Next_OrfChunk_Term),
-	make_training_file_rec(Next_OrfChunk_Term,OrfChunk_Stream,Train_Stream).
+	make_training_file_rec(Next_OrfChunk_Term,OrfChunk_Stream,Train_Stream),!.
 
 makelist(0,_,[]).
 makelist(N,X,[X|Rest]):-

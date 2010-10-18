@@ -38,8 +38,9 @@ safe_run_model(Model,Goal) :-
         CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
         term2atom(CallGoal,GoalAtom),
         write(launch_prism_process(ModelFile,GoalAtom)),nl,
-        launch_prism_process(ModelFile,GoalAtom),
-        check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))).
+        launch_prism_process(ModelFile,GoalAtom)
+        %, check_or_warn(file_exists(Filename),interface_error(missing_annotation_file(Filename))) % FIXME: temporarily disbaled check /061010 OTL
+	 .
 
 
 % Run a Lost Model
@@ -148,6 +149,10 @@ lost_required_option(Options, Key, Value) :-
 % Launching a PRISM process
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Launching a PRISM process
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% launch_prism_process(+PrismPrologFile,+Goal)
 %
 % Launch a prism process that first consults
@@ -168,11 +173,46 @@ launch_prism_process(PrismPrologFile, Goal) :-
 	write('cmd: '), write(Cmd),nl,
 	% FIXME: Setup some stdout redirection (this may be troublesome on windows)
 	% Run PRISM
+	
+	% The following UGLY code is to catch arbitrary memory faults (ExitCode 11) - retry the command at most ten times **OTL**
+	% should be changed to wrap the one main system command	 **OTL**
 	system(Cmd,ExitCode),
-	write('--> PRISM process exits with code '), write(ExitCode),nl,
+	(
+	ExitCode == 11 ->
+		write('--> PRISM process exits with code 11 on first attempt, retrying ...'),nl,
+		retry_sys_command(Cmd,9,ExtraAttempts,ExitCode2)
+	;
+		ExitCode2 = ExitCode,
+		ExtraAttempts = 0
+	),
+	Attempts is 1 + ExtraAttempts,
+	
+	write('--> PRISM process exits with code '), write(ExitCode2), write(', total attempts '), write(Attempts),nl,
+
 	% Unfortunately bprolog/prism does get the concept of exit codes. DOH!!!
-	check_or_fail((ExitCode==0), error(launch_prism_process(PrismPrologFile,Goal))),
+	check_or_fail((ExitCode2==0), error(launch_prism_process(PrismPrologFile,Goal))),
         chdir(CurrentDir).
+
+
+%% retry_sys_command(+System Command,+MaxAttempts, -Attempts, -ExitCode)
+%
+% Retry a system command until exitcode differetn from 11 or MaxAttempts times:
+% return total number of attempts and final exitcode
+retry_sys_command(SysCommand, MaxTries, FinalTry, Code):-
+	retry_rec(SysCommand, MaxTries, 0 , FinalTry,Code).
+
+retry_rec(_SysCommand, MaxTries, MaxTries, MaxTries ,11).
+retry_rec( SysCommand, MaxTries, Counter,  FinalTry, Code):-
+	MaxTries > Counter,
+	ThisTry is Counter +1,
+	system(SysCommand,ExitCode),
+	(
+	ExitCode == 11 ->
+		retry_rec(SysCommand, MaxTries, ThisTry, FinalTry, Code)
+	;
+		FinalTry = ThisTry,
+		Code = ExitCode
+	).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

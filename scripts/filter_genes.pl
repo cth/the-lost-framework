@@ -25,6 +25,15 @@ filter_non_y_genes(Genes,Sequence,Filtered) :-
 	write(Filtered),
         nl.
 
+filter_non_dir_frame_genes(Dir,Frame,Genes,Sequence,Filtered):-
+	Options = [ match_frames([Frame]), match_strands([Dir]) ],
+	filter_genes(Genes,Sequence,Options,Filtered),
+	write('output is :'),
+	write(Filtered),
+       nl.
+
+
+
 % Exclude 'predicted/hypothetical/putative' etc genes
 % The list of word is taken from easygene paper
 filter_uncertain_genes(Genes,Genome,ExtraOptions,Filtered) :-

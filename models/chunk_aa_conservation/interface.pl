@@ -62,7 +62,7 @@ write('got option ok'),nl,
 	retractall(nongap_mismatch_score(_)),
 	retractall(blast_input_name(_)),
 	retractall(blast_output_name(_)),
-	(member(alignements(AlnFile),Options) ->
+	(member(alignments(AlnFile),Options) ->
             retractall(output_alignments(_)),
             close(Aln_Stream)
 	;

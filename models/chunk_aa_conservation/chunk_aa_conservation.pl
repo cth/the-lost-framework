@@ -3,6 +3,7 @@
 % History:
 %         24.03.2010 Inclusion into Lost Framework OTL
 %         12.05.2010 Something OTL & MP
+%         14.09.2010 counts matching final stops when score best alignments
 %============================================================================
 % conservation/6
 % in: file of fasta-formatted AA sequences:
@@ -79,11 +80,15 @@ conservation(Chunk_Stream,Counter,Dir,Frame,Aln_Stream,Cons_Stream):-
 % from the result of the blast report.
 
 cons_init(Chunk_Stream,QId,Left,Right,Start_ORF,Query,IDs,All_alignments,ChunkTerminated,Status):-
-        blast_next_chunk(Chunk_Stream,Headline_Chunk,Query,XML_Blast_File,ChunkTerminated,Status),
+       blast_next_chunk(Chunk_Stream,Headline_Chunk,Query,XML_Blast_File,ChunkTerminated,Status),
+	nl,write('Blast Status --------> '), writeln(Status),
 	(Status == 0 ->
-            parser_headline_fasta(Headline_Chunk,QId,Left,Right,Start_ORF),
-            parser_blast(XML_Blast_File, IDs, All_alignments)
-	;
+	     parser_headline_fasta(Headline_Chunk,QId,Left,Right,Start_ORF),
+          nl,writeln('Headline Parsed ------------- 1 '),
+          write('XML_Blast_File :'), writeln(XML_Blast_File),nl,
+	     parser_blast(XML_Blast_File, IDs, All_alignments)
+          ,nl,writeln('Rest Parsed ----------------- 2 ')
+	     ;
             % TODO something but I don't know what /TODO
             IDs = [],
             All_alignments = [],
@@ -101,7 +106,7 @@ cons_main(Query,_DBID,All_alignments,_Aln_Stream,Cons,Avg_Cons) :-
         All_alignments \= [],
         All_alignments \= ['n/a','n/a'],
         !,
-        determine_best_alns(All_alignments,Best_alignments),
+	determine_best_alns(All_alignments,Best_alignments),
        % TODO Do something to manage the option output_alignments /TODO
        % (output_alignments(yes)->
        %     report_alns(Aln_Stream,FirstPos,LastPos,All_alignments,Best_alignments)
@@ -224,7 +229,8 @@ blast_next_chunk(Chunk_Stream,Headline_Chunk,Query,XML_Blast_File,ChunkTerminate
             system(Command,Status)
 	;
             Status = 2
-	).
+	)
+	.
 
 % copy_fasta(++Infile,--OutFile,--Headline_Chunk,--ChunkTerminated,CopyFasta_OK)
 copy_fasta(Infile,OutFile,Headline_Chunk,Seq_codes,ChunkTerminated,OK):-
@@ -323,17 +329,18 @@ best_of_rest(Rest1,ID,P31,P32,M3,Rest3,Score3):-
 score([],[],0,0) :-
         !.
 
-score([42],[],0,0) :-
+score([42],[42],0,Score) :- % Stop as final char is LEGAL, i.e., report "no illegal stops".
+        sc(42,Score),
         !.
 
 score([X|L1],[Y|L2],Saw_a_stop,Score):-
 	score(L1,L2,Saw_a_stop_in_rest,ScoreRest),
 	( X \= 42, Saw_a_stop_in_rest = 0 ->
             Y = X,
-            Saw_a_stop = 0 % copies X to Y and reports "no stops" if X is not a '*' AND "no stops" in rest
+            Saw_a_stop = 0 % copies X to Y and reports "no illegal stops" if X is not a '*' AND "no illegal stops" in rest
 	;
             Y = 32,
-            Saw_a_stop = 1 % replaces X by ' ' and reports "stop(s) seen" oherwise
+            Saw_a_stop = 1 % replaces X by ' ' and reports "illegal stop(s)" oherwisel.
 	),
 	sc(Y,ScoreY),   % predicate defined in blosum62scores
 	Score is ScoreRest + ScoreY.
@@ -378,14 +385,14 @@ qhead_vs_dbheads(_Qhead,[],_Position,[],0) :-
         !.                    
 
 % Case: Qhead has not been aligned with DB
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[_DBhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
         Position < Start,
         !,                  
 	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQ).
 
 
 % Case: Qhead has not been aligned with DB
-qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[_DBhead|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
         Stop < Position,
         !,                  
 	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQ).
@@ -397,9 +404,16 @@ qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[Qhead|TailDB1])|RestDBs],Position,[(DB
 	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest), 
 	CountQ is 1 + CountQRest. % increment match count
 
+% Case Perfect Match: Qhead is 'X' and DBhead is legal stop '*'
+qhead_vs_dbheads(88,[(DBID,Start,Stop,[42|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQ):-
+        !,                  
+	qhead_vs_dbheads(88,RestDBs,Position,RestTails,CountQRest), 
+	CountQ is 1 + CountQRest. % increment match count
+
 % Case: Mismatch a space in DB
 qhead_vs_dbheads(Qhead,[(DBID,Start,Stop,[32|TailDB1])|RestDBs],Position,[(DBID,Start,Stop,TailDB1)|RestTails],CountQRest):-
-        !,
+       Qhead \= 88,
+	!,
 	qhead_vs_dbheads(Qhead,RestDBs,Position,RestTails,CountQRest).
 
 % Case: Mismatch a - in DB
