@@ -7,9 +7,9 @@
 viterbi_learn_file(File) :-
 	clear_counters,
 	add_pseudo_counts,
-        open(File,read,Stream),
-        viterbi_learn_stream(Stream,0),
-        close(Stream),
+    open(File,read,Stream),
+    viterbi_learn_stream(Stream,0),
+    close(Stream),
 	set_switches_from_counts.
 
 %% viterbi_learn_file_count_only(+File)
@@ -17,25 +17,25 @@ viterbi_learn_file(File) :-
 % in the viterbi path of the observed goals in File 
 viterbi_learn_file_count_only(File) :-
 	clear_counters,	
-        open(File,read,Stream),
-        viterbi_learn_stream(Stream),
-        close(Stream).
+    open(File,read,Stream),
+    viterbi_learn_stream(Stream),
+    close(Stream).
 
 %% viterbi_learn_stream(+Stream)
 % Does empirical frequency counting of the MSWs involved
 % in the viterbi path of the observed goals in Stream 
 viterbi_learn_stream(Stream,NumGoals) :-
-        read(Stream,Term),
-        ((Term == end_of_file) ->
-                true
+    read(Stream,Term),
+    ((Term == end_of_file) ->
+            true
+            ;
+            viterbi_learn_term(Term),
+            ReportNum is NumGoals mod 100,
+            ReportDot is NumGoals mod 10,
+            ((ReportNum == 0) ->
+            	write(NumGoals)
                 ;
-                viterbi_learn_term(Term),
-                ReportNum is NumGoals mod 100,
-                ReportDot is NumGoals mod 10,
-                ((ReportNum == 0) ->
-                        write(NumGoals)
-                        ;
-                        ((ReportDot == 0) -> write('.');true)),
+                ((ReportDot == 0) -> write('.');true)),
                 flush_output,
                 NewNumGoals is NumGoals + 1,
                 !,
@@ -47,28 +47,28 @@ viterbi_learn_stream(Stream,NumGoals) :-
 viterbi_learn([]).
 viterbi_learn([G|Gs]) :-
 	clear_counters,
-        viterbi_learn_term(G),
-        table_remove0,
-        !,
-        viterbi_learn(Gs).
+    viterbi_learn_term(G),
+    table_remove0,
+    !,
+    viterbi_learn(Gs).
 
 %% viterbi_learn_term(+G)
 % Does empirical frequency counting of the MSWs involved
 % in the viterbi path of the observed goal G
 viterbi_learn_term(G) :-
-        viterbit(G,_,T),
-        tree_switches(T,S),
-        forall(member(M,S),count_msw(M)).
+	viterbit(G,_,T),
+    tree_switches(T,S),
+    forall(member(M,S),count_msw(M)).
 
 %%%% 
 
 %%  count_msw(+MSW)
 % increment the counter for MSW 
 count_msw(MSW) :-
-        retract(count_table(MSW,OldCount)),
+    retract(count_table(MSW,OldCount)),
 	!,
-        NewCount is OldCount + 1,
-        assert(count_table(MSW,NewCount)).
+    NewCount is OldCount + 1,
+    assert(count_table(MSW,NewCount)).
 
 count_msw(MSW) :-
 	assert(count_table(MSW,1)).
@@ -85,27 +85,28 @@ clear_counters :-
 % counts, effectively summing the counts of all the files.
 merge_counts_files([]).
 merge_counts_files([CountsFile|CFs]) :-
-        load_counts_file(CountsFile),
-        merge_counts_files(CFs).
+    load_counts_file(CountsFile),
+    merge_counts_files(CFs).
 
 %% load_counts_file(+CountsFile)
 %  
 load_counts_file(CountsFile) :-
-        terms_from_file(CountsFile,CountTerms),
-        forall(member(Term,CountTerms),merge_count_term(Term)).
+    terms_from_file(CountsFile,CountTerms),
+    forall(member(Term,CountTerms),merge_count_term(Term)).
 
 save_counts_file(CountsFile) :-
 	write('save_counts_to_file: '),write(CountsFile), nl,
-        findall(count_table(A,B),count_table(A,B),CountTerms),
-        terms_to_file(CountsFile,CountTerms).
+    findall(count_table(A,B),count_table(A,B),CountTerms),
+    terms_to_file(CountsFile,CountTerms).
         
 % Merge the counts for an existing/asserted count/2 fact with the
 % counts given in CountTerm
 merge_count_term(count_table(msw(MSW,Outcome),Count)) :-
-        retract(count_table(msw(MSW,Outcome),LocalCount)),
+    retract(count_table(msw(MSW,Outcome),LocalCount)),
 	!,
-        NewCount is LocalCount + Count,
-        assert(count_table(msw(MSW,Outcome),NewCount)).
+    NewCount is LocalCount + Count,
+    assert(count_table(msw(MSW,Outcome),NewCount)).
+
 merge_count_term(T) :-
 	assert(T).
 
@@ -169,10 +170,10 @@ count_table_total_count_for_variable(Variable, Total) :-
 tree_switches([],[]) :- !.
 tree_switches(msw(Var,Outcome),[msw(Var,Outcome)]) :- !.
 tree_switches([Goal|Gs],Msws) :-
-        !,
-        tree_switches(Goal,Msws1),
-        tree_switches(Gs,Msws2),
-        append(Msws1,Msws2,Msws).
+    !,
+    tree_switches(Goal,Msws1),
+    tree_switches(Gs,Msws2),
+    append(Msws1,Msws2,Msws).
 
 tree_switches(_,[]).
 
