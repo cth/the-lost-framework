@@ -149,10 +149,6 @@ lost_required_option(Options, Key, Value) :-
 % Launching a PRISM process
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Launching a PRISM process
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %% launch_prism_process(+PrismPrologFile,+Goal)
 %
 % Launch a prism process that first consults
@@ -382,6 +378,11 @@ print_available_model_rec([Name|Rest]) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Directory and file management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+lost_testcase_directory(TestCaseDir) :-
+	lost_config(lost_base_directory,BaseDir),!,
+	atom_concat(BaseDir,'/test/', TestCaseDir).
+
 
 %% lost_models_directory(-TmpDir)
 lost_tmp_directory(TmpDir) :-
@@ -837,7 +838,7 @@ lost_model_input_formats_to_file(Model,Goal,OutputFile) :-
 % Write the output formats of a Model called with Goal/Options to OutputFile
 % API call required by the CLC gui
 lost_model_output_format_to_file(Model,Goal,Options,OutputFile) :-
-	lost_interface_output_format(Model,Goal,Option,OutputFormat),
+	lost_interface_output_format(Model,Goal,Options,OutputFormat),
 	open(OutputFile,write,OStream),
 	write(OStream,lost_model_output_format(Model,Goal,Options,OutputFormat)),
 	write(OStream, '.\n'),

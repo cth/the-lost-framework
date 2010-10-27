@@ -15,7 +15,6 @@
 	<classpathentry kind="lib" path="/CLCDeveloperKit/lib-base/jaxrpc.jar"/>
 	<classpathentry kind="lib" path="/CLCDeveloperKit/lib-base/log4j-1.2.8.jar"/>
 	<classpathentry kind="lib" path="/CLCDeveloperKit/lib-base/wsdl4j-1.5.1.jar"/>
-	<classpathentry kind="src" path="/PrologInJava"/>
 	<classpathentry kind="lib" path="plugin_libs/antlr.jar"/>
 	<classpathentry kind="lib" path="plugin_libs/PrologInJava.jar"/>
 	<classpathentry kind="output" path="bin"/>

@@ -87,7 +87,7 @@ public class LostFrameworkInterface {
 			optionsBuffer.append("]");
 
 			String prismGoals = "cl('" + modelInterfaceFile(modelName) + "'), " + 
-			"lost_best_annotation(['" + inputFile.getAbsolutePath() + "']," +
+			"annotate(['" + inputFile.getAbsolutePath() + "']," +
 			optionsBuffer.toString() + 
 			", '" + 
 			outputFile.getAbsolutePath() + "').";
@@ -153,7 +153,7 @@ public class LostFrameworkInterface {
 			"lost_include_api(interface), " +
 			"list_lost_model_options_to_file(" + 
 			model + "," +
-			"lost_best_annotation" + "," +
+			"annotate" + "," +
 			"'" + outputFile.getAbsolutePath() + "').";
 
 			runPrism2(lost_framework_path, prismGoals);
@@ -180,7 +180,7 @@ public class LostFrameworkInterface {
 			"lost_include_api(interface), " +
 			"lost_model_option_values_to_file(" + 
 			model + "," +
-			"lost_best_annotation," +
+			"annotate," +
 			option + "," +
 			"'" + outputFile.getAbsolutePath() + "').";
 
@@ -234,6 +234,7 @@ public class LostFrameworkInterface {
 			optionsBuffer.append("]");
 			
 			String prismGoals = "cl('lost.pl'), " +
+				"lost_include_api(interface), " +
 				"lost_interface_output_format_to_file(" +
 				model + "," +
 				"annotate," +
@@ -269,7 +270,6 @@ public class LostFrameworkInterface {
 			File outputFile = File.createTempFile("lost_list_model_output_format", ".pl");
 
 			String prismGoals = "cl('lost.pl'), " + 
-//			"lost_include_api(interface), " +
 			"lost_model_input_formats_to_file(" +
 			model + "," +
 			"annotate" + "," +
