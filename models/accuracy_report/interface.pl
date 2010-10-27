@@ -8,7 +8,7 @@ lost_option(annotate,start,min,'An positive integer indicating the start of the 
 lost_option(annotate,end,max,'A positive integer indicating the end of the range. The default value, \'max\' is used to specify the minimal start for any of the inputs').
 
 % TODO: implement support text(prolog(accuracy_report) of this option 
-lost_option(annotate,output_format,text(flat(accuracy_report)),
+lost_option(annotate,output_format,text(prolog(accuracy_report)),
 	    'Indicates the output format the accuracy report. Options are text(flat(accuracy_report)) and text(prolog(accuracy_report))').
 
 lost_input_formats(annotate, [text(prolog(ranges(gene))), text(prolog(ranges(gene)))]).
