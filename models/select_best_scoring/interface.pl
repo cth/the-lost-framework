@@ -26,7 +26,7 @@ annotate([InputFile],Options,OutputFile) :-
         (OptThreshold==auto->
                 GoodPredictions = Predictions 
                 ;
-                select_good_predictions(Predictions,GoodPredictions)),
+                select_good_predictions(ScoreFunctor,OptThreshold,Predictions,GoodPredictions)),	
         sort_by_score(ScoreFunctor,GoodPredictions,ScoreSortedPredictions),
         take(NumPredictions,ScoreSortedPredictions,SelectedPredictions),
         sort(SelectedPredictions,PosSortedSelectedPredictions),
