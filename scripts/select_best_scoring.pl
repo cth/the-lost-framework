@@ -19,7 +19,7 @@ test :-
     write(Atom),
     nl.
 
-data_points(5).
+
 % The idea with this is to extract and experiment with all relevant 
 % thresholds from the predictions in order to generate the data needed
 % to produce a ROC curve.
@@ -29,8 +29,7 @@ data_points(5).
 %     - run accuracy
 %     - consult report to extract TPR+FPR
 %     - build up TPR+FPR in list
-generate_roc_curve_data :-
-	data_points(DataPoints),
+generate_roc_curve_data(DataPoints) :-
     lost_data_file('nc000913_2_all_urfs_for_real.pl',PredictionsFile),
 %    lost_data_file('nc000913_2_1000_orfs.pl',PredictionsFile),
     lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
