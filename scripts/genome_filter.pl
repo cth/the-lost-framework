@@ -1,5 +1,15 @@
 :- ['../lost.pl'].
 :- lost_include_api(misc_utils).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Turn off gene-finder signal (e.g. all scores are considered 
+% to be the same.)
+% This is easily done by making just one score group
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+turnoff_experiment :-
+	run(1).
+
 %%%%%%%% Experiment r1: veco_cyc and Soerens gene finder %%%%%%
 
 
@@ -16,21 +26,20 @@ run(Categories) :-
         write('PredictionsFile:'), write(PredictFile), nl,
         write('AnnnotationsFile:'), write(AnnotationFile),nl,
         % input files:
-	verified_file(GF),
-	predictions_file(PF),
+		verified_file(GF),
+		predictions_file(PF),
         % Run the genome filter:
-	run_model(genome_filter,
-                  annotate([GF,PF],[score_categories(Categories),score_functor(score)],SelectedPredictionsFile)),
+		run_model(genome_filter,
+        	annotate([GF,PF],[score_categories(Categories),score_functor(score)],SelectedPredictionsFile)),
         write('Wrote selected predictions to: '),
         write(SelectedPredictionsFile),nl,
         %move_data_file(SelectedPredictionsFile,PredictFile),
         % Accuracy report:
         run_model(accuracy_report, annotate([GF,PredictFile],[start(1),end(max)],AccuracyFileTmp)),
-        %move_data_file(AccuracyFileTmp,AccuracyFile),
         write('Accuracy report is : '), write(AccuracyFile), nl,
-	readFile(AccuracyFile,Contents),
-	atom_codes(Atom,Contents),
-	write(Atom),nl.
+		readFile(AccuracyFile,Contents),
+		atom_codes(Atom,Contents),
+		write(Atom),nl.
 
 verified_file(GeneFileProlog) :-
     lost_data_file('nc000913_2_vecocyc_ptt',PttFile),
