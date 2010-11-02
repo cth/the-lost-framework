@@ -9,18 +9,30 @@
 
 turnoff_experiment :-
 	run(1).
+	% Doesn't work well because of high delete probability (e.g. delete state dominates!)
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Experiment: Different delete state probabilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%% Experiment r1: veco_cyc and Soerens gene finder %%%%%%
-
+exp_del_state_prob :-
+%	DeleteProbs = [0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99],
+	DeleteProbs = [0.8, 0.9], %, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99],
+	forall(member(P, DeleteProbs), run_gf(40,DeleteProbs)). 
+	
+%%%%%
 
 runall :-
         ScoreSymbols = [ 25, 50, 75, 100 ],
-        forall(member(X,ScoreSymbols),run(X)).
-        
-run(Categories) :- 
+        forall(member(X,ScoreSymbols),run_gf(X)).
+
+run_gf(Categories) :-
+	run_gf(Categories,false).
+	        
+run_gf(Categories,DeleteProb) :- 
         lost_data_directory(DataDir),
         % Create file names:
-        atom_integer(CategoriesAtom,Categories), 
+        atom_integer(CategoriesAtom,Categories),
         %atom_concat_list([DataDir,'gf_',CategoriesAtom,'_predictions.pl'],PredictFile),
         %atom_concat_list([DataDir,'gf_',CategoriesAtom,'_accuracy.txt'],AnnotationFile),
         write('PredictionsFile:'), write(PredictFile), nl,
@@ -30,7 +42,7 @@ run(Categories) :-
 		predictions_file(PF),
         % Run the genome filter:
 		run_model(genome_filter,
-        	annotate([GF,PF],[score_categories(Categories),score_functor(score)],SelectedPredictionsFile)),
+        	annotate([GF,PF],[debug(true),score_categories(Categories),score_functor(score),override_delete_probability(DeleteProb)],SelectedPredictionsFile)),
         write('Wrote selected predictions to: '),
         write(SelectedPredictionsFile),nl,
         %move_data_file(SelectedPredictionsFile,PredictFile),

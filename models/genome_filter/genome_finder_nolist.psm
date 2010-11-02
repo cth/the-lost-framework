@@ -72,13 +72,12 @@ dummy_pgoal(SwName,Outcome) :-
 
 frames([1,2,3,4,5,6]).
 
-% parameters of model: 
+% parameters of model:
 values(trans(_),Frames) :-
         frames(Frames).
 
-
 % The score is emitted from the frame
-values(emit(F), SC) :- 
+values(emit(F), SC) :-
         F \= delete,
         frames(Frames),
         member(F,Frames),
@@ -91,13 +90,9 @@ values(emit(delete),Outcomes) :-
 
 values(goto_delete,[yes,no]).
 
-% Should be approx 1/N, where N is the observation length
-values(terminate,[yes,no]).
-
-        
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%% Model definition %%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Initiation:
 model(Observations):-
@@ -105,10 +100,10 @@ model(Observations):-
    % Can probably just have uniform probability
    retractall(list_elem(_,_)),
    retractall(end_of_list(_)),
-   retractall(store(_)),
-   retractall(program_counter(_)),
-   init_store,
-   assert(program_counter(1)),
+   %retractall(store(_)),
+   %retractall(program_counter(_)),
+   %init_store,
+   %assert(program_counter(1)),
    assert_list(Observations),
    write('asserted list..'),nl,
    !,
@@ -125,7 +120,7 @@ recursion(F,ListIdx) :-
    end_of_list(EOL),
    %write(ListIdx), write('-'), write(EOL),nl,
    ListIdx < EOL,
-   report_progress,
+   %(debug_enabled(true) -> report_progress ; true),
    msw(goto_delete,GotoDel),
    ((GotoDel == yes) -> 
         recursion_delete(F,ListIdx) 

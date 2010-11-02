@@ -1,12 +1,23 @@
 :- ['../../lost.pl'].
 :- lost_include_api(misc_utils).
+:- lost_include_api(viterbi_learn).
 
 lost_option(annotate,score_functor,score,'A functor that specifies a member of the Extra list in each prediction which has score').
 lost_option(annotate,score_categories,50,'An integer specifying how many discrete groups to divide scores into').
+lost_option(annotate,learn_method,prism,'Species which routine to use for learning. Options are prism and custom.').
+lost_option(annotate,debug,false,'Whether to report debugging information.').
+lost_option(annotate,override_delete_probability,false,'Lets the user manually override the delete probability').
 
 lost_input_formats(annotate, [text(prolog(ranges(gene))), text(prolog(ranges(gene)))]).
 lost_output_format(annotate, _,text(prolog(ranges(gene)))).
 
+set_debug(Options) :-
+	get_option(Options,debug,DebugEnabled),
+	% Set/unset debug mod
+	((DebugEnabled==true) ->
+		assert(debug_enabled(true))
+		;
+		assert(debug_enabled(false))).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % annotate
@@ -14,27 +25,28 @@ lost_output_format(annotate, _,text(prolog(ranges(gene)))).
 
 %% annotate([GoldStdFile,PredictionsFile],Options,OutputFile)
 % Annotate first initializes the model parameters.
-% Then 
+% Then
 % - converts input file to a sequence
 % - runs viterbi on the sequence
 % - Extract the sequence of visited states from the viterbi tree
 % - Create a set of predictions from the sequence of visited states
 % - write the set of predictions to OutputFile
 annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
-        write('anntate called'),nl,
-        % Learn is always invoked before annotate (it's fast, so no
-        % worries)
+        write('annotate called'),nl,
+        % Learn is always invoked before annotate (it's fast, so no worries)
         run_model(genome_filter,
                   learn([GenbankFile,PredictionsFile],Options,ParametersFile)),
 
         % Options hadling:
         get_option(Options,score_categories,NumScoreGroups),
         get_option(Options,score_functor,ScoreFunctor),
- 
+		get_option(Options,override_delete_probability,OverrideDelete),
+		set_debug(Options),
+		
         % Load model
         prism(genome_finder_nolist),
         assert(learn_mode(false)), % Tell model that we want to do predictions now
-       % Load gene finder predictions  
+       % Load gene finder predictions
         terms_from_file(PredictionsFile,GeneFinderPredictionsUnsorted),
         % Make sure prediction are sorted
         sort(GeneFinderPredictionsUnsorted,GeneFinderPredictions),
@@ -50,6 +62,13 @@ annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
         assert(score_categories(ScoreCategories)), % Tell prism how many score categories
         % Restore model parameters
         restore_sw(ParametersFile),
+		% Override delete probability if requested
+		((OverrideDelete==false) ->
+			true
+			;
+			NotGotoDelete is 1 - OverrideDelete,
+			set_sw(goto_delete,[OverrideDelete,NotGotoDelete])
+		),
         show_sw,
         % Write model inputs to file:
         write('- writing model inputs file:'),
@@ -123,11 +142,21 @@ predictions_from_state_sequence([P|Ps],[S|Ss],[P|Ms]) :-
 % learning of different probability distributions for the model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Decide which learning method to use
 learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
+	get_option(Options,learn_method,LearnMethod),
+	((LearnMethod==prism) ->
+		learn_prism([GenbankFile,PredictionsFile],Options,OutputFile)
+		;
+		learn_custom([GenbankFile,PredictionsFile],Options,OutputFile)
+	).
+
+learn_prism([GenbankFile,PredictionsFile],Options,OutputFile) :-
        prism(genome_finder_nolist),
        assert(learn_mode(true)),
        get_option(Options, score_functor, ScoreFunctor),
        get_option(Options,score_categories,NumScoreGroups),
+	   set_debug(Options),
        terms_from_file(GenbankFile,RefGenesUnsorted),
        write('::: sorting genes in golden standard file'),nl,
        sort(RefGenesUnsorted,RefGenes),
@@ -154,7 +183,7 @@ learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
         save_sw(OutputFile),nl,
         retractall(learn_mode(_)).
 
-learn2([GenbankFile,PredictionsFile],Options,OutputFile) :-
+learn_custom([GenbankFile,PredictionsFile],Options,OutputFile) :-
        prism(genome_finder),
        get_option(Options, score_functor, ScoreFunctor),
        get_option(Options,score_categories,NumScoreGroups),
@@ -205,6 +234,7 @@ learn_frame_transitions(GenbankTerms) :-
   %      terms_from_file(GenbankFile,GenbankTerms),
         frame_list_from_genbank_terms(GenbankTerms,FrameList),
         assert(score_categories([0])),
+
         map(add_unit_score,FrameList,ObservationList),
         learn([model(ObservationList)]),
         retract(score_categories(_)).
