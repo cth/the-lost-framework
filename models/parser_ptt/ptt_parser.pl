@@ -37,9 +37,9 @@
 gb_parser(GB_Input_File,Genome_Key,GB_Output_File):-
 	open(GB_Input_File, read, Input_Stream,[alias(gb_in)]),
 	open(GB_Output_File, write, Output_Stream,[alias(gb_out)]),
-        set_output(Output_Stream),
-        readline(Input_Stream,First_Line),
-        var(Comment),
+    set_output(Output_Stream),
+    readline(Input_Stream,First_Line),
+    var(Comment),
 	parser_gb(Input_Stream,Comment,Genome_Key,First_Line),
 	set_input(user_input),
 	set_output(user_output),
@@ -93,7 +93,9 @@ parser_gb(Input_Stream,Comment,Genome_Key,Line_Codes):-
 
 fact_building_gb(List,Genome_Key):-
 	List = [ Start, Stop, Dir, Length, PID, Gene, Synonym, Code, COG | ProductList],
-        Temp is Start mod 3,
+	number(Start),
+	number(Stop),
+    Temp is Start mod 3,
 	(Temp = 0 ->
             Frm = 3
 	;
