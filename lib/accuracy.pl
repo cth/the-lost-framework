@@ -290,6 +290,8 @@ gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,SN) :-
 gene_level_specificity(RefFunctor,PredFunctor,Start,End,SP) :-
 	number_of_correct_genes(RefFunctor,PredFunctor,Start,End,Correct),
 	count_genes(PredFunctor,Start,End,Predicted),
+	write(Correct),nl,
+	write(Predicted),nl,
 	SP is Correct / Predicted.
 	
 gene_level_stop_sensitivity(RefFunctor,PredFunctor,Start,End,SN) :-
@@ -608,12 +610,13 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 %	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
 %	catch(call(Goal),_,fail).
 
-annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
-	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
-	catch(call(Goal),_,fail).
+%annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
+%	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
+%	catch(call(Goal),_,fail).
 
 annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
 	Goal =.. [ Type,_, From, To, Strand, ReadingFrame, Extra ],
+        write(Goal),nl,
 	catch(call(Goal),_,fail).
 
 annotations_in_range(Type, From, To, Strand, ReadingFrame, Name, RangeMin, RangeMax) :-
@@ -650,7 +653,7 @@ db_annotation_max(AnnotType, Strand,ReadingFrame,Max) :-
 
 % Find the beginning of the range of an annotation
 db_annotation_min(AnnotType, Strand,ReadingFrame,Max) :-
-	Goal =.. [ AnnotType, IncludeLeft, _right, Strand, ReadingFrame, _ ],
+	Goal =.. [ AnnotType, _, IncludeLeft, _right, Strand, ReadingFrame, _ ],
 	findall(IncludeLeft,Goal, ResultList),
 	list_min(ResultList,Max).
 
