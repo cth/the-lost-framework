@@ -33,24 +33,42 @@ ldata_parser_rec(IS,[35|Rest]) :-
         write(Comment_Atom),nl,
         ldata_parser(IS).
 
+%  parsable lines 
 ldata_parser_rec(IS, Line) :-
-	!,
         parser_line(Line,LineTokens),
+        write(LineTokens),
         ldata_line(Term,LineTokens,[]),
+        !,
         writeq(Term), write('.'), nl,
         ldata_parser(IS).
 
+% anything else is treated as comments
+ldata_parser_rec(IS, Line) :-
+        !,
+        ldata_parser_rec(IS,[35|Line]).
 
 % DCG for parsing differeggxnt type of lines
 ldata_line(T) --> gene_prediction_line(T).
 ldata_line(T) --> region_prediction_line(T).
 ldata_line(T) --> frame_shift_prediction_line(T).
 
+% This is the format which seems to be used by the local version of
+% genemark
 gene_prediction_line(genemark_gene_prediction(Start,End,Strand,Frame,[average_probability(AvgProb),start_codon_probability(StartProb)])) -->
         [Start,End],
         reading_frame6(Strand,Frame),
         [AvgProb,StartProb],
 	{ integer(Start),integer(End), float(AvgProb),float(StartProb) }.
+
+% this is the format which seems to be used by the web genemark reports:
+gene_prediction_line(genemark_gene_prediction(Start,End,Strand,Frame,[average_probability(AvgProb),start_codon_probability(StartProb)])) -->
+        [Start,End],
+        strand_word(Strand),
+        ['fr'],
+        [Frame],
+        [AvgProb,StartProb],
+	{ integer(Start),integer(End), integer(Frame),float(AvgProb),float(StartProb) }.
+
 
 region_prediction_line(genemark_region_prediction(Start,End,Strand,Frame)) -->
         [Start,End],
