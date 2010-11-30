@@ -36,7 +36,6 @@ ldata_parser_rec(IS,[35|Rest]) :-
 %  parsable lines 
 ldata_parser_rec(IS, Line) :-
         parser_line(Line,LineTokens),
-        write(LineTokens),
         ldata_line(Term,LineTokens,[]),
         !,
         writeq(Term), write('.'), nl,
