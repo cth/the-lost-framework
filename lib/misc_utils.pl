@@ -124,8 +124,8 @@ intersperse(Separator,[One,Two|Rest],[One,Separator|NewRest]) :-
         intersperse(Separator,[Two|Rest],NewRest).
 
 % take(+N,+ListIn,-ListOut). 
-% true if ListOut contains is the first N elements of ListIn
-take(_, [], []).
+% true if ListOut is the first N elements of ListIn
+take(0, _, []).
 take(N, [E|R1],[E|R2]) :-
         N1 is N - 1,
         !,
