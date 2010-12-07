@@ -17,7 +17,6 @@ annotate([InputFile],Options,OutputFile) :-
 	((PredFunctorOpt == auto) -> file_functor(InputFile,PredFunctor) ;  PredFunctor = PredFunctorOpt),
 	get_option(Options,score_functor,ScoreFunctor),
 	((ScoreFunctor == not_set) -> throw(error(score_functor_must_be_set)) ; true),
-        write('berfore_genedb_distisnct_stops'),nl,
 	genedb_distinct_stop_codons(PredFunctor,DistinctStops),
 	length(DistinctStops,DSL),
 	write('distinct stops: '), write(DSL),nl,
@@ -32,7 +31,6 @@ annotate([InputFile],Options,OutputFile) :-
 	write(OutputFile),
 	nl,
 	terms_to_file(OutputFile,BestPredictions).
-
 
 select_prediction(_,[BestPrediction],BestPrediction).
 
