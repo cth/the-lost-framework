@@ -26,9 +26,15 @@ annotate([InputFile],Options,OutputFile) :-
         (OptThreshold==auto->
                 GoodPredictions = Predictions 
                 ;
-                select_good_predictions(ScoreFunctor,OptThreshold,Predictions,GoodPredictions)),	
+                select_good_predictions(ScoreFunctor,OptThreshold,Predictions,GoodPredictions)),
+        length(GoodPredictions,NumGoodPredictions),nl,
         sort_by_score(ScoreFunctor,GoodPredictions,ScoreSortedPredictions),
-        take(NumPredictions,ScoreSortedPredictions,SelectedPredictions),
+        % It is probably take again.. hmm..
+        ((NumPredictions > NumGoodPredictions) ->
+                NumToTake = NumGoodPredictions
+                ;
+                NumToTake = NumPredictions),
+        take(NumToTake,ScoreSortedPredictions,SelectedPredictions),
         sort(SelectedPredictions,PosSortedSelectedPredictions),
         terms_to_file(OutputFile,PosSortedSelectedPredictions).
 
@@ -52,11 +58,4 @@ score_wrap(ScoreFunctor,Prediction,[Score,Prediction]) :-
         Prediction =.. [ _Functor, _Id, _Left, _Right, _Strand, _Frame, Extra ], 
         ScoreMatcher =.. [ ScoreFunctor, Score ],
         member(ScoreMatcher,Extra).
-
-        
-
-
-
-
-
 

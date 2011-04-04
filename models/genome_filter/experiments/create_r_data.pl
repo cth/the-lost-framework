@@ -6,7 +6,7 @@ create_data_file(ResultIndexFile,ResultsFile) :-
 	tell(ResultsFile),
     terms_from_file(ResultIndexFile,ETerms),
 	write('ScoreGroups\tDeleteProbability\tTotalPredicted\tStopsCorrect\tStopWrong\tStopSensitivity\sStopSpecificity\n'),
-	delete_state_probability_experiment1_report(ETerms).
+	delete_state_probability_experiment1_report(ETerms),
 	told.
 
 delete_state_probability_experiment1_report([]).

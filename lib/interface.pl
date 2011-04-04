@@ -45,41 +45,34 @@ safe_run_model(Model,Goal) :-
 
 % Run a Lost Model
 run_model(Model,Goal) :-
-
 	writeq(run_lost_model(Model,Goal)),nl,
-
 	Goal =.. [ Functor, Inputs, Options, Filename ],
-	
 	lost_model_interface_file(Model, ModelFile),
-	
 	check_valid_model_call(Model,Functor,3,Options),
-	
 	expand_model_options(Model, Functor, Options, ExpandedOptions),
-	
 	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Check if a result allready exists:
-	
 	lost_data_index_file(AnnotIndex),
-	
 	writeq(lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename)
 ),nl,
+	write(AnnotIndex),nl,
 	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename),
-	
-	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
-	
-	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
+	write(here),nl,
+	!,
+%	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
+%   There is a bug with the timestamp. Disabled untill fixed!	
+%	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
+	write('Filename: '), write(Filename),nl,
+	(file_exists(Filename) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
 	 CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
 	 %term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
 	 term2atom(CallGoal,GoalAtom),
-         write(launch_prism_process(ModelFile,GoalAtom)),nl,
-	 
-	launch_prism_process(ModelFile,GoalAtom),
-	 
-	check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
-	
-	lost_file_index_update_file_timestamp(AnnotIndex,Filename) 
+     write(launch_prism_process(ModelFile,GoalAtom)),nl,
+     launch_prism_process(ModelFile,GoalAtom),
+     check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
+     lost_file_index_update_file_timestamp(AnnotIndex,Filename) 
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

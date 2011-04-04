@@ -30,3 +30,10 @@ test :-
 	lost_sequence_file('U00096',File),
 	write(File),nl.
 	
+% Produce file containing all ORFs of the e-coli genome
+run :-
+        lost_sequence_file('U00096',File),
+	write(File),nl,
+        chop_genome(File).
+
+
