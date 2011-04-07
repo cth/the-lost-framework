@@ -7,6 +7,151 @@
 :- [smooth].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Simple length range model
+% This model estimates a rough length distribution of coding ORFs. The length
+% distribution is divided into ranges of subsequent lengths scores. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% The goals used for learning. Takes a file with reference genes as input.
+simple_range_model_learn([GeneRefFile],_,OutputFile) :-
+	terms_from_file(GeneRefFile,GeneTerms),
+	extract_gene_lengths(GeneTerms,GeneLengths),
+	prism(length_model),
+	['length_model.psm'],
+	learn_gene_lengths(GeneLengths),
+	save_sw(OutputFile).
+
+% Perform annotation of ORFs using a trained model
+simple_range_model_annotate([OrfFile,ParameterFile],_,OutputFile) :-
+	prism(length_model),
+	restore_sw(ParameterFile),
+	['length_model.psm'],
+	open(OrfFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	simple_range_model_annotate_orf(0,InStream,OutStream),
+	close(InStream),
+	close(OutStream).
+
+simple_range_model_annotate_orf(Counter,InStream,OutStream) :-
+	Counter1 is Counter + 1,
+	((0 is Counter1 mod 100) -> write('procesed '), write(Counter1), write(' orfs'),nl ;	true),
+	read(InStream,ORF),
+	((ORF == end_of_file) ->
+		true
+	;
+		ORF =.. [Functor,SeqId,Left,Right,Dir,Frame,Extra],
+		member(starts(StartsList), Extra),
+		member(stop([Stop]), Extra),
+		findall(L,(member(Start,StartsList), length_in_codons(Start,Stop,L)), Lengths),!,
+		findall(R,(member(L,Lengths),get_range(L,R)),Ranges),!,
+		findall(P,(member(R,Ranges),prob(msw_gene_length_range(R),P)),LengthScores),!,
+		NewExtra = [length_ranges(Ranges),length_scores(LengthScores)|Extra],
+		NewAnnot =.. [Functor,SeqId,Left,Right,Dir,Frame,NewExtra],
+%		write(NewAnnot),
+		write(OutStream,NewAnnot),
+		write(OutStream,'\n'),
+		!,
+		simple_range_model_annotate_orf(Counter1,InStream,OutStream)).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Significance model:
+% This model is trained using both positive and negative evidence
+% - The positive evidence is used to built a gene length distribution
+% - The negative evidence is used to build a non-gene length distribution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Learning both gene range msw and nongene range msw
+
+significance_model_learn([GeneRefFile,OrfFileRef],_,OutputFile) :-
+	terms_from_file(GeneRefFile,GeneTerms),
+	terms_from_file(OrfFileRef,NonGeneTerms),
+	extract_gene_lengths(GeneTerms,GeneLengths),
+	extract_gene_lengths(NonGeneTerms,NonGeneLengths),
+	prism(length_model),
+	['length_model.psm'],
+	learn_gene_lengths(GeneLengths),
+	learn_nongene_lengths(NonGeneLengths),
+	learn_filter_probability(GeneTerms,NonGeneTerms),
+	save_sw(OutputFile).
+	
+% There are two possible modes of prediction using the discriminative model
+% 1. Start codon ranking 
+%   - This approach takes ORFs/ORF-chunks as input and assigns each start
+%     codon a significance score (a posterior probability defined as P(real-start)/P(fake-start))
+% 2. Filtering 
+%    - This approach takes Predictions in range format as input and basically
+%      annotates as GENE if P(real-start) > P(fake-start)
+%      annotates as NON-GENE if P(real-start) < P(fake-start)
+
+
+% Method 1: Ranking
+significance_model_rank_orf(Counter,InStream,OutStream) :-
+	Counter1 is Counter + 1,
+	((0 is Counter1 mod 1000) -> write('procesed '), write(Counter1), write(' orfs'),nl ;	true),
+	read(InStream,ORF),
+	((ORF == end_of_file) ->
+		true
+	;
+		ORF =.. [Functor,SeqId,Left,Right,Dir,Frame,Extra],
+		member(starts(StartsList), Extra),
+		member(stop([Stop]), Extra),
+		findall(L,(member(Start,StartsList), length_in_codons(Start,Stop,L)), Lengths),!,
+		findall(R,(member(L,Lengths),get_range(L,R)),Ranges),!,
+		findall(P,(member(R,Ranges),prob(msw_gene_length_range(R),P)),GeneLengthScores),!,
+		findall(P,(member(R,Ranges),prob(msw_nongene_length_range(R),P)),NonGeneLengthScores),!,
+		% Assuming log-probabilities
+		calculate_significance_scores(GeneLengthScores,NonGeneLengthScores,SignificanceScores),
+		NewExtra = [length_ranges(Ranges),length_scores_significance(SignificanceScores), length_scores(GeneLengthScores)|Extra],
+		NewAnnot =.. [Functor,SeqId,Left,Right,Dir,Frame,NewExtra],
+%		write(NewAnnot),
+		write(OutStream,NewAnnot),
+		write(OutStream,'\n'),
+		!,
+		significance_model_rank_orf(Counter1,InStream,OutStream)).
+
+% utility, calculating of significance scores:
+calculate_significance_scores([],[],[]).
+calculate_significance_scores([A|As],[B|Bs],[C|Cs]) :-
+	C is A - B,
+	calculate_significance_scores(As,Bs,Cs).
+
+% Method 2: Filtering
+
+significance_model_filter([PredictionsFile,ParamFile],_Opts,OutputFile) :-
+	prism(length_model),
+	restore_sw(ParamFile),
+	open(PredictionsFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	read_and_annotate_predictions(InStream,OutStream),
+	close(InStream),
+	close(OutStream).
+
+significance_model_filter_prediction(Counter,InStream,OutStream) :-
+	Counter1 is Counter + 1,
+	((0 is Counter1 mod 1000) -> write('procesed '), write(Counter1), write(' predictions'),nl ;	true),
+	read(InStream,Prediction),
+	((Prediction == end_of_file) ->
+		true
+	;
+		Prediction =.. [Functor,SeqId,Left,Right,Dir,Frame,Extra],
+		length_in_codons(Left,Right,Length),
+		discriminative_model(Length,Coding),
+		((Coding='+') ->
+			% Also, add the score to the Extra list.
+			get_range(Length,Range),
+			prob(msw_gene_length_range(Range),Prob),
+			NewExtra = [length_range(Range),length_score(Prob)|Extra],
+			NewAnnot =.. [Functor,SeqId,Left,Right,Dir,Frame,NewExtra],
+			write(OutStream,NewAnnot),
+			write(OutStream,'.\n')
+			;
+			true
+		)
+	),
+	!,
+	significance_model_filter_prediction(Counter1,InStream,OutStream).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Prediction using a HMM-type model for ORF chunks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 annotate_orf_chunks([OrfFile,ParamFile],_Opts,OutputFile) :-

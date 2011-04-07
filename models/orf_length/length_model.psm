@@ -3,7 +3,7 @@
 min_orf_length(5).
 max_orf_length(1500).
 
-score_categories(250).
+score_categories(100).
 
 orf_lengths(Lengths) :-
 	min_orf_length(Min),
@@ -28,17 +28,21 @@ values(gene_length_range, Ranges) :-
 	length_ranges(Ranges).
 	
 values(nongene_length_range, Ranges) :-
-	length_ranges(Ranges).	
+	length_ranges(Ranges).
 	
-	
-values(trans(start),['+','-']).
-values(trans('+'),['+']).
-values(trans('-'),['+','-']).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HMM type model                                     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-hmm_model(Lengths,CodingAnnot) :-
+
+% Model should reflect the regular expression:
+% before-coding* coding? after-coding*
+
+values(trans(start),['+','-']).
+values(trans('+'),['+']).
+values(trans('-'),['+','-']).
+
+hmm_model(Lengths,CodingAnnot) :- 
 	hmm_model(start,Lengths,CodingAnnot).
 	
 hmm_model(_State,[],[]).
@@ -53,13 +57,14 @@ hmm_model(State,[L|Ls],[NextState|Cs]) :-
 	% Recursion
 	hmm_model(NextState,Ls,Cs).
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Another possibility
 % Basically a one state HMM.
 discriminative_model(Length,Coding) :-
 	msw(coding,Coding),
 	get_range(Length,Range),
-	((Coding==yes) ->
+	((Coding=='+') ->
 		msw(gene_length_range,Range)
 		;
 		msw(nongene_length_range,Range)).
