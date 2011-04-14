@@ -13,30 +13,32 @@
 lost_input_formats(annotate,[prolog(sequence(_))]).
 % Output Format Specification
 lost_output_format(annotate,_,text(prolog(ranges(_)))).
-
+set_params:- restore_sw('params_fifth.gen').
 % 
 annotate([InputFile],_Options,OutputFile) :-                                 
 	write('Codon preference genefinder: '),nl,                                                         
         prismAnnot('codon_pref'), % Load the actual PRISM model                                         
+        set_params,
         % Building of the Input for the annotations
         consult(InputFile),
         chunk(_ID,_Left,_Right, Dir, Frame,_Extra),
-        findall(Data, 
-        (
-        chunk(_, _, _, D, _,[sequence(DataRev),_,_]),
-        D = '-' -> reverse(DataRev,Data)
-        ;
-        Data = DataRev
-        ),
-        List_ORF),	 
-        findall([Left,Right],chunk(_,Left,Right,_,_,_),List_Ranges_ORF),
+        findall(Chunk,get_chunk(Chunk),List_Chunk),	 
+        findall([Left,Right],chunk(_,Left,Right,_,_,_),List_Ranges_Chunk),
 	 % Computation of annotations
         open(OutputFile,write,Stream_Out),
-        compute_and_save_annotations(Stream_Out,1,List_ORF,List_Ranges_ORF,Dir,Frame).
+        compute_and_save_annotations(Stream_Out,1,List_Chunk,List_Ranges_Chunk,Dir,Frame).
         % Save the annotations in the right format
         %write(save_annotation(lost_prediction,List_Ranges_ORF,List_Annotations,Dir,Frame,OutputFile)),nl,
         %save_annotation(lost_prediction,List_Ranges_ORF,Dir,Frame,List_Annotations,OutputFile). % Måske, something more generic to include in io 
         %save_annotation_to_sequence_file(genemark_genefinder,70,Annotation,OutputFile).
+
+get_chunk(Chunk):-
+				chunk(_, _, _, D, _,[sequence(ChunkRev),_,_]),
+        (D = '-' -> reverse(ChunkRev,Chunk)
+        ;
+        Chunk = ChunkRev).
+	
+
 
 %annotate([InputFile],Options,OutputFile) :-
 %	get_option(Options,optimized,true),
@@ -71,11 +73,11 @@ compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],[Range|Rest
         ;
             write(Stream_Out,Term),write(Stream_Out,'.'),nl(Stream_Out)
         ),
-        Number is Nb_Iterations mod 500,
+        Number is Nb_Iterations mod 100,
         (Number == 1 -> write(Nb_Iterations) ; write('.')),
         (Number == 0 ->
-            table_remove(hmm_lost_annot(_,_)),
-            table_remove(hmm_lost_annot(_,_,_))
+            table_remove(codpref_annot(_,_)),
+            table_remove(codpref_annot_rec(_,_,_))            
         ;
             true
         ),
