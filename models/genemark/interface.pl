@@ -1,7 +1,6 @@
 % Interface file for the genemark module
 :- ['../../lost.pl'].
 
-
 % Load configuration options
 :- [config].
 :- [ldata_parser].
@@ -11,6 +10,8 @@
 
 lost_option(annotate,parameters,'Escherichia_coli_K12','The named parameter set to use for prediction. Should be similar to organism of the sequence').
 
+lost_option(annotate,threshold,0.5,'Any predictions with probability below this threshold are discarded').
+
 lost_option_values(annotate,parameters,Values) :-
 	genemark_config(genemark_parameters_dir,GMDir),
 	directory_files(GMDir,DirFileAtoms),
@@ -18,19 +19,33 @@ lost_option_values(annotate,parameters,Values) :-
 	atom_codes('.mat',ExtensionCode),
 	findall(Head, (member(DirFileCode,DirFileCodes),match_tail(DirFileCode,Head,ExtensionCode)), ValuesCodes),
 	map(atom_codes(output,input), ValuesCodes, Values).
-	
+
 lost_input_formats(annotate, [text(fasta(fna))]).
+lost_input_formats(parse, [text(report(genemark))]).
 lost_output_format(annotate, _, text(prolog(ranges(gene)))).
+lost_output_format(parse, _, text(prolog(ranges(gene)))).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Parse a genemark report file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+parse([InputFile],_Opts,OutputFile) :-
+       write('parsing file: '),
+       write(InputFile),
+       nl,
+       ldata_parser_main(InputFile,OutputFile),
+       write('done parsing.'),nl.
 
 % Load configuration options
 % Load configuration options
 % InputFile: Should be a file in fasta format
 annotate([InputFile], Options, OutputFile) :-
       get_option(Options,parameters, ParamsId),
+      get_option(Options,threshold,Threshold),
       genemark_parameter_file(ParamsId,ParamsFile),
       write(ParamsFile),nl,
       genemark_setup(InputFile,GMInputFile),
-      genemark_run(GMInputFile,ParamsFile),
+      genemark_run(GMInputFile,Threshold,ParamsFile),
       atom_concat(GMInputFile,'.ldata',LDATAFILE),
       write('Parsing Genemark report...'),nl,
 %      atom_concat(LDATAFILE,'.parsed.pl',ParsedLDataFile),
@@ -42,9 +57,10 @@ genemark_parameter_file(ParamsId,ParamsFile) :-
         genemark_config(genemark_parameters_dir,GMDir),
         atom_concat_list([GMDir,ParamsId,'.mat'],ParamsFile).
          
-genemark_run(InputFile,ParamsFile) :-
+genemark_run(InputFile,Threshold,ParamsFile) :-
         genemark_config(genemark_command,GMCmd),
-        atom_concat_list([ GMCmd, ' -D -m ', ParamsFile, ' ', InputFile],FullCommand),
+        atom_integer(ThresholdAtom,Threshold),
+        atom_concat_list([ GMCmd, ' -t ', ThresholdAtom,' -D -m ', ParamsFile, ' ', InputFile],FullCommand),
         write('Running genemark: '),nl,
         writeq(FullCommand),nl,
         system(FullCommand).

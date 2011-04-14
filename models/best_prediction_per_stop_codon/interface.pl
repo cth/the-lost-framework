@@ -11,6 +11,7 @@ lost_input_formats(annotate, [text(prolog(ranges(gene)))]).
 lost_output_format(annotate, _, text(prolog(ranges(gene)))).
 
 annotate([InputFile],Options,OutputFile) :-
+        write('--------------------  start'),nl,
 	consult(InputFile),
 	get_option(Options,prediction_functor,PredFunctorOpt),
 	((PredFunctorOpt == auto) -> file_functor(InputFile,PredFunctor) ;  PredFunctor = PredFunctorOpt),
@@ -34,12 +35,8 @@ annotate([InputFile],Options,OutputFile) :-
 select_prediction(_,[BestPrediction],BestPrediction).
 
 select_prediction(ScoreFunctor,[Prediction1,Prediction2|Rest],BestPrediction) :-
-	Prediction1 =.. [_,_,_,_,_,Extra1],
-	Prediction2 =.. [_,_,_,_,_,Extra2],
-	G1 =.. [ ScoreFunctor, P1 ],
-	G2 =.. [ ScoreFunctor, P2 ],
-	member(G1, Extra1),
-	member(G2, Extra2),
+        gene_extra_field(Prediction1,ScoreFunctor,P1),
+        gene_extra_field(Prediction2,ScoreFunctor,P2),
 	((P1 > P2) ->
 	 select_prediction(ScoreFunctor,[Prediction1|Rest],BestPrediction)
 	;

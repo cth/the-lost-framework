@@ -1,40 +1,62 @@
 :- ['../../lost.pl'].
 :- lost_include_api(misc_utils).
+:- lost_include_api(viterbi_learn).
 
 lost_option(annotate,score_functor,score,'A functor that specifies a member of the Extra list in each prediction which has score').
 lost_option(annotate,score_categories,50,'An integer specifying how many discrete groups to divide scores into').
+lost_option(annotate,learn_method,prism,'Species which routine to use for learning. Options are prism and custom.').
+lost_option(annotate,debug,false,'Whether to report debugging information.').
+lost_option(annotate,override_delete_probability,false,'Lets the user manually override the delete probability').
+
+
+% Inherit options from annotate:
+lost_option(split_annotate,Name,Default,Description) :-	lost_option(annotate,Name,Default,Description).
+lost_option(split_annotate,terminus,0,'Specifies location of terminus on the genome.').
+lost_option(split_annotate,terminus,0,'Specifies location of origin on the genome.').
 
 lost_input_formats(annotate, [text(prolog(ranges(gene))), text(prolog(ranges(gene)))]).
+lost_input_formats(split_annotate, [text(prolog(ranges(gene))), text(prolog(ranges(gene)))]).
+
 lost_output_format(annotate, _,text(prolog(ranges(gene)))).
+lost_output_format(split_annotate, _,text(prolog(ranges(gene)))).
 
-
+set_debug(Options) :-
+	get_option(Options,debug,DebugEnabled),
+	% Set/unset debug mod
+	((DebugEnabled==true) ->
+		assert(debug_enabled(true))
+		;
+		assert(debug_enabled(false))).
+		
+		
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % annotate
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
 %% annotate([GoldStdFile,PredictionsFile],Options,OutputFile)
 % Annotate first initializes the model parameters.
-% Then 
+% Then
 % - converts input file to a sequence
 % - runs viterbi on the sequence
 % - Extract the sequence of visited states from the viterbi tree
 % - Create a set of predictions from the sequence of visited states
 % - write the set of predictions to OutputFile
 annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
-        write('anntate called'),nl,
-        % Learn is always invoked before annotate (it's fast, so no
-        % worries)
+        write('annotate called'),nl,
+        % Learn is always invoked before annotate (it's fast, so no worries)
         run_model(genome_filter,
                   learn([GenbankFile,PredictionsFile],Options,ParametersFile)),
 
         % Options hadling:
         get_option(Options,score_categories,NumScoreGroups),
         get_option(Options,score_functor,ScoreFunctor),
- 
+		get_option(Options,override_delete_probability,OverrideDelete),
+		set_debug(Options),
+		
         % Load model
         prism(genome_finder_nolist),
         assert(learn_mode(false)), % Tell model that we want to do predictions now
-       % Load gene finder predictions  
+       % Load gene finder predictions
         terms_from_file(PredictionsFile,GeneFinderPredictionsUnsorted),
         % Make sure prediction are sorted
         sort(GeneFinderPredictionsUnsorted,GeneFinderPredictions),
@@ -50,6 +72,14 @@ annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
         assert(score_categories(ScoreCategories)), % Tell prism how many score categories
         % Restore model parameters
         restore_sw(ParametersFile),
+		% Override delete probability if requested
+		((OverrideDelete==false) ->
+			true
+			;
+			write('overriding delete probability: '),
+			NotGotoDelete is 1 - OverrideDelete,
+			set_sw(goto_delete,[OverrideDelete,NotGotoDelete])
+		),
         show_sw,
         % Write model inputs to file:
         write('- writing model inputs file:'),
@@ -59,8 +89,8 @@ annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
         terms_to_file(InputsFile,[input_sequence(FrameScorePairsDiscrete)]),
         %% Run viterbi on teh (frame,score) sequence of the sorted predictions
         write('- Runnning viterbi on prediction sequence:'),nl,
-        write('!! Done running viterbi'),nl,
         viterbif(model(FrameScorePairsDiscrete),_,Expl),
+        write('!! Done running viterbi'),nl,
         viterbi_switches(Expl,ExplSwitches),
         findall(X,member(msw(emit(X),_),ExplSwitches),AllStates),
         atom_concat(TmpDir,'genome_filter_model_states.pl',StatesFile),
@@ -71,6 +101,47 @@ annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
         predictions_from_state_sequence(GeneFinderPredictions,AllStates,SelectedPredictions),
         terms_to_file(OutputFile,SelectedPredictions).
 
+split_annotate([GenbankFile,PredictionsFile],Options,OutputFile) :-
+	get_option(Options,origin,Origin),
+	get_option(Options,terminus,Terminus),
+	terms_from_file(GenbankFile,GBTerms),
+	terminus_origin_split(Origin,Terminus,GBTerms,RefOriTer,RefTerOri),
+
+	% Split predictions in two sets according to leading strand
+	lost_tmp_directory(Tmp),
+	atom_concat(Tmp, 'frame_bias_ref_ori_ter.pl',RefOriTerFile),
+	write('RefOriTerFile: '), write(RefOriTerFile),nl,
+	terms_to_file(RefOriTerFile,RefOriTer),
+	atom_concat(Tmp, 'frame_bias_ref_ter_ori.pl',RefTerOriFile),
+	write('RefTerOriFile: '), write(RefTerOriFile),nl,
+	terms_to_file(RefTerOriFile,RefTerOri),
+
+	% Split predictions in two sets according to leading strand
+	terms_from_file(PredictionsFile,PredTerms),
+	terminus_origin_split(Origin,Terminus,PredTerms,PredOriTer,PredTerOri),
+	atom_concat(Tmp, 'frame_bias_pred_ori_ter.pl',PredOriTerFile),
+	write('PredOriTerFile: '), write(PredOriTerFile),nl,
+	terms_to_file(PredOriTerFile,PredOriTer),
+	atom_concat(Tmp, 'frame_bias_pred_ter_ori.pl',PredTerOriFile),
+	terms_to_file(PredTerOriFile,PredTerOri),
+	write('PredTerOriFile: '), write(PredTerOriFile),nl,	
+
+	delete(Options,terminus(_),Options1),
+	delete(Options1,origin(_),Options2),
+	
+	write(run_model(genome_filter,annotate([RefOriTerFile,PredOriTerFile],Options2,OriTerResultFile))),nl,
+	run_model(genome_filter,annotate([RefOriTerFile,PredOriTerFile],Options2,OriTerResultFile)),
+	write(run_model(genome_filter,annotate([RefTerOriFile,PredTerOriFile],Options2,TerOriResultFile))),nl,
+	run_model(genome_filter,annotate([RefTerOriFile,PredTerOriFile],Options2,TerOriResultFile)),
+	
+	terms_from_file(OriTerResultFile,OriTerResults),
+	terms_from_file(TerOriResultFile,TerOriResults),
+
+	append(OriTerResults,TerOriResults,AllResults),
+	sort(AllResults,SortedResults),
+	terms_to_file(OutputFile,SortedResults).
+	
+	
 list_from_genbank_file(File,List) :-
         open(File,read,Stream),
         read(Stream,model(List)),
@@ -110,7 +181,7 @@ list_from_stream(Functor,Stream,List) :-
 % the predictions except the ones generated in a delete state
 predictions_from_state_sequence([],[],[]).
 
-predictions_from_state_sequence([P|Ps],[delete|Ss],Ms) :-
+predictions_from_state_sequence([_|Ps],[delete|Ss],Ms) :-
        !,
        predictions_from_state_sequence(Ps,Ss,Ms). 
 
@@ -123,19 +194,33 @@ predictions_from_state_sequence([P|Ps],[S|Ss],[P|Ms]) :-
 % learning of different probability distributions for the model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Decide which learning method to use
 learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
+	get_option(Options,learn_method,LearnMethod),
+	((LearnMethod==prism) ->
+		learn_prism([GenbankFile,PredictionsFile],Options,OutputFile)
+		;
+		learn_custom([GenbankFile,PredictionsFile],Options,OutputFile)
+	).
+
+learn_prism([GenbankFile,PredictionsFile],Options,OutputFile) :-
        prism(genome_finder_nolist),
        assert(learn_mode(true)),
        get_option(Options, score_functor, ScoreFunctor),
        get_option(Options,score_categories,NumScoreGroups),
+        set_debug(Options),
        terms_from_file(GenbankFile,RefGenesUnsorted),
        write('::: sorting genes in golden standard file'),nl,
        sort(RefGenesUnsorted,RefGenes),
        terms_from_file(PredictionsFile,Predictions),
-        scores_from_terms(ScoreFunctor,Predictions,Scores),
-        threshold_list_from_scores(Scores,NumScoreGroups,ThresholdList),
-		write('ThresholdList: '), nl,
-		write(ThresholdList),nl,
+       length(Predictions,PredictionCount),
+       write('::: Determing thresholds for '), 
+       write(PredictionCount),
+       write(' genes.'),nl,
+       scores_from_terms(ScoreFunctor,Predictions,Scores),
+       threshold_list_from_scores(Scores,NumScoreGroups,ThresholdList),
+	write('ThresholdList: '), nl,
+	write(ThresholdList),nl,
         write('Classifying predictions into true and false positives.'),nl,
         classify_predictions(Predictions,RefGenes,ClassifiedPredictions),
         write('Create frame/score input list for model.'),nl,
@@ -154,7 +239,7 @@ learn([GenbankFile,PredictionsFile],Options,OutputFile) :-
         save_sw(OutputFile),nl,
         retractall(learn_mode(_)).
 
-learn2([GenbankFile,PredictionsFile],Options,OutputFile) :-
+learn_custom([GenbankFile,PredictionsFile],Options,OutputFile) :-
        prism(genome_finder),
        get_option(Options, score_functor, ScoreFunctor),
        get_option(Options,score_categories,NumScoreGroups),
@@ -205,6 +290,7 @@ learn_frame_transitions(GenbankTerms) :-
   %      terms_from_file(GenbankFile,GenbankTerms),
         frame_list_from_genbank_terms(GenbankTerms,FrameList),
         assert(score_categories([0])),
+
         map(add_unit_score,FrameList,ObservationList),
         learn([model(ObservationList)]),
         retract(score_categories(_)).
@@ -422,6 +508,48 @@ max_tp_distance([FirstTP|TPs], [Prediction|PredictionsRest] , CurrentDist, MaxDi
 max_tp_distance(TPs, [_|PredictionsRest], CurrentDist, MaxDist) :-
         NextCurrentDist is CurrentDist + 1,
         max_tp_distance(TPs,PredictionsRest, NextCurrentDist, MaxDist).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Separate data into ter-ori list and ori-ter list
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% terminus_origin_split(+Origin,+Terminus,+GeneList,-OriginTerminusList,-TerminusOriginList)
+% Splits a list of gene-(s/-predictions) into two lists:
+% one with genes starting after/on and before Origin and Terminus: 
+% One with genes staring after/on terminus and before Origin
+
+terminus_origin_split(_,_,[],[],[]).
+
+terminus_origin_split(Origin,Terminus,Genes,OriTer,TerOri) :-
+	Origin > Terminus,
+	terminus_origin_split(Terminus,Origin,Genes,TerOri,OriTer).
+
+% Case 1: Forward strand, gene between origin and terminus
+terminus_origin_split(Origin,Terminus,[Gene|GenesRest],[Gene|OriTerRest],TerOri) :-
+	Gene =.. [ GeneFunctor, _identifier, Left, Right, '+', _Frame, _Extra],
+	Left >= Origin,
+	Left < Terminus,
+	%write([1,Left,Right,Origin,Terminus]),nl,	
+	terminus_origin_split(Origin,Terminus,GenesRest,OriTerRest,TerOri).
+	
+terminus_origin_split(Origin,Terminus,[Gene|GenesRest],[Gene|OriTerRest],TerOri) :-
+	Gene =.. [ GeneFunctor, _identifier, Left, Right, '-', _Frame, _Extra],
+	Right >= Origin,
+	Right < Terminus,
+	%write([2,Left,Right,Origin,Terminus]),nl,
+	terminus_origin_split(Origin,Terminus,GenesRest,OriTerRest,TerOri).
+
+terminus_origin_split(Origin,Terminus,[Gene|GenesRest],OriTer,[Gene|TerOriRest]) :-
+	Gene =.. [ GeneFunctor, _identifier, Left, Right, _, _Frame, _Extra],
+	%write([3,Left,Right,Origin,Terminus]),nl,
+	terminus_origin_split(Origin,Terminus,GenesRest,OriTer,TerOriRest).
+	
+ter_ori_split_test :-
+	terms_from_file('genes.pl',AllGenes),
+	sort(AllGenes,AllGenesSorted),
+	terminus_origin_split(3923500,1588800,AllGenesSorted,OriTerList,TerOriList),
+	terms_to_file('ter_ori.pl',TerOriList),
+	terms_to_file('ori_ter.pl',OriTerList).
 
 %%%%%%%%%%%%% Some test stuff %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 gb_file(GeneFileProlog) :-

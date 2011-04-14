@@ -27,19 +27,16 @@
 %          - list(Size): chunking of the genome into list of nucleotids with a length Size
 %          - range([Min,Max])
 %----------
-parser_fna(Options,FNA_File,GBK_File,Output_File) :-
-        open(GBK_File,read,GBK_Stream),
-        get_info_gbk(GBK_Stream,GeneBank_Key,N_BP),
-        close(GBK_Stream),
-        open(FNA_File,read,FNA_Stream),
-        open(Output_File,write,Output_Stream),
-        readline(FNA_Stream,First_Line),
-        atom_codes(Comment,[37|First_Line]),
-        write(Output_Stream,Comment),
-        nl(Output_Stream),
-        parser_fna_data(Options,FNA_Stream,GeneBank_Key,N_BP,Output_Stream),
-        close(FNA_Stream),
-        close(Output_Stream).
+%parser_fna(Options,FNA_File,SequenceKey,NumBases,Output_File) :-
+%        open(FNA_File,read,FNA_Stream),
+%        open(Output_File,write,Output_Stream),
+%        readline(FNA_Stream,First_Line),
+%        atom_codes(Comment,[37|First_Line]),
+%        write(Output_Stream,Comment),
+%        nl(Output_Stream),
+%        parser_fna_data(Options,FNA_Stream,GeneBank_Key,N_BP,Output_Stream),
+%        close(FNA_Stream),
+%        close(Output_Stream).
 
  
 

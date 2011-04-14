@@ -5,7 +5,7 @@
 	<!-- ### Basic Properties (Update these to suit your environment) ### //-->
 
 	<!-- The name of your plugin //-->
-	<property name="pluginName" value="The LoSt framework"/>
+	<property name="pluginName" value="LoStPlugin"/>
 
 	<!-- The path to your clcdeveloperkit //-->
 	<property name="sdkDir" value="../CLCDeveloperKit"/>

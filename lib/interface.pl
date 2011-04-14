@@ -45,41 +45,34 @@ safe_run_model(Model,Goal) :-
 
 % Run a Lost Model
 run_model(Model,Goal) :-
-
 	writeq(run_lost_model(Model,Goal)),nl,
-
 	Goal =.. [ Functor, Inputs, Options, Filename ],
-	
 	lost_model_interface_file(Model, ModelFile),
-	
 	check_valid_model_call(Model,Functor,3,Options),
-	
 	expand_model_options(Model, Functor, Options, ExpandedOptions),
-	
 	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Check if a result allready exists:
-	
 	lost_data_index_file(AnnotIndex),
-	
 	writeq(lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename)
 ),nl,
+	write(AnnotIndex),nl,
 	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename),
-	
-	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
-	
-	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
+	write(here),nl,
+	!,
+%	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
+%   There is a bug with the timestamp. Disabled untill fixed!	
+%	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
+	write('Filename: '), write(Filename),nl,
+	(file_exists(Filename) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
 	 CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
 	 %term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
 	 term2atom(CallGoal,GoalAtom),
-         write(launch_prism_process(ModelFile,GoalAtom)),nl,
-	 
-	launch_prism_process(ModelFile,GoalAtom),
-	 
-	check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
-	
-	lost_file_index_update_file_timestamp(AnnotIndex,Filename) 
+     write(launch_prism_process(ModelFile,GoalAtom)),nl,
+     launch_prism_process(ModelFile,GoalAtom),
+     check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
+     lost_file_index_update_file_timestamp(AnnotIndex,Filename) 
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,10 +137,6 @@ get_option(Options, Key, Value) :-
 lost_required_option(Options, Key, Value) :-
 	write('!!! lost_required_option is deprecated since ALL declared options are now required. Use get_option/3 instead !!!'),nl,
 	get_option(Options,Key,Value).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Launching a PRISM process
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Launching a PRISM process
@@ -383,6 +372,11 @@ print_available_model_rec([Name|Rest]) :-
 % Directory and file management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+lost_testcase_directory(TestCaseDir) :-
+	lost_config(lost_base_directory,BaseDir),!,
+	atom_concat(BaseDir,'/test/', TestCaseDir).
+
+
 %% lost_models_directory(-TmpDir)
 lost_tmp_directory(TmpDir) :-
         lost_config(lost_base_directory,BaseDir),!,
@@ -612,7 +606,7 @@ lost_interface_defines_output_format(Model,InterfacePredicate) :-
 	Head =.. [ lost_output_format, InterfacePredicate, _options, _format],
 	Rule =.. [ :-, Head, _ ],
 	(member(Head, Terms) ; member(Rule,Terms)).
-
+	
 lost_interface_output_format_to_file(Model,InterfacePredicate, Options, OutputFormatFile) :-
 	lost_model_interface_file(Model, ModelFile),
 	lost_interface_defines_output_format(Model,InterfacePredicate),
@@ -778,6 +772,7 @@ move_data_file(OldFilename, NewFilename) :-
 %% list_lost_models_to_file(File)
 %
 % Write in File the list of lost models
+% This is used by the CLC gui
 list_lost_models_to_file(File) :-
 	open(File,write,OStream),
 	list_lost_models(Models),
@@ -822,7 +817,7 @@ write_model_options(OStream, [Option1|Rest]) :-
 %% lost_model_input_formats_to_file(+Model,+Goal,+OutputFile)
 %
 % Write the input formats of a Model called with Goal to the file OutputFile
-%
+% Used by the CLC gui 
 lost_model_input_formats_to_file(Model,Goal,OutputFile) :-
 	lost_interface_input_formats(Model,Goal,Formats),
 	open(OutputFile,write,OStream),
@@ -831,10 +826,13 @@ lost_model_input_formats_to_file(Model,Goal,OutputFile) :-
 	close(OStream).
 
 
-/*lost_model_output_format_to_file(Model,Goal,Options,OutputFile) :-
-	lost_interface_output_format(Model,Goal,Option,OutputFormat),
+%% lost_mode.output_format_to_file
+% 
+% Write the output formats of a Model called with Goal/Options to OutputFile
+% API call required by the CLC gui
+lost_model_output_format_to_file(Model,Goal,Options,OutputFile) :-
+	lost_interface_output_format(Model,Goal,Options,OutputFormat),
 	open(OutputFile,write,OStream),
 	write(OStream,lost_model_output_format(Model,Goal,Options,OutputFormat)),
 	write(OStream, '.\n'),
 	close(OStream).
-*/	

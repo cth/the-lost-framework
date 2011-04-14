@@ -40,7 +40,7 @@ toggle_disable_delete(S) :-
 model(Observations):-
    % select initial frame:
    % Can probably just have uniform probability
-   recursion(begin,Observations). 
+   recursion(begin,Observations).
 
 % recursion structure:
 recursion(Del,F,XR) :-
@@ -67,9 +67,9 @@ recursion_frame(F,[(NextFrame,Score)|R]) :-
 
 % Arg1: previous frame
 recursion_delete(Del,F,[X|R]) :-
-   max_consequtive_deletes(MaxDel),
-   Del =< MaxDel,
-   NextDel is Del + 1,
+	%   max_consequtive_deletes(MaxDel),
+	%   Del =< MaxDel,
+	%   NextDel is Del + 1,
    %write('in delete state'),nl,
    msw(emit(delete), X),
    recursion(NextDel,F,R).

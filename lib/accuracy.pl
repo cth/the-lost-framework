@@ -1,4 +1,3 @@
-
 /** <module> Module accuracy.pl
 
  This is a tool to calculate the accuracy of gene finder predictions
@@ -13,73 +12,123 @@
 
 :- lost_include_api(misc_utils).
 
-%% accuracy_stats(+RefFunctor,+PredFunctor,+Start,+End,+OutputFile)
-%
-% Overall report the accuracy statistics for a particular predictor.
-accuracy_stats(RefFunctor,PredFunctor,Start,End,OutputFile) :-
-	count_genes(PredFunctor,Start,End,NumberPredictedGenes),!,
-	count_genes(RefFunctor,Start,End,NumberActualGenes),!,
-	number_of_correct_genes(RefFunctor, PredFunctor,Start,End,NumberCorrect),
-	number_of_correct_gene_ends(RefFunctor, PredFunctor,Start,End,NumberCorrectStops),
-	number_of_wrong_genes(RefFunctor, PredFunctor, Start, End, NumberWrong),
-	number_of_wrong_gene_ends(RefFunctor, PredFunctor, Start, End, NumberWrongStops),
-	gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,GSN),!,
-	gene_level_specificity(RefFunctor,PredFunctor,Start,End,GSP),!,
+%% Tabling declarations:
 
-	gene_level_stop_sensitivity(RefFunctor,PredFunctor,Start,End,StopGSN),!,
-	gene_level_stop_specificity(RefFunctor,PredFunctor,Start,End,StopGSP),!,
+:- table count_genes(+,+,+,-).
+:- table nucleotide_level_accuracy_counts(+,+,+,+,-,-,-,-).
+:- table correct_genes(+,+,+,+,-).
+:- table correct_gene_ends(+,+,+,+,-).
+:- table annotations_as_lists(+,+,+,-).
+:- table annotations_as_detailed_list(+,+,+,-).
+		
+report_type(Type) :-
+	member(Type,[
+		genes_predicted,
+		genes_actual,
+		genes_correct,
+		genes_wrong,
+		gene_stops_correct,
+		gene_stops_wrong,
+		gene_sensitivity,
+		gene_specificity,
+		gene_stop_sensitivity,
+		gene_stop_specificity,
+		genes_wrong_ratio,
+		genes_missing_ratio,
+		nucleotide_true_positives,
+		nucleotide_false_positives,
+		nucleotide_true_negatives,
+		nucleotide_false_negatives,
+		nucleotide_sensitivity,
+		nucleotide_specificity,
+		nucleotide_specificity_traditional,
+		nucleotide_correlation_coefficient,
+		nucleotide_simple_matching_coefficient,
+		nucleotide_average_conditional_probability,
+		nucleotide_approximate_correlation	]).
 
-	wrong_genes(RefFunctor,PredFunctor,Start,End,Wrong),!,
-	missing_genes(RefFunctor,PredFunctor,Start,End,Missing),!,
-	annotations_as_lists(PredFunctor,Start,End,PredAnnot),!,
-	annotations_as_lists(RefFunctor,Start,End,RefAnnot),!,
-	nucleotide_level_accuracy_counts(Start,End, RefAnnot, PredAnnot, TP,FP,TN,FN),
-	sensitivity(TP,FN,SN),
-	specificity(TP,FP,SP),
-	specificity_traditional(TN,FP,SP2),
-	correlation_coefficient(TP,FP,TN,FN,CC),
-	simple_matching_coefficient(TP,FP,TN,FN,SMC),
-	average_conditional_probability(TP,FP,TN,FN,ACP),
-	aproximate_correlation(TP,FP,TN,FN,AC),
-	tell(OutputFile),
-	write('--------------- gene level stats -----------------'), nl,
-	write('number of predicted genes: '), write(NumberPredictedGenes),nl,
-	write('actual number of genes: '), write(NumberActualGenes), nl,
-	write('number of correctly predicted genes: '), write(NumberCorrect), nl,
-	write('number of wrongly predicted genes: '), write(NumberWrong), nl,
-        write('number of correctly predicted stop codons:'), write(NumberCorrectStops),nl,
-        write('number of wrongly predicted stop codons:'), write(NumberWrongStops),nl,
-	write('Genes sensitivity (#correct/#actual): '),
-	write(GSN),nl,
-	write('Genes specificity (#correct/#predicted): '),
-	write(GSP),nl,
-	write('(stops) sensitivity  (#correct/#actual): '),
-	write(StopGSN),nl,
-	write('(stops) specificity (#correct/#predicted): '),
-	write(StopGSP),nl,
-	write('wrong genes: '),
-	write(Wrong),nl,
-	write('missing genes: '),
-	write(Missing),nl,
+% Types of reports
+genes_predicted(_RefFunctor,PredFunctor,Start,End,Result) :- 
+	count_genes(PredFunctor,Start,End,Result).
+	
+genes_actual(RefFunctor,_PredFunctor,Start,End,Result) :-
+	count_genes(RefFunctor,Start,End,Result).
+	
+genes_correct(RefFunctor,PredFunctor,Start,End,Result) :-
+	number_of_correct_genes(RefFunctor, PredFunctor,Start,End,Result).
 
+genes_wrong(RefFunctor,PredFunctor,Start,End,Result) :-
+	number_of_wrong_genes(RefFunctor, PredFunctor, Start, End, Result).
 
-	write('--------------- nucleotide level stats -----------------'), nl,
-        write('true positives: '), write(TP),nl,
-        write('false positives: '), write(FP),nl,
-        write('true negatives: '), write(TN),nl,
-        write('false negatives: '), write(FN),nl,
-	write('sensitivity: '), 
-	write(SN),nl,
-	write('specificity: '),
-	write(SP),nl,
-	write('specificity traditional: '),
-	write(SP2),nl,
-	write('correlation coefficient: '), write(CC), nl,
-	write('simple matching coefficient: '), write(SMC), nl,
-	write('average conditional probability: '), write(ACP), nl,
-	write('approximate correlation: '), write(AC), nl,
-	told.
+gene_stops_correct(RefFunctor,PredFunctor,Start,End,Result) :-
+	number_of_correct_gene_ends(RefFunctor, PredFunctor,Start,End,Result).
 
+gene_stops_wrong(RefFunctor,PredFunctor,Start,End,Result) :-
+	number_of_wrong_gene_ends(RefFunctor, PredFunctor,Start,End,Result).
+	
+gene_sensitivity(RefFunctor,PredFunctor,Start,End,Result) :-
+	gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,Result).
+
+gene_specificity(RefFunctor,PredFunctor,Start,End,Result) :-
+	gene_level_specificity(RefFunctor,PredFunctor,Start,End,Result).
+	
+gene_specificity(RefFunctor,PredFunctor,Start,End,Result) :-
+	gene_level_specificity(RefFunctor,PredFunctor,Start,End,Result).	
+	
+gene_stop_sensitivity(RefFunctor,PredFunctor,Start,End,Result) :-
+	gene_level_stop_sensitivity(RefFunctor,PredFunctor,Start,End,Result).
+
+gene_stop_specificity(RefFunctor,PredFunctor,Start,End,Result) :-
+	gene_level_stop_specificity(RefFunctor,PredFunctor,Start,End,Result).	
+
+genes_wrong_ratio(RefFunctor,PredFunctor,Start,End,Result) :-
+	wrong_genes(RefFunctor,PredFunctor,Start,End,Result).
+
+genes_missing_ratio(RefFunctor,PredFunctor,Start,End,Result) :-
+	missing_genes(RefFunctor,PredFunctor,Start,End,Result).
+	
+% Note that (in the following) nucleotide_level_accuracy_counts is tabled, so multiple
+% calls from each of the individual report types does not result in any major overhead.
+nucleotide_true_positives(RefFunctor,PredFunctor,Start,End,TP) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor, PredFunctor, TP,_FP,_TN,_FN).
+		
+nucleotide_false_positives(RefFunctor,PredFunctor,Start,End,FP) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor, PredFunctor, _TP,FP,_TN,_FN).
+		
+nucleotide_true_negatives(RefFunctor,PredFunctor,Start,End,TN) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor, PredFunctor, _TP,_FP,TN,_FN).
+		
+nucleotide_false_negatives(RefFunctor,PredFunctor,Start,End,FN) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor, PredFunctor, _TP,_FP,_TN,FN).
+		
+nucleotide_specificity(RefFunctor,PredFunctor,Start,End,Result) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor,PredFunctor,TP,FP,_TN,_FN),
+	specificity(TP,FP,Result).
+	
+nucleotide_specificity_traditional(RefFunctor,PredFunctor,Start,End,Result) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor,PredFunctor,_TP,FP,TN,_FN),
+	specificity_traditional(TN,FP,Result).	
+	
+nucleotide_sensitivity(RefFunctor,PredFunctor,Start,End,Result) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor,PredFunctor,TP,_FP,TN,_FN),
+	sensitivity(TP,TN,Result).
+
+nucleotide_correlation_coefficient(RefFunctor,PredFunctor,Start,End,Result) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor,PredFunctor,TP,FP,TN,FN),
+	correlation_coefficient(TP,FP,TN,FN,Result).
+
+nucleotide_simple_matching_coefficient(RefFunctor,PredFunctor,Start,End,Result) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor,PredFunctor,TP,FP,TN,FN),
+	simple_matching_coefficient(TP,FP,TN,FN,Result).
+
+nucleotide_average_conditional_probability(RefFunctor,PredFunctor,Start,End,Result) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor,PredFunctor,TP,FP,TN,FN),
+	average_conditional_probability(TP,FP,TN,FN,Result).
+
+nucleotide_approximate_correlation(RefFunctor,PredFunctor,Start,End,Result) :-
+	nucleotide_level_accuracy_counts(Start,End, RefFunctor,PredFunctor,TP,FP,TN,FN),
+	aproximate_correlation(TP,FP,TN,FN,Result).
+	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % accuracy measures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
@@ -104,7 +153,6 @@ specificity(0,0,undefined) :- !.
 specificity(TP,FP,SP) :-
 	SP is TP / (TP + FP).
 
-
 %% specificity_traditional(+TN,+FP,-SP)
 %
 % Computation of the tradional specificity
@@ -115,7 +163,6 @@ specificity(TP,FP,SP) :-
 specificity_traditional(0,0,undefined) :- !.
 specificity_traditional(TN,FP,SP) :-
 	SP is TN / (TN + FP).
-
 
 %% correlation_coefficient(+TP,+FP,+TN,+FN,-CC)
 %
@@ -131,12 +178,12 @@ correlation_coefficient(TP,FP,TN,FN,CC) :-
 	C is TP+FP+0.0, 
 	D is TN+FN+0.0,
 	DenominatorSquared is A*B*C*D,
-        ((DenominatorSquared > 0.0) ->
-	        Denominator is sqrt(DenominatorSquared),
-	        CC is Numerator / Denominator
-                ;
-                CC=undefined).
-                
+		((DenominatorSquared > 0.0) ->
+			Denominator is sqrt(DenominatorSquared),
+			CC is Numerator / Denominator
+				;
+				CC=undefined).
+				
 %% simple_matching_coefficient(+TP,+FP,+TN,+FN,-SMC)
 %
 % Computation of the simple matching coefficient
@@ -169,7 +216,7 @@ average_conditional_probability(TP,FP,TN,FN,ACP) :-
 
 aproximate_correlation(TP,FP,TN,FN,undefined) :-
 	average_conditional_probability(TP,FP,TN,FN,undefined),
-        !.
+		!.
 aproximate_correlation(TP,FP,TN,FN,AC) :-
 	average_conditional_probability(TP,FP,TN,FN,ACP),
 	AC is (ACP - 0.5) * 2.
@@ -180,23 +227,23 @@ aproximate_correlation(TP,FP,TN,FN,AC) :-
 
 count_genes(Functor,Start,End,Count) :-
 	annotations_as_lists(Functor,Start,End,PredAnnot),
-        % predannot is a list of six lists. one for each reading frame
-        % flatten_once merges all these in one list.. 
+		% predannot is a list of six lists. one for each reading frame
+		% flatten_once merges all these in one list.. 
 	flatten_once(PredAnnot,Flat),
 	length(Flat,Count).
 
 correct_gene_ends(RefFunctor,PredFunctor,Start,End,Correct) :-
 	annotations_as_detailed_list(RefFunctor,Start,End,RefAnnot),
 	annotations_as_detailed_list(PredFunctor,Start,End,PredAnnot),
-        findall(Stop,
-                (member([coding,_,Stop,'+',Frame],PredAnnot),
-                member([coding,_,Stop,'+',Frame],RefAnnot)),
-                StopsForward),
-        findall(Stop,
-                (member([coding,Stop,_,'-',Frame],PredAnnot),
-                member([coding,Stop,_,'-',Frame],RefAnnot)),
-                StopsReverse),
-        union(StopsForward,StopsReverse,Correct).
+		findall(Stop,
+				(member([coding,_,Stop,'+',Frame],PredAnnot),
+				member([coding,_,Stop,'+',Frame],RefAnnot)),
+				StopsForward),
+		findall(Stop,
+				(member([coding,Stop,_,'-',Frame],PredAnnot),
+				member([coding,Stop,_,'-',Frame],RefAnnot)),
+				StopsReverse),
+		union(StopsForward,StopsReverse,Correct).
 
 correct_genes(RefFunctor, PredFunctor, Start, End, Correct) :-
 	annotations_as_detailed_list(RefFunctor,Start,End,RefAnnot),
@@ -243,6 +290,8 @@ gene_level_sensitivity(RefFunctor,PredFunctor,Start,End,SN) :-
 gene_level_specificity(RefFunctor,PredFunctor,Start,End,SP) :-
 	number_of_correct_genes(RefFunctor,PredFunctor,Start,End,Correct),
 	count_genes(PredFunctor,Start,End,Predicted),
+	write(Correct),nl,
+	write(Predicted),nl,
 	SP is Correct / Predicted.
 	
 gene_level_stop_sensitivity(RefFunctor,PredFunctor,Start,End,SN) :-
@@ -286,9 +335,9 @@ gene_finding_difficulty_report(RefFunctor,PredictionFunctors,RangeMin,RangeMax,M
 
 combine_gene_scores(_,[],[],[]).
 combine_gene_scores(RefFunctor,
-		    [[coding,From,To,Strand,Frame]|RefGenesRest],
-		    [GeneScoreList|GeneScoresRest],
-		    [gene(From,To,Strand,Frame,ExtraList)|CombinedRest]) :-
+			[[coding,From,To,Strand,Frame]|RefGenesRest],
+			[GeneScoreList|GeneScoresRest],
+			[gene(From,To,Strand,Frame,ExtraList)|CombinedRest]) :-
 	annotation(RefFunctor,From,To,Strand,Frame,ExtraOrig),
 	append(ExtraOrig,[found_by_genefinders(GeneScoreList),gene_finding_difficulty_score(CombinedScore)],ExtraList),
 	length(GeneScoreList,NumGeneFinders),
@@ -368,10 +417,12 @@ report_nstats(ReferenceAnnotFunctor,PredictionAnnotFunctor,Start,End) :-
 %
 % Compute some statistics at the nucleotide level.
 
-nucleotide_level_accuracy_counts(Begin,End, RefAnnot, PredAnnot, TP,FP,TN,FN) :-
-        map(sort, RefAnnot, RefAnnotSorted),
+nucleotide_level_accuracy_counts(Begin,End, RefFunctor, PredFunctor, TP,FP,TN,FN) :-
+	annotations_as_lists(PredFunctor,Begin,End,PredAnnot),!,
+	annotations_as_lists(RefFunctor,Begin,End,RefAnnot),!,
+	map(sort, RefAnnot, RefAnnotSorted),
 	map(fill_range_gaps(input,output,Begin,End,partial), RefAnnotSorted, RefAnnotFilled), !,
-        map(sort, PredAnnot, PredAnnotSorted),!,
+	map(sort, PredAnnot, PredAnnotSorted),!,
 	map(fill_range_gaps(input,output,Begin,End,partial), PredAnnotSorted,PredAnnotFilled), !,
 	map(rm_seq_elems,PredAnnotFilled,PredAnnotSimple),!,
 	map(rm_seq_elems,RefAnnotFilled,RefAnnotSimple),!,
@@ -385,7 +436,7 @@ nucleotide_level_accuracy_counts(Begin,End, RefAnnot, PredAnnot, TP,FP,TN,FN) :-
 	sum_range_list(FPL,FP),!,
 	sum_range_list(TNL,TN),!,
 	sum_range_list(FNL,FN),!,
-        true.
+	true.
 	
 all_frames_coding_intervals([],[]).
 	
@@ -508,7 +559,7 @@ clist_to_ext_range_list([Part1|Part2],OutputList) :-
 % Document: what is difference between partial/complete
 
 fill_range_gaps([],[],Curpos,Endpos,_Mode) :-
-       Curpos >= Endpos.
+	   Curpos >= Endpos.
 
 fill_range_gaps([],[[noncoding,Curpos,Endpos,[[Curpos,Endpos]]]],Curpos,Endpos,_).
 
@@ -526,21 +577,21 @@ fill_range_gaps([[AnnotType,_,IE,Elems]|R],Filled,Curpos,Endpos,complete) :-
 	inlists_nth0(AllShorterElems,ShortBegins),
 	list_max(ShortEnds,End),
 	list_min(ShortBegins,Begin),
-	fill_range_gaps([[AnnotType,Begin,End,ShortElems]|R],Filled,Curpos,End,complete	).
+	fill_range_gaps([[AnnotType,Begin,End,ShortElems]|R],Filled,Curpos,End,complete ).
 
 % Past end of range
 fill_range_gaps([[_,_,IE,_]|_],[],_,Endpos,complete) :-
-       IE > Endpos.
+	   IE > Endpos.
 
 % If the last input doesnt reach end of range
 fill_range_gaps([[AnnotType,IS,IE,Elems]],[[AnnotType,IS,IE,Elems], [noncoding,GS,Endpos,[[GS,Endpos]]]], IS, Endpos,_) :- 
-       IE < Endpos,
-       GS is IE + 1.
+	   IE < Endpos,
+	   GS is IE + 1.
 
 fill_range_gaps([[AnnotType,IS,IE,Elems]|Rest],[[noncoding,Curpos,GE,[[Curpos,GE]]]|GRest], Curpos, Endpos, Mode) :-
-       IS > Curpos,
-       GE is IS - 1,
-       fill_range_gaps([[AnnotType,IS,IE,Elems]|Rest],GRest,IS,Endpos,Mode).
+	   IS > Curpos,
+	   GE is IS - 1,
+	   fill_range_gaps([[AnnotType,IS,IE,Elems]|Rest],GRest,IS,Endpos,Mode).
 
 fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elems]|GRest], Curpos, Endpos,Mode) :-
 	NextCurpos is End + 1,
@@ -559,12 +610,13 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 %	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
 %	catch(call(Goal),_,fail).
 
-annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
-	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
-	catch(call(Goal),_,fail).
+%annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
+%	Goal =.. [ Type, From, To, Strand, ReadingFrame, Extra ],
+%	catch(call(Goal),_,fail).
 
 annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
 	Goal =.. [ Type,_, From, To, Strand, ReadingFrame, Extra ],
+        write(Goal),nl,
 	catch(call(Goal),_,fail).
 
 annotations_in_range(Type, From, To, Strand, ReadingFrame, Name, RangeMin, RangeMax) :-
@@ -601,7 +653,7 @@ db_annotation_max(AnnotType, Strand,ReadingFrame,Max) :-
 
 % Find the beginning of the range of an annotation
 db_annotation_min(AnnotType, Strand,ReadingFrame,Max) :-
-	Goal =.. [ AnnotType, IncludeLeft, _right, Strand, ReadingFrame, _ ],
+	Goal =.. [ AnnotType, _, IncludeLeft, _right, Strand, ReadingFrame, _ ],
 	findall(IncludeLeft,Goal, ResultList),
 	list_min(ResultList,Max).
 

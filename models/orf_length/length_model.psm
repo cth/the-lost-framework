@@ -1,0 +1,153 @@
+:- set_prism_flag(learn_mode,both).
+
+min_orf_length(5).
+max_orf_length(1500).
+
+score_categories(100).
+
+orf_lengths(Lengths) :-
+	min_orf_length(Min),
+	max_orf_length(Max),
+	upto(Min,Max,Lengths).
+	
+length_ranges([out_of_range(too_short)|RangesWithOverflow]) :-
+	score_categories(NumCategories),
+	orf_lengths(GeneLengths),
+	divide_list(GeneLengths,NumCategories,SubSequences),
+	findall(R,(member(Seq,SubSequences),sequence_range(Seq,R)),Ranges),
+	reverse(Ranges,RangesRev),
+	reverse([out_of_range(too_long)|RangesRev],RangesWithOverflow).
+	
+values(gene_length,Lengths) :-
+	orf_lengths(Lengths).
+	
+values(nongene_length,Lengths) :-
+	orf_lengths(Lengths).
+
+values(gene_length_range, Ranges) :-
+	length_ranges(Ranges).
+	
+values(nongene_length_range, Ranges) :-
+	length_ranges(Ranges).
+	
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% HMM type model                                     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Model should reflect the regular expression:
+% before-coding* coding? after-coding*
+
+values(trans(start),['+','-']).
+values(trans('+'),['+']).
+values(trans('-'),['+','-']).
+
+hmm_model(Lengths,CodingAnnot) :- 
+	hmm_model(start,Lengths,CodingAnnot).
+	
+hmm_model(_State,[],[]).
+hmm_model(State,[L|Ls],[NextState|Cs]) :-
+	msw(trans(State),NextState),
+	% Emission:
+	get_range(L,Range),
+	((NextState=='+') ->
+		msw(gene_length_range,Range)
+		;
+		msw(nongene_length_range,Range)),
+	% Recursion
+	hmm_model(NextState,Ls,Cs).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Another possibility
+% Basically a one state HMM.
+discriminative_model(Length,Coding) :-
+	msw(coding,Coding),
+	get_range(Length,Range),
+	((Coding=='+') ->
+		msw(gene_length_range,Range)
+		;
+		msw(nongene_length_range,Range)).
+
+% Dummy goals for training a single msw at a time.
+msw_gene_length(L) :- msw(gene_length,L).
+msw_nongene_length(L) :- msw(nongene_length,L).
+msw_gene_length_range(R) :- msw(gene_length_range,R).
+msw_nongene_length_range(R) :- msw(nongene_length_range,R).
+
+%%
+% get_range(+Length,-Range)
+% Determines a range group from a given length
+get_range(Len,out_of_range(too_short)) :-
+	min_orf_length(MinLen),
+	Len < MinLen.
+
+get_range(Len,out_of_range(too_long))	:-
+	max_orf_length(MaxLen),
+	Len > MaxLen.
+	
+get_range(Len,Range) :-
+	min_orf_length(MinLen),
+	max_orf_length(MaxLen),
+	Len >= MinLen,
+	Len =< MaxLen,
+	length_ranges(Ranges),
+	member(Range,Ranges),
+	Range = [RangeMin,RangeMax],
+	Len >= RangeMin,
+	Len =< RangeMax,
+	!.
+	
+%% 
+% Predicates used for training the msws
+learn_gene_lengths(Lengths) :-
+	findall(R,(member(L,Lengths),get_range(L,R)),Ranges),
+	list_add_functor(msw_gene_length_range,Ranges,Goals),
+	learn(Goals).
+
+learn_gene_lengths(Lengths) :-
+	findall(R,(member(L,Lengths),get_range(L,R)),Ranges),
+	list_add_functor(msw_nongene_length_range,Ranges,Goals),
+	learn(Goals).
+	
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% utility predicates:
+	
+sequence_range(Seq,[First,Last]) :-
+	reverse(Seq,RevSeq),
+	Seq = [First|_],
+	RevSeq = [Last|_].
+
+%%
+% Divide a list (of msw gene_length) into continuous groups, e.g.
+% 1..20, 21...56, 57..62,....
+
+divide_list([],_,[]).
+
+divide_list(L,0,L).
+
+divide_list(List,NumChunks,[Chunk|ChunksRest]) :-
+	length(List,ListLen),
+	ChunkLen is ListLen // NumChunks,
+	first_n(ChunkLen,List,Chunk),
+	append(Chunk,RestList,List),
+	RestNumChunks is NumChunks - 1,
+	divide_list(RestList,RestNumChunks,ChunksRest).
+
+upto(StartEnd,StartEnd,[StartEnd]).
+upto(Start,End,[Start|Rest]) :-
+	NewStart is Start + 1,
+	upto(NewStart,End,Rest).
+
+first_n(_,[],[]).
+first_n(0,_,[]).
+first_n(N,[E|R1],[E|R2]) :-
+	N1 is N - 1,
+	first_n(N1,R1,R2).
+
+list_add_functor(_Functor,[],[]).
+list_add_functor(Functor,[L|Ls],[WithFunc|FLs]) :-
+	WithFunc =.. [Functor, L],
+	list_add_functor(Functor,Ls,FLs).
+

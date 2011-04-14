@@ -37,9 +37,9 @@
 gb_parser(GB_Input_File,Genome_Key,GB_Output_File):-
 	open(GB_Input_File, read, Input_Stream,[alias(gb_in)]),
 	open(GB_Output_File, write, Output_Stream,[alias(gb_out)]),
-        set_output(Output_Stream),
-        readline(Input_Stream,First_Line),
-        var(Comment),
+    set_output(Output_Stream),
+    readline(Input_Stream,First_Line),
+    var(Comment),
 	parser_gb(Input_Stream,Comment,Genome_Key,First_Line),
 	set_input(user_input),
 	set_output(user_output),
@@ -58,14 +58,23 @@ parser_gb(Input_Stream,Comment,Genome_Key,[]):-
 
 
 % Line that starts with 'Location' (76,111,99,97,116,105,111,110) end of the comments
-parser_gb(Input_Stream,Comment,Genome_Key,[76,111,99,97,116,105,111,110|RestComment]):-
-        var(Comment),
-	!,
-	atom_codes(Comment_Atom,[37,76,111,99,97,116,105,111,110|RestComment]),
-	write(Comment_Atom),nl,
+% parser_gb(Input_Stream,Comment,Genome_Key,[76,111,99,97,116,105,111,110|RestComment]):-
+%        var(Comment),
+%	!,
+%	atom_codes(Comment_Atom,[37,76,111,99,97,116,105,111,110|RestComment]),
+%	write(Comment_Atom),nl,
+%	readline(Input_Stream,Next_Line),
+%        Comment = 'end',
+%	parser_gb(Input_Stream,Comment,Genome_Key,Next_Line).
+
+
+% Parse of a data line (Ignored characters = [space,tab,'.'])
+parser_gb(Input_Stream,'end',Genome_Key,Entry_Codes):-
+	parser_line(Entry_Codes,[9,32,46],Entry_Tokens),
+	fact_building_gb(Entry_Tokens,Genome_Key),
 	readline(Input_Stream,Next_Line),
-        Comment = 'end',
-	parser_gb(Input_Stream,Comment,Genome_Key,Next_Line).
+	parser_gb(Input_Stream,'end',Genome_Key,Next_Line).
+
 
 % Line to comment
 parser_gb(Input_Stream,Comment,Genome_Key,Line_Codes):-
@@ -77,12 +86,6 @@ parser_gb(Input_Stream,Comment,Genome_Key,Line_Codes):-
 	parser_gb(Input_Stream,Comment,Genome_Key,Next_Line).
 
 
-% Parse of a data line (Ignored characters = [space,tab,'.'])
-parser_gb(Input_Stream,'end',Genome_Key,Entry_Codes):-
-	parser_line(Entry_Codes,[9,32,46],Entry_Tokens),
-	fact_building_gb(Entry_Tokens,Genome_Key),
-	readline(Input_Stream,Next_Line),
-	parser_gb(Input_Stream,'end',Genome_Key,Next_Line).
 
 
 
@@ -90,14 +93,9 @@ parser_gb(Input_Stream,'end',Genome_Key,Entry_Codes):-
 
 fact_building_gb(List,Genome_Key):-
 	List = [ Start, Stop, Dir, Length, PID, Gene, Synonym, Code, COG | ProductList],
-	/*
-        nth1(1,List,Start),
-        nth1(2,List,Stop),
-        nth1(3,List,Dir),
-        nth1(6,List,Gene),
-				nth1(7,List,SynCode),
-	*/
-  Temp is Start mod 3,
+	number(Start),
+	number(Stop),
+    Temp is Start mod 3,
 	(Temp = 0 ->
             Frm = 3
 	;
