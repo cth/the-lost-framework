@@ -123,6 +123,7 @@ add_pseudo_counts :-
 set_switches_from_counts :-
 	findall(V,values(V,_),AllVarsWithDups),
 	eliminate_duplicate(AllVarsWithDups,AllVars),
+	nl,
 	forall(member(V,AllVars),set_switches_from_counts(V)).
 
 %% set_switches_from_couns(+Switch)
