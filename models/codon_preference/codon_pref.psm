@@ -1,0 +1,157 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  NAME :
+%      Codon_pref.psm
+%
+% VERSION :
+%     1.0
+%
+% AUTHOR : Ole Torp Lassen
+%
+% FUNCTION :
+%      Hmm for disciminating between coding and noncoding codon preferences in DNA.
+% 
+% HISTORIC :
+%  April 13 2011: creation                           OTL
+%
+% REMARKS : any problem, contact otl@ruc.dk
+%
+% NOTE TO THE USER: n/a
+%
+% REFERENCE: 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ 
+
+:- set_prism_flag(scaling,log_exp).
+:- set_prism_flag(learn_mode,both).
+:- set_prism_flag(log_viterbi,on).
+        
+
+
+%-----
+% HMM architecture
+%-----
+
+% HS to HS
+
+% Initialization
+values(begin,['n','c']).
+
+% Transitions from Hiddens states
+values(trans('c'),['c','end']).
+
+values(trans('n'),['c','n','end']).
+
+% Emissions from hidden states
+
+values(emit(State),Codons_List) :-
+				member(State,['n','c']),	
+        get_list_codons(Codons_List).
+        
+% Hack to avoid divided by 3 condition of the model
+values(end,[0,1,2]).
+values(end(0),[[]]).
+values(end(1),[[a],[c],[t],[g]]).
+values(end(2),[[a,a],[a,c],[a,t],[a,g],
+               [c,a],[c,c],[c,t],[c,g],
+               [t,a],[t,c],[t,t],[t,g],
+               [g,a],[g,c],[g,t],[g,g]
+              ]).        
+
+
+get_list_codons(L) :-
+        L = [ [a,a,a],[a,a,t],[a,a,c],[a,a,g],
+              [a,t,a],[a,t,t],[a,t,c],[a,t,g],
+              [a,c,a],[a,c,t],[a,c,c],[a,c,g],
+              [a,g,a],[a,g,t],[a,g,c],[a,g,g],
+              [t,a,a],[t,a,t],[t,a,c],[t,a,g],
+              [t,t,a],[t,t,t],[t,t,c],[t,t,g],
+              [t,c,a],[t,c,t],[t,c,c],[t,c,g],
+              [t,g,a],[t,g,t],[t,g,c],[t,g,g],
+              [c,a,a],[c,a,t],[c,a,c],[c,a,g],
+              [c,t,a],[c,t,t],[c,t,c],[c,t,g],
+              [c,c,a],[c,c,t],[c,c,c],[c,c,g],
+              [c,g,a],[c,g,t],[c,g,c],[c,g,g],
+              [g,a,a],[g,a,t],[g,a,c],[g,a,g],
+              [g,t,a],[g,t,t],[g,t,c],[g,t,g],
+              [g,c,a],[g,c,t],[g,c,c],[g,c,g],
+              [g,g,a],[g,g,t],[g,g,c],[g,g,g]
+             ].
+
+%---
+% Process definition for Learning
+%---
+% Classic implementation
+
+codpref(Seq,Annotation) :-
+        msw(begin,State),
+        codpref_rec(State,Seq,Annotation).
+
+% End State
+codpref_rec('end',End,[end(Num)]) :-
+        msw(end,Num),
+        msw(end(Num),End).
+
+% coding state
+codpref_rec(State,[N1,N2,N3|Rest_Nuc],[1,1,1|Rest_Annot]) :-
+        State = 'c',
+        !,
+        msw(emit(State),[N1,N2,N3]),
+        msw(trans(State),New_State),
+        codpref_rec(New_State,Rest_Nuc,Rest_Annot).
+
+% non coding state
+codpref_rec(State,[N1,N2,N3|Rest_Nuc],[0,0,0|Rest_Annot]) :-
+        State = 'n',
+        !,
+        msw(emit(State),[N1,N2,N3]),
+        msw(trans(State),New_State),
+        codpref_rec(New_State,Rest_Nuc,Rest_Annot).
+
+%---
+% Process definition for Inference
+%---
+% 
+% Classic implementation
+% Annotation: [0,0,0 (null region), 1,1,1, (coding region)]
+codpref_annot(Seq,--Annot) :-
+        msw(begin,State),
+        codpref_annot_rec(State,Seq,--Annot).
+
+
+% End State
+codpref_annot_rec('end',End,--[end(Num)]) :-
+        msw(end,Num),
+        msw(end(Num),End).
+
+% coding state
+codpref_annot_rec(State,[N1,N2,N3|Rest_Nuc],--[1,1,1|Rest_Annot]) :-
+        State = 'c',
+        !,
+        msw(emit(State),[N1,N2,N3]),
+        msw(trans(State),New_State),
+        codpref_annot_rec(New_State,Rest_Nuc,--Rest_Annot).
+
+% non coding state
+codpref_annot_rec(State,[N1,N2,N3|Rest_Nuc],--[0,0,0|Rest_Annot]) :-
+        State = 'n',
+        !,
+        msw(emit(State),[N1,N2,N3]),
+        msw(trans(State),New_State),
+        codpref_annot_rec(New_State,Rest_Nuc,--Rest_Annot).
+
+
+
+       
+
+       
+           
+       
+
+     
+        
+
+
+
+
+
