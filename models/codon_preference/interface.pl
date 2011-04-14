@@ -21,7 +21,14 @@ annotate([InputFile],_Options,OutputFile) :-
         % Building of the Input for the annotations
         consult(InputFile),
         chunk(_ID,_Left,_Right, Dir, Frame,_Extra),
-        findall(Data, chunk(_, _, _, _, _,[sequence(Data),_,_]),List_ORF),	 
+        findall(Data, 
+        (
+        chunk(_, _, _, D, _,[sequence(DataRev),_,_]),
+        D = '-' -> reverse(DataRev,Data)
+        ;
+        Data = DataRev
+        ),
+        List_ORF),	 
         findall([Left,Right],chunk(_,Left,Right,_,_,_),List_Ranges_ORF),
 	 % Computation of annotations
         open(OutputFile,write,Stream_Out),
