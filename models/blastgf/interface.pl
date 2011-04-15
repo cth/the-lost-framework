@@ -17,12 +17,21 @@ lost_output_format(annotate,_,text(prolog(ranges(_)))).
 % Prediction  %
 %%%%%%%%%%%%%%%
 
-annotate([InputFile],_Options,OutputFile) :-                                 
+annotate_single_track([InputFile],_Options,OutputFile) :-                                 
 	write('BLAST genefinder: '),nl,
-   	prismAnnot('blastgf_sum'), % Load the actual PRISM model
+   	prismAnnot('blastgf_single_track'), % Load the actual PRISM model
 	open(OutputFile,write,StreamOut),
 	open(InputFile,read,StreamIn),
-    compute_and_save_annotations(StreamIn,StreamOut,1),
+	compute_and_save_annotations(StreamIn,StreamOut,1),
+	close(StreamOut),
+	close(StreamIn).
+
+annotate_multi_track([InputFile],_Options,OutputFile) :-                                 
+	write('BLAST genefinder: '),nl,
+   	prismAnnot('blastgf_muli_track'), % Load the actual PRISM model
+	open(OutputFile,write,StreamOut),
+	open(InputFile,read,StreamIn),
+	compute_and_save_annotations(StreamIn,StreamOut,1),
 	close(StreamOut),
 	close(StreamIn).
 
