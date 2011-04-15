@@ -1,0 +1,68 @@
+%:- set_prism_flag(scaling,log_exp).
+:-set_prism_flag(log_scale,on).
+:- set_prism_flag(learn_mode,both).
+
+number_of_tracks(7).
+
+% Initialization
+values(begin,['n','c']).
+
+% Transitions from Hiddens states
+values(trans('c'),['c','end']).
+
+values(trans('n'),['c','n','end']).
+
+% Emissions from hidden states
+
+%[0,1,2,3,4,5,6,7,8,9]). % Number of organism identity matches
+values(emit(State),Emits):- 
+	number_of_tracks(N),
+	findall(EmitPattern,emission_pattern(N,EmitPatterns), Emits).
+
+emission_pattern(0,[]).
+emission_pattern(Idx,[0|Es]) :-
+	Idx1 is Idx - 1,
+	emission_pattern(Idx1,Es).
+
+emission_pattern(Idx,[1|Es]) :-
+	Idx1 is Idx - 1,
+	emission_pattern(Idx1,Es).
+
+        
+blastgf(IdentitySeq,Annotation) :-
+        msw(begin,State),
+        blastgf_rec(State,IdentitySeq,Annotation).
+
+% End State
+blastgf_rec('end',[],[]).
+
+blastgf_rec(State,[I|Is],[A|As]) :-
+		((State == 'c') -> A = 1 ; A = 0),
+        msw(emit(State),I),
+        msw(trans(State),NextState),
+        blastgf_rec(extState,Is,As).
+
+
+blastgf_rec('end',[],[]).
+blastgf_rec(State,[I|Is],[A|As]) :-
+	((State == 'c') -> A = 1 ; A = 0),
+   	msw(emit(State),I),
+    msw(trans(State),NextState),
+    blastgf_rec(extState,Is,As).
+
+%---
+% Process definition for Inference
+%---
+
+blastgf_annot(IdentitySeq,Annotation) :-
+        msw(begin,State),
+        blastgf_rec(State,IdentitySeq,Annotation).
+
+% End State
+blastgf_rec_annot('end',[],--[]).
+
+blastgf_rec_annot(State,[I|Is],--[A|As]) :-
+		((State == 'c') -> A = [1,1,1] ; A = [0,0,0]),
+        msw(emit(State),I),
+        msw(trans(State),NextState),
+        blastgf_rec_annot(extState,Is,--As).
