@@ -75,7 +75,31 @@ identity_markup_line([Q|Qs],[H|Hs],[0|Is]) :-
 	identity_markup_line(Qs,Hs,Is).
 
 
+%%
+% Remove duplicate hits
+% Assumption: First one has best score 
 
+remove_dups([BlastHitFile],[],OutFile) :-
+	open(BlastHitFile,read,InStream),
+	open(OutFile,write,OutStream),
+	remove_dups_stream(nil,InStream,OutStream),
+	close(InStream),
+	close(OutStream).
+
+remove_dups_stream(PrevSeqId,InStream,OutStream) :-
+	read(InStream,Term),
+	((Term==end_of_file) ->
+		write('done'),nl,
+		true
+		;
+		Term =.. [ _, SeqId, _, _, _, _, _ ],
+		((SeqId==PrevSeqId) ->
+			true % = skip this one
+			;
+			writeq(OutStream,Term),
+			writeq(OutStream,'\n.')),
+		!,
+		remove_dups_stream(SeqId,InStream,OutStream)).
 %%
 % merge_identity 
 %
@@ -102,18 +126,14 @@ merge_multiple_streams(MergeFunctor,InStreams,OutStream) :-
 %		forall(member(T,Terms),(write(T),nl)),
 		findall(IdSeq,(member(T,Terms),identity_seq_from_term(T,IdSeq)),IdSeqs),
 		write(IdSeqs),nl,
-		write(here1),
 		MergeGoal =.. [ MergeFunctor, IdSeqs, MergedIdSeqs ],
-		write(here2),
 		call(MergeGoal),
-		%merge_multiple_lines(IdSeqs,MergedIdSeqs),
 		NewExtra = [ identity_seq(MergedIdSeqs) ], % Note, that this throws original extra away
 		write(here3),
 		Terms = [T|_],
 		T =.. [ Functor, _, Left, Right, Strand, Frame, _ ],
 		write([ Functor, merged_sequences, Left, Right, Strand, Frame, NewExtra ]),nl,
 		NewTerm =.. [ Functor, merged_sequences, Left, Right, Strand, Frame, NewExtra ],
-		write(here4),
 		write(MergedIdSeqs),nl,
 		writeq(OutStream,NewTerm),
 		write(OutStream,'.\n'),
