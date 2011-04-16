@@ -97,7 +97,7 @@ remove_dups_stream(PrevSeqId,InStream,OutStream) :-
 			true % = skip this one
 			;
 			writeq(OutStream,Term),
-			writeq(OutStream,'\n.')),
+			write(OutStream,'.\n')),
 		!,
 		remove_dups_stream(SeqId,InStream,OutStream)).
 %%
