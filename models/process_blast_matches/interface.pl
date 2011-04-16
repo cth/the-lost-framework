@@ -44,6 +44,7 @@ identity_markup_stream(InStream,OutStream) :-
 			makelist(PaddingEnd,0,PaddingEndList),
 			write(PaddingEndList),nl,
 			write(mark),
+			write(	identity_markup_line(QuerySeq,HitSeq,AlignIdentitySeq)),nl,
 			identity_markup_line(QuerySeq,HitSeq,AlignIdentitySeq),
 			append(PaddingStartList,AlignIdentitySeq,StartPadded),
 			append(StartPadded,PaddingEndList,IdentitySeq)
@@ -60,15 +61,15 @@ identity_markup_stream(InStream,OutStream) :-
 		identity_markup_stream(InStream,OutStream)
 	).
 	
-identity_markup_line([],[],[]).
+identity_markup_line([],_,[]).
 identity_markup_line([C|Qs],[C|Hs],[1|Is]) :-
 	!,
 	identity_markup_line(Qs,Hs,Is).
 
 % WARNING: This is dubious! Fix blast report instead! (when you get the time..)
-identity_markup_line([x|Qs],[_|Hs],[1|Is]) :-
-	!,
-	identity_markup_line(Qs,Hs,Is).	
+%identity_markup_line([x|Qs],[_|Hs],[1|Is]) :-
+%	!,
+%	identity_markup_line(Qs,Hs,Is).	
 	
 identity_markup_line([Q|Qs],[H|Hs],[0|Is]) :-
 	H \= Q,
