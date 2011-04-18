@@ -1,6 +1,8 @@
 :- ['../../lost.pl'].                                                                   
 :- lost_include_api(interface).                                                         
-:- lost_include_api(autoAnnotations).
+:- [autoAnnotations].
+%:- lost_include_api(autoAnnotations). (bug i denne her ?)
+:- lost_include_api(prism_parallel).
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).                                                                                                                                        
 :- lost_include_api(stats).
@@ -13,7 +15,7 @@
 lost_input_formats(annotate,[prolog(sequence(_))]).
 % Output Format Specification
 lost_output_format(annotate,_,text(prolog(ranges(_)))).
-set_params:- restore_sw('params_fifth.gen').
+set_params:- restore_sw('params_half.gen').
 % 
 annotate([InputFile],_Options,OutputFile) :-                                 
 	write('Codon preference genefinder: '),nl,                                                         
@@ -21,12 +23,11 @@ annotate([InputFile],_Options,OutputFile) :-
         set_params,
         % Building of the Input for the annotations
         consult(InputFile),
-        chunk(_ID,_Left,_Right, Dir, Frame,_Extra),
         findall(Chunk,get_chunk(Chunk),List_Chunk),	 
-        findall([Left,Right],chunk(_,Left,Right,_,_,_),List_Ranges_Chunk),
+        findall([Left,Right,Dir,Frame],chunk(_,Left,Right,Dir,Frame,_),List_Ranges_Chunk),
 	 % Computation of annotations
         open(OutputFile,write,Stream_Out),
-        compute_and_save_annotations(Stream_Out,1,List_Chunk,List_Ranges_Chunk,Dir,Frame).
+        compute_and_save_annotations(Stream_Out,1,List_Chunk,List_Ranges_Chunk).
         % Save the annotations in the right format
         %write(save_annotation(lost_prediction,List_Ranges_ORF,List_Annotations,Dir,Frame,OutputFile)),nl,
         %save_annotation(lost_prediction,List_Ranges_ORF,Dir,Frame,List_Annotations,OutputFile). % Måske, something more generic to include in io 
@@ -59,15 +60,15 @@ test :-
 % compute_and_save_annotations(++Stream,++ORF,++Type_Gene,++List_Ranges,++Dir,++Frame)
 % Compute the annotation and write into Stream when a coding region is found.
 
-compute_and_save_annotations(Stream_Out,_Nb_Iterations,[],[],_Dir,_Frame) :-
+compute_and_save_annotations(Stream_Out,_Nb_Iterations,[],[]) :-
         !,
         close(Stream_Out).
 
-compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],[Range|Rest_Ranges],Dir,Frame) :-
+compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],[Range|Rest_Ranges]) :-
         check_or_fail(viterbiAnnot(codpref_annot(ORF,Annotation),_P),
                       error('Viterbi computation failed (Lost GeneFinder)')
                      ),
-        build_term_for_annotation(codon_pref,Range,Dir,Frame,Annotation,Term),
+        build_term_for_annotation(codon_pref,Range,Annotation,Term),
         (var(Term) ->
             true
         ;
@@ -83,19 +84,23 @@ compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],[Range|Rest
         ),
         Nb_Iterations1 is Nb_Iterations+1,
         !,
-        compute_and_save_annotations(Stream_Out,Nb_Iterations1,Rest_ORF,Rest_Ranges,Dir,Frame) .
+        compute_and_save_annotations(Stream_Out,Nb_Iterations1,Rest_ORF,Rest_Ranges) .
     
 
 
 
 % build_term_for_annotation : Terms is a variable if the annotation is a list of 0, otherwise a term with a range for the coding region
-build_term_for_annotation(Functor,[Left,Right],Dir,Frame,Annotation,Term) :-
+build_term_for_annotation(Functor,[Left,Right,Dir,Frame],AnnotationRev,Term) :-
+        (Dir = '-' -> reverse(AnnotationRev,Annotation)
+        ;
+        Annotation = AnnotationRev),
+        
         first_coding(Left,1,Annotation,Start),
         !,
         Term =..[Functor,Left,Right,Dir,Frame,[codon_pref(Annotation),start(Start)]].
 
 
-build_term_for_annotation(_Functor,_Range,_Dir,_Frame,_Annotation,_Term).
+build_term_for_annotation(_Functor,_Range,_Annotation,_Term).
 
 % first_coding(++Left,++Value,++Annotation,--Start)
 first_coding(_Left,_Value,[],_Start) :-
@@ -113,33 +118,29 @@ first_coding(Left,Value,[_Annotation|Rest_Annotations],Start) :-
 %%%%%%%%%%%%%%%
 %%%% learning %
 %%%%%%%%%%%%%%%
+% new verision using refseq'ed chunk in chunk_ref_file
 test_make_data :-	
-	make_training_file('test_chunks.gen','test_genes.gen', 'test_train.gen').
+	make_training_file('test_chunk_ref.gen', 'test_train.gen').
 
-make_training_file(Chunk_Annot,Ref_Annot,Training_File):-
-	open(Chunk_Annot,read,Chunk_Stream,[alias(chunkin)]),
-	open(Ref_Annot,read,Ref_Stream,[alias(refin)]),
+make_training_file(Chunk_Ref,Training_File):-
+	open(Chunk_Ref,read,Chunk_Stream,[alias(chunkin)]),
 	open(Training_File,write,Train_Stream,[alias(trainout)]),
 		
 	read(Chunk_Stream,Chunk_Term),
-	make_training_file_rec(0,Chunk_Term, Chunk_Stream, Ref_Stream, Train_Stream),!,	% green cut, for tail-recursion optimization  
+	make_training_file_rec(0,Chunk_Term, Chunk_Stream, Train_Stream),!,	% green cut, for tail-recursion optimization  
 	
 	close(Train_Stream),
-	close(Ref_Stream),
 	close(Chunk_Stream).
 
 
-make_training_file_rec(Count,end_of_file, _Chunk_Stream, _Ref_Stream, _Train_Stream):- nl, write('ok - '), write(Count), writeln(' training goals constructed').	
+make_training_file_rec(Count,end_of_file, _Chunk_Stream, _Train_Stream):- nl, write('ok - '), write(Count), writeln(' training goals constructed').	
 
-make_training_file_rec(Count,chunk(Id,Left,Right,Dir,Frame,[sequence(Chunk_Annot)|_rest]), Chunk_Stream, Ref_Stream, Train_Stream):-
+make_training_file_rec(Count,chunk(_Id,Left,Right,_Dir,_Frame,[ref_annot(Ref_Annot),sequence(Chunk_Annot)|_rest]), Chunk_Stream, Train_Stream):-
 	NewCount is Count + 1,
 	N is NewCount mod 500,
 	(N = 0 -> write('.')
 	; true
 	),	
-	read(Ref_Stream,RefTerm),
-	RefTerm =.. [genebank_annotation,Id,Left,Right,Dir,Frame,Extra_Ref_Info],	% ...or chunk mismatch?
-	member(seq_annotation(Ref_Annot),Extra_Ref_Info),							% ...or missing annotation?
 	Num is (Right-Left+1)mod 3, 
 	append(Ref_Annot,[end(Num)],Ref_Annot2), % ... appending number of trailing nucleotides
 	Training_Goal =.. [codpref,Chunk_Annot,Ref_Annot2],
@@ -147,7 +148,7 @@ make_training_file_rec(Count,chunk(Id,Left,Right,Dir,Frame,[sequence(Chunk_Annot
 	write(Train_Stream,'.'),
 	nl(Train_Stream),
 	read(Chunk_Stream,Next_Chunk_Term),
-	make_training_file_rec(NewCount, Next_Chunk_Term, Chunk_Stream, Ref_Stream, Train_Stream).
+	make_training_file_rec(NewCount, Next_Chunk_Term, Chunk_Stream, Train_Stream).
 
 
 makelist(0,_,[]).
@@ -163,4 +164,28 @@ train(Training_file,Parameter_file):-
 	viterbi_learn_file(Training_file),
 	save_sw(Parameter_file).
 
+%%%%%%%%%%%%%%%%%%%%%%%
+% Parallel Execution  %
+%%%%%%%%%%%%%%%%%%%%%%%
+parallel_codpref(InFile,OutFile) :-
+       split_file_fasta(InFIle,1000,codpref_split_in,'seq',InFileParts),
+       map(codpref_split_out,InFileParts,OutFileParts),
+       %write(OutFileParts),nl,
+       create_goals(InFileParts,OutFileParts,1,FilePartGoals),
+       prism_parallel(FilePartGoals).
 
+
+out_file_name(InFile,OutFile) :-
+        atom_concat(InFile,'.processed',OutFile).
+
+
+create_goals([],[],_Num,[]) :-
+        !.
+
+create_goals([FileIn|RestIn],[FileOut|RestOut],Num,[Goal|Rest_Goal]) :-
+        Goal = (                 
+                 [interface],
+                 annotate([FileIn],_Options,FileOut)
+                 ),
+        Num1 is Num+1,
+        create_goals(RestIn,RestOut,Num1,Rest_Goal).

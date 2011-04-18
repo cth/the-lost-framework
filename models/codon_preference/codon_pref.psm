@@ -38,9 +38,14 @@
 values(begin,['n','c']).
 
 % Transitions from Hiddens states
-values(trans('c'),['c','end']).
 
+% Grammar 1, no transitions from c to n
+values(trans('c'),['c','end']).
 values(trans('n'),['c','n','end']).
+
+% Grammar 2, unrestricted transitions
+%values(trans(State),['c','n','end']):-
+	%member(State,['c','n']).
 
 % Emissions from hidden states
 
