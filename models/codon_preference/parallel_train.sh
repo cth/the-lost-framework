@@ -35,7 +35,7 @@ mywait() {
     echo "Waiting for process $1 to terminate"
     while [ 1 ]
     do
-        running=`ps -eo pid |grep -c "$1"`
+        running=`ps -eo pid |grep -c "^$1\$"`
         if [ $running -eq 0 ]; then
             break
         fi
@@ -46,7 +46,7 @@ mywait() {
 
 # Check if process with given PID is running
 is_running() {
-    ps -eo pid |grep -c "$1"
+    ps -eo pid |grep -c "^$1\$"
 }
 
 # Display information about running processes
