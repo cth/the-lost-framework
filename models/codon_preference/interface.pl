@@ -1,7 +1,7 @@
 :- ['../../lost.pl'].                                                                   
 :- lost_include_api(interface).                                                         
-:- [autoAnnotations].
-%:- lost_include_api(autoAnnotations). (bug i denne her ?)
+%:- [autoAnnotations].
+:- lost_include_api(autoAnnotations). % (bug i denne her ?)
 :- lost_include_api(prism_parallel).
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).                                                                                                                                        
@@ -17,10 +17,10 @@ lost_input_formats(annotate,[prolog(sequence(_))]).
 lost_output_format(annotate,_,text(prolog(ranges(_)))).
 set_params:- restore_sw('params_half.gen').
 % 
-annotate([InputFile],_Options,OutputFile) :-                                 
+annotate([ParamsFile,InputFile],_Options,OutputFile) :-                                 
 	write('Codon preference genefinder: '),nl,                                                         
         prismAnnot('codon_pref'), % Load the actual PRISM model                                         
-        set_params,
+        restore_sw(ParamsFile),
         % Building of the Input for the annotations
         consult(InputFile),
         findall(Chunk,get_chunk(Chunk),List_Chunk),	 
@@ -32,6 +32,15 @@ annotate([InputFile],_Options,OutputFile) :-
         %write(save_annotation(lost_prediction,List_Ranges_ORF,List_Annotations,Dir,Frame,OutputFile)),nl,
         %save_annotation(lost_prediction,List_Ranges_ORF,Dir,Frame,List_Annotations,OutputFile). % Måske, something more generic to include in io 
         %save_annotation_to_sequence_file(genemark_genefinder,70,Annotation,OutputFile).
+
+parallel_annotate([ParamsFile,InputFile],_opts,OutputFile) :-
+        split_file(InputFile,500,'cod_pref_input', '.pl',ResultingFiles),
+        open('input_files.list',write,OutS),
+        forall(member(File,ResultingFiles), (write(OutS,File), write(OutS,'\n'))),
+        close(OutS),
+        atom_concat_list(['./parallel_predict.sh ','10 ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
+        system(Cmd).
+
 
 get_chunk(Chunk):-
 				chunk(_, _, _, D, _,[sequence(ChunkRev),_,_]),
@@ -182,7 +191,7 @@ train(Training_file,Parameter_file):-
 % Parallel Execution  %
 %%%%%%%%%%%%%%%%%%%%%%%
 parallel_codpref(InFile,OutFile) :-
-       split_file_fasta(InFIle,1000,codpref_split_in,'seq',InFileParts),
+       split_file_fasta(InFile,1000,codpref_split_in,'seq',InFileParts),
        map(codpref_split_out,InFileParts,OutFileParts),
        %write(OutFileParts),nl,
        create_goals(InFileParts,OutFileParts,1,FilePartGoals),
