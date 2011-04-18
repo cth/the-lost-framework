@@ -30,6 +30,20 @@ init_processors() {
     done
 }
 
+member() {
+        target=$1
+        shift
+
+        for i in $@
+        do
+                if [ x$i = "x$target" ]; then
+                        echo "1"
+                        return
+                fi
+        done
+        echo "0"
+}
+
 # Wait that works for non-child processes
 mywait() {
     echo "Waiting for process $1 to terminate"
