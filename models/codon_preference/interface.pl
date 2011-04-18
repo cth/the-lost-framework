@@ -118,6 +118,20 @@ first_coding(Left,Value,[_Annotation|Rest_Annotations],Start) :-
 %%%%%%%%%%%%%%%
 %%%% learning %
 %%%%%%%%%%%%%%%
+
+
+parallel_learn([InputFile],[],ParamsFile) :-
+        lost_tmp_directory(Tmp),
+        atom_concat_list([Tmp,'codon_pref_full_train.pl'],TrainingFile),
+        make_training_file(InputFile,TrainingFile),
+        split_file(TrainingFile,1000,'cod_pref', '.pl',ResultingFiles),
+        open('training_files.list',write,OutS),
+        forall(member(File,ResultingFiles), (write(OutS,File), write(OutS,'\n'))),
+        close(OutS),
+        atom_concat_list(['./parallel_train.sh ','10 ', ParamsFile, ' training_files.list'], Cmd),
+        system(Cmd).
+
+
 % new verision using refseq'ed chunk in chunk_ref_file
 test_make_data :-	
 	make_training_file('test_chunk_ref.gen', 'test_train.gen').

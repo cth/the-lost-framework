@@ -7,8 +7,10 @@
 viterbi_learn_file(File) :-
 	clear_counters,
 	add_pseudo_counts,
+        write(File),nl,
     open(File,read,Stream),
     viterbi_learn_stream(Stream,0),
+        write(vl_here),nl,
     close(Stream),
 	set_switches_from_counts.
 
@@ -18,7 +20,7 @@ viterbi_learn_file(File) :-
 viterbi_learn_file_count_only(File) :-
 	clear_counters,	
     open(File,read,Stream),
-    viterbi_learn_stream(Stream),
+    viterbi_learn_stream(Stream,0),
     close(Stream).
 
 %% viterbi_learn_stream(+Stream)
@@ -29,6 +31,7 @@ viterbi_learn_stream(Stream,NumGoals) :-
     ((Term == end_of_file) ->
             true
             ;
+            %write(Term),nl,
             viterbi_learn_term(Term),
             ReportNum is NumGoals mod 100,
             ReportDot is NumGoals mod 10,
@@ -134,8 +137,8 @@ set_switches_from_counts(Switch) :-
 	count_list_from_outcome_list(Switch,Outcomes,CountList),
 	sumlist(CountList,Total),
 	compute_frequencies_from_counts(Total,CountList,FreqList),
-	write(set_sw_all(Switch,FreqList)),nl,
-	set_sw_all(Switch,FreqList).
+	write(set_sw(Switch,FreqList)),nl,
+	set_sw(Switch,FreqList).
 
 
 %% count_list_from_outcome_list(+Switch,+OutcomesList,-CountList)
