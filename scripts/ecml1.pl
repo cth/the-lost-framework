@@ -137,9 +137,16 @@ train_blastgf_model(ParamsFile) :-
 
 make_training_data(TrainingDataFile) :-
         lost_data_directory(DatDir),
-        atom_concat(DatDir,'mini_train.pl',ChunkFile),
+        ChunkFile = '/tmp/ECML_DATA/train_orfs.pl',
+        % atom_concat(DatDir,'/tmp/ECML_DATA/train_orfs.pl',ChunkFile),
         lost_sequence_file('NC_000913_ptt', RefFile),
         run_model(parser_ptt,annotate([RefFile],[],RefFileParsed)),
         run_model(chunk_ref_annot, add_reference_track([ChunkFile,RefFileParsed], [], OrfRef)),
         run_model(codon_preference,parallel_learn([OrfRef],[],ParamsFile)).
 
+cod_pref_predict :-
+        lost_data_directory(DatDir),
+        atom_concat(DatDir,'mini_train.pl',ChunkFile),
+        ParamsFile = '/tmp/ECML_DATA/NC_000913_codpref_params.pl',
+        run_model(codon_preference,parallel_annotate([ParamsFile,ChunkFile],[],OutputFile)),
+        write('predictions written to :'), write(OutputFile),nl.
