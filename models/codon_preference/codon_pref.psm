@@ -22,9 +22,15 @@
 
  
 
-:- set_prism_flag(scaling,log_exp).
 :- set_prism_flag(learn_mode,both).
-:- set_prism_flag(log_viterbi,on).
+
+% PRISM 2 only:
+:-set_prism_flag(log_scale,on).
+
+% PRISM 1 only
+%:- set_prism_flag(log_viterbi,on).
+%:- set_prism_flag(scaling,log_exp).
+
         
 
 
