@@ -161,7 +161,7 @@ make_training_file_rec(Count,end_of_file, _Input_Stream, _Train_Stream):- nl, wr
 make_training_file_rec(Count,chunk(_Id,Left,Right,_Dir,_Frame,Extra), Input_Stream, Train_Stream):-
 	member(codon_pref(Cp),Extra),
 	member(blastgf(Cn),Extra),
-	member(ref_annot(Ref),Extra)
+	member(gb(Ref),Extra)
 	NewCount is Count + 1,
 	N is NewCount mod 500,
 	(N = 0 -> write('.')
