@@ -24,7 +24,7 @@ annotate([ParamsFile,InputFile],_Options,OutputFile) :-
         % Building of the Input for the annotations
         consult(InputFile),
         findall(Chunk,get_chunk(Chunk),List_Chunk),	 
-        findall([Left,Right,Dir,Frame],chunk(_,Left,Right,Dir,Frame,_),List_Ranges_Chunk),
+        findall([ID,Left,Right,Dir,Frame],chunk(ID,Left,Right,Dir,Frame,_),List_Ranges_Chunk),
 	 % Computation of annotations
         open(OutputFile,write,Stream_Out),
         compute_and_save_annotations(Stream_Out,1,List_Chunk,List_Ranges_Chunk).
@@ -81,7 +81,7 @@ compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],[Range|Rest
         (var(Term) ->
             true
         ;
-            write(Stream_Out,Term),write(Stream_Out,'.'),nl(Stream_Out)
+            writeq(Stream_Out,Term),write(Stream_Out,'.'),nl(Stream_Out)
         ),
         Number is Nb_Iterations mod 100,
         (Number == 1 -> write(Nb_Iterations) ; write('.')),
@@ -99,14 +99,14 @@ compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],[Range|Rest
 
 
 % build_term_for_annotation : Terms is a variable if the annotation is a list of 0, otherwise a term with a range for the coding region
-build_term_for_annotation(Functor,[Left,Right,Dir,Frame],AnnotationRev,Term) :-
+build_term_for_annotation(Functor,[ID,Left,Right,Dir,Frame],AnnotationRev,Term) :-
         (Dir = '-' -> reverse(AnnotationRev,Annotation)
         ;
         Annotation = AnnotationRev),
         
         first_coding(Left,1,Annotation,Start),
         !,
-        Term =..[Functor,Left,Right,Dir,Frame,[codon_pref(Annotation),start(Start)]].
+        Term =..[ID,Functor,Left,Right,Dir,Frame,[codon_pref(Annotation),start(Start)]].
 
 
 build_term_for_annotation(_Functor,_Range,_Annotation,_Term).
