@@ -2,7 +2,7 @@
 :-set_prism_flag(log_scale,on).
 :- set_prism_flag(learn_mode,both).
 
-number_of_tracks(7).
+number_of_tracks(8).
 
 % Initialization
 values(begin,['n','c']).
@@ -16,15 +16,17 @@ values(trans('n'),['c','n','end']).
 
 %[0,1,2,3,4,5,6,7,8,9]). % Number of organism identity matches
 values(emit(State),Emits):- 
+        member(State,[c,n]),
 	number_of_tracks(N),
-	findall(EmitPattern,emission_pattern(N,EmitPatterns), Emits).
+	findall(EmitPattern,emission_pattern(N,EmitPattern), Emits).
 
 emission_pattern(0,[]).
 emission_pattern(Idx,[0|Es]) :-
+        Idx > 0,
 	Idx1 is Idx - 1,
 	emission_pattern(Idx1,Es).
-
 emission_pattern(Idx,[1|Es]) :-
+        Idx > 0,
 	Idx1 is Idx - 1,
 	emission_pattern(Idx1,Es).
 
@@ -36,33 +38,32 @@ blastgf(IdentitySeq,Annotation) :-
 % End State
 blastgf_rec('end',[],[]).
 
-blastgf_rec(State,[I|Is],[A|As]) :-
-		((State == 'c') -> A = 1 ; A = 0),
-        msw(emit(State),I),
-        msw(trans(State),NextState),
-        blastgf_rec(extState,Is,As).
+blastgf_rec('c',[I|Is],[1,1,1|As]) :-
+        msw(emit('c'),I),
+        msw(trans('c'),NextState),
+        blastgf_rec(NextState,Is,As).
+
+blastgf_rec('n',[I|Is],[0,0,0|As]) :-
+        msw(emit('n'),I),
+        msw(trans('n'),NextState),
+        blastgf_rec(NextState,Is,As).
 
 
-blastgf_rec('end',[],[]).
-blastgf_rec(State,[I|Is],[A|As]) :-
-	((State == 'c') -> A = 1 ; A = 0),
-   	msw(emit(State),I),
-    msw(trans(State),NextState),
-    blastgf_rec(extState,Is,As).
-
-%---
-% Process definition for Inference
-%---
-
-blastgf_annot(IdentitySeq,Annotation) :-
+blastgf_noannot(IdentitySeq) :-
         msw(begin,State),
-        blastgf_rec(State,IdentitySeq,Annotation).
+        blastgf_rec_noannot(State,IdentitySeq).
 
-% End State
-blastgf_rec_annot('end',[],--[]).
+blastgf_rec_noannot('end',[]).
 
-blastgf_rec_annot(State,[I|Is],--[A|As]) :-
-		((State == 'c') -> A = [1,1,1] ; A = [0,0,0]),
-        msw(emit(State),I),
-        msw(trans(State),NextState),
-        blastgf_rec_annot(extState,Is,--As).
+blastgf_rec_noannot('c',[I|Is]) :-
+        msw(emit('c'),I),
+        msw(trans('c'),NextState),
+        blastgf_rec_noannot(NextState,Is).
+
+blastgf_rec_noannot('n',[I|Is]) :-
+        msw(emit('n'),I),
+        msw(trans('n'),NextState),
+        blastgf_rec_noannot(NextState,Is).
+
+
+

@@ -13,7 +13,9 @@ values(trans('n'),['c','n','end']).
 
 % Emissions from hidden states
 
-values(emit(State),[0,1,2,3,4,5,6,7,8,9]). % Number of organism identity matches
+% Number of organism identity matches
+values(emit(State),[0,1,2,3,4,5,6,7,8,9]) :-
+        member(State,[c,n]).
         
 blastgf(IdentitySeq,Annotation) :-
         msw(begin,State),
@@ -22,33 +24,29 @@ blastgf(IdentitySeq,Annotation) :-
 % End State
 blastgf_rec('end',[],[]).
 
-blastgf_rec(State,[I|Is],[A|As]) :-
-		((State == 'c') -> A = 1 ; A = 0),
-        msw(emit(State),I),
-        msw(trans(State),NextState),
-        blastgf_rec(extState,Is,As).
+blastgf_rec('c',[I|Is],[1,1,1|As]) :-
+        msw(emit('c'),I),
+        msw(trans('c'),NextState),
+        blastgf_rec(NextState,Is,As).
 
+blastgf_rec('n',[I|Is],[0,0,0|As]) :-
+        msw(emit('n'),I),
+        msw(trans('n'),NextState),
+        blastgf_rec(NextState,Is,As).
 
-blastgf_rec('end',[],[]).
-blastgf_rec(State,[I|Is],[A|As]) :-
-	((State == 'c') -> A = 1 ; A = 0),
-   	msw(emit(State),I),
-    msw(trans(State),NextState),
-    blastgf_rec(extState,Is,As).
-
-%---
-% Process definition for Inference
-%---
-
-blastgf_annot(IdentitySeq,Annotation) :-
+blastgf_noannot(IdentitySeq) :-
         msw(begin,State),
-        blastgf_rec(State,IdentitySeq,Annotation).
+        blastgf_rec_noannot(State,IdentitySeq).
 
-% End State
-blastgf_rec_annot('end',[],--[]).
+blastgf_rec_noannot('end',[]).
 
-blastgf_rec_annot(State,[I|Is],--[A|As]) :-
-		((State == 'c') -> A = [1,1,1] ; A = [0,0,0]),
-        msw(emit(State),I),
-        msw(trans(State),NextState),
-        blastgf_rec_annot(extState,Is,--As).
+blastgf_rec_noannot('c',[I|Is]) :-
+        msw(emit('c'),I),
+        msw(trans('c'),NextState),
+        blastgf_rec_noannot(NextState,Is).
+
+blastgf_rec_noannot('n',[I|Is]) :-
+        msw(emit('n'),I),
+        msw(trans('n'),NextState),
+        blastgf_rec_noannot(NextState,Is).
+
