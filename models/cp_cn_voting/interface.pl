@@ -44,7 +44,7 @@ parallel_annotate([ParamsFile,InputFile],_opts,OutputFile) :-
 
 get_chunk((Cp,Cn)):-
 				chunk(_, _, _, D, _,Extra),
-				member(codpref(CpRev),Extra),
+				member(codon_pref(CpRev),Extra),
 				member(blastgf(CnRev),Extra),
         (D = '-' -> reverse(CpRev,Cp),reverse(CnRev,Cn)
         ;
@@ -126,6 +126,53 @@ first_coding(Left,Value,[_Annotation|Rest_Annotations],Start) :-
         Left1 is Left+1,
         first_coding(Left1,Value,Rest_Annotations,Start).
 
+%%%%%%%%%%%%%%%
+%%%% learning %
+%%%%%%%%%%%%%%%
 
+
+parallel_learn([InputFile],[],ParamsFile) :-
+        lost_tmp_directory(Tmp),
+        atom_concat_list([Tmp,'codon_pref_full_train.pl'],TrainingFile),
+        make_training_file(InputFile,TrainingFile),
+        split_file(TrainingFile,1000,'cpcn', '.pl',ResultingFiles),
+        open('training_files.list',write,OutS),
+        forall(member(File,ResultingFiles), (write(OutS,File), write(OutS,'\n'))),
+        close(OutS),
+        atom_concat_list(['./parallel_train.sh ','10 ', ParamsFile, ' training_files.list'], Cmd),
+        system(Cmd).
+
+
+% new verision using refseq'ed chunk in chunk_ref_file
+% Multitrack file has all neccessary tracks for all chunks.
+make_training_file(Multi_Track,Training_File):-
+	open(Multi_track,read,Chunk_Tracks_In,[alias(TracksIn)]),
+	open(Training_File,write,Train_Stream,[alias(trainout)]),
+		
+	read(Chunk_Tracks_In,Term),
+	make_training_file_rec(0,Term, Chunk_Tracks_In, Train_Stream),!,	% green cut, for tail-recursion optimization  
+	
+	close(Train_Stream),
+	close(Chunk_Tracks_In).
+
+
+make_training_file_rec(Count,end_of_file, _Input_Stream, _Train_Stream):- nl, write('ok - '), write(Count), writeln(' training goals constructed').	
+
+make_training_file_rec(Count,chunk(_Id,Left,Right,_Dir,_Frame,Extra), Input_Stream, Train_Stream):-
+	member(codon_pref(Cp),Extra),
+	member(blastgf(Cn),Extra),
+	member(gb(Ref),Extra)
+	NewCount is Count + 1,
+	N is NewCount mod 500,
+	(N = 0 -> write('.')
+	; true
+	),
+	Num is (Right-Left+1)mod 3, 
+	append(Ref,[end(Num)],Ref2), % ... appending number of trailing nucleotides	
+	Training_Goal =.. [cp_cn_voting,Cp,Cn,Ref2],
+	writeq(Train_Stream,Training_Goal),	write(Train_Stream,'.'),
+	nl(Train_Stream),
+	read(Input_Stream,Next_Term),
+	make_training_file_rec(NewCount, Next_Term, Chunk_Stream, Train_Stream).
 
 	
