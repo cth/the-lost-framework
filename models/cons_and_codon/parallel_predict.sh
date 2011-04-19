@@ -4,12 +4,13 @@
 
 NUM_PROCESSORS=$1
 shift
+ANNOTATE_GOAL=$1
+shift
 PARAMS_FILE=$1
 shift
 OUTPUT_FILE=$1
 shift
 INPUT_FILES_LIST=$1
-
 
 PRISM="/opt/prism/bin/prism -s 1000000000"
 
@@ -46,7 +47,6 @@ member() {
         echo "0"
 }
 
-
 # Wait that works for non-child processes
 mywait() {
     echo "Waiting for process $1 to terminate"
@@ -64,10 +64,10 @@ mywait() {
 
 # Check if process with given PID is running
 is_running() {
-        running_processes=`ps -eo pid`
-        member $1 $running_processes
-}
+    running_processes=`ps -eo pid`
+    member $1 $running_processes
 
+}
 
 # Display information about running processes
 show_running_processes() {
@@ -120,7 +120,7 @@ do
     echo "Trying to allocate processor for file: $f"
     processor_id=`find_free_processor` # blocks!
     echo "found free processor: $processor_id"
-    goals="['interface.pl'], annotate(['$PARAMS_FILE','$f'],[],'$f.predictions')."
+    goals="['interface.pl'], $ANNOTATE_GOAL(['$PARAMS_FILE','$f'],[],'$f.predictions')."
     echo "running prism with goals: $goals"
     echo "-----"
     exec $PRISM  -g "$goals" & pid=$!

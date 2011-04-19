@@ -4,6 +4,8 @@
 
 NUM_PROCESSORS=$1
 shift
+MODEL_NAME=$1
+shift
 OUTPUT_FILE=$1
 shift
 TRAINING_FILES_LIST=$1
@@ -51,8 +53,8 @@ mywait() {
     do
         running_processes=`ps -eo pid`
         running=`member $1 $running_processes`
-
         if [ $running -eq 0 ]; then
+            echo "runnning -eq 0 - breaking"
             break
         fi
         sleep 1
@@ -65,7 +67,6 @@ is_running() {
         running_processes=`ps -eo pid`
         member $1 $running_processes
 }
-
 
 # Display information about running processes
 show_running_processes() {
@@ -108,6 +109,8 @@ find_free_processor() {
 
 # main: 
 
+MODEL_NAME_EX=`echo "$MODEL_NAME EX.psm"|tr -d " "`
+
 echo "Init processors..."
 init_processors
 echo "done."
@@ -119,7 +122,7 @@ do
     processor_id=`find_free_processor` # blocks!
     echo "found free processor: $processor_id"
     goals_file=`tempfile`
-    goals="['../../lost.pl'],lost_include_api(autoAnnotations),prismAnnot(codon_pref,direct),['codon_prefEX.psm'],lost_include_api(viterbi_learn),viterbi_learn_file_count_only('$f'),write('here'),nl,save_counts_file('$f.counts')."
+    goals="['../../lost.pl'],lost_include_api(autoAnnotations),prismAnnot($MODEL_NAME,direct),['$MODEL_NAME_EX'],lost_include_api(viterbi_learn),viterbi_learn_file_count_only('$f'),write('here'),nl,save_counts_file('$f.counts')."
     echo "running prism with goals: $goals"
     echo "-----"
     exec $PRISM  -g "$goals" & pid=$!
@@ -141,7 +144,7 @@ done
 COUNT_FILES=`echo $COUNT_FILES|tr " " ","`
 
 # Merge training sessions
-goals="['../../lost.pl'],lost_include_api(autoAnnotations),prismAnnot(codon_pref,direct),['codon_prefEX.psm'],lost_include_api(viterbi_learn),!,add_pseudo_counts,merge_counts_files([$COUNT_FILES]),set_switches_from_counts,write('$OUTPUT_FILE'),save_sw('$OUTPUT_FILE')."
+goals="['../../lost.pl'],lost_include_api(autoAnnotations),prismAnnot($MODEL_NAME,direct),['$MODEL_NAME_EX'],lost_include_api(viterbi_learn),!,add_pseudo_counts,merge_counts_files([$COUNT_FILES]),set_switches_from_counts,write('$OUTPUT_FILE'),save_sw('$OUTPUT_FILE')."
 
 
 exec $PRISM -g "$goals"

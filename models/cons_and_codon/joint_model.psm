@@ -7,8 +7,8 @@ values(trans(n),[c,n,end]).
 
 values(emit(State),Emits) :-
         member(State,[n,c]),
-        get_list_codons(Codons_List),
-	findall([Codon,EmitPattern],(emission_pattern(N,EmitPattern),member(Codon,CodonList)),Emits).
+        get_list_codons(CodonList),
+	findall([Codon,EmitPattern],(emission_pattern(8,EmitPattern),member(Codon,CodonList)),Emits).
         
 emission_pattern(0,[]).
 emission_pattern(Idx,[0|Es]) :-
@@ -40,12 +40,12 @@ get_list_codons(L) :-
               [g,g,a],[g,g,t],[g,g,c],[g,g,g]].
 
 
-joint_model(Seq) :-
+joint_model(Seq,Annotation) :-
         msw(begin,State),
         joint_model_rec(State,Seq,Annotation).
 
 % End State
-joint_model_rec('end').
+joint_model_rec(end,[],[]).
 
 joint_model_rec(c,[I|Is],[1,1,1|As]) :-
         msw(emit(c),I),
@@ -64,7 +64,7 @@ joint_model_noannot(Seq) :-
         joint_model_rec(State,Seq).
 
 % End State
-joint_model_rec_noannot('end').
+joint_model_rec_noannot(end,[],[]).
 
 joint_model_rec_noannot(c,[I|Is]) :-
         msw(emit(c),I),
