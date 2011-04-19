@@ -4,6 +4,30 @@
 :- ['../../lost.pl'].
 :- lost_include_api(io).
 
+merge_extra_fields([ChunkFile1,ChunkFile2],_,OutFile) :-
+	open(ChunkFile1,read,InStream1),
+	open(ChunkFile2,read,InStream2),
+	open(OutFile,write,OutStream),
+        merge_chunk_extra_fields_stream(InStream1,InStream2,OutStream),
+	close(InStream),
+	close(OutStream).
+
+merge_chunk_extra_fields_stream(InStream1,InStream2,OutStream) :-
+	read(InStream1,Chunk1),
+	read(InStream2,Chunk2),
+	((Chunk1==end_of_file) ->
+		true
+	;
+		Chunk1 =.. [ Functor, SeqId, Left, Right, Strand, Frame, Extra1],
+		Chunk2 =.. [ _Functor, _SeqId, Left, Right, Strand, Frame, Extra2],
+                union(Extra1,Extra2,NewExtra),
+        	NewChunk =.. [ Functor,SeqId,Left,Right,Strand,Frame,NewExtra],
+		writeq(OutStream,NewChunk),
+		writeln(OutStream,'.'),
+		!,
+		merge_chunk_extra_fields_stream(InStream1,InStream2,OutStream)).
+
+
 add_reference_track([ChunkFile,GoldenStandardFile],_,OutFile) :-
 	file_functor(GoldenStandardFile,RefFunctor),
 	open(ChunkFile,read,InStream),
@@ -38,12 +62,34 @@ add_reference_track_stream(RefFunctor,InStream,OutStream) :-
 			ChunkLength is 1 + abs(Left - Right),
 			makelist(ChunkLength,0,RefAnnot)
 		),
-		NewExtra = [ref_annot(RefAnnot)|Extra],
+                RefAnnotFact =.. [RefFunctor,RefAnnot],
+		NewExtra = [RefAnnotFact|Extra],
 		NewChunk =.. [ Functor,SeqId,Left,Right,Strand,Frame,NewExtra],
 		writeq(OutStream,NewChunk),
 		writeln(OutStream,'.'),
 		!,
 		add_reference_track_stream(RefFunctor,InStream,OutStream)).
+
+report_matches_to_chunks([ChunkFile,RefFile],_,OutputFile) :-
+	file_functor(RefFile,RefFunctor),
+	open(ChunkFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	[RefFile],
+        report_matches_to_chunks_stream(RefFunctor,InStream,OutStream),
+	close(InStream),
+        close(OutStream).
+
+report_matches_to_chunks_stream(RefFunctor,InStream,OutStream) :-
+	read(InStream,Chunk),
+	((Chunk==end_of_file) ->
+		true
+	;
+                write('.'),
+		Chunk =.. [ _, _, Left, Right, Strand, Frame, _],
+                findall(M,find_matches(RefFunctor,Left,Right,Strand,Frame,M),Matches),
+                forall(member(Match,Matches),( writeq(OutStream,Match), write(OutStream,'.\n'))),
+	        !,
+	        report_matches_to_chunks_stream(RefFunctor,InStream,OutStream)).
 
 % This disregards overlapping genes in same frame, just pick first match..
 lookup_ref_term(RefFunctor,Left,Right,Strand,Frame,FirstMatch) :-
@@ -59,7 +105,7 @@ lookup_ref_term(RefFunctor,Left,Right,Strand,Frame,FirstMatch) :-
 	Matches = [FirstMatch|_].
 
 find_matches(RefFunctor,MinLeft,MaxRight,Strand,Frame,Match) :-
-	Match =.. [ RefFunctor, _SeqId, Left, Right, Strand, Frame, _ ],
+	Match =.. [ RefFunctor, SeqId, Left, Right, Strand, Frame, Extra ],
 	call(Match),
 	Left >= MinLeft,
 	Right =< MaxRight.
