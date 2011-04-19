@@ -1,0 +1,78 @@
+:- set_prism_flag(learn_mode,both).
+:-set_prism_flag(log_scale,on).
+
+values(begin,[n,c]).
+values(trans(c),[c,end]).
+values(trans(n),[c,n,end]).
+
+values(emit(State),Emits) :-
+        member(State,[n,c]),
+        get_list_codons(Codons_List),
+	findall([Codon,EmitPattern],(emission_pattern(N,EmitPattern),member(Codon,CodonList)),Emits).
+        
+emission_pattern(0,[]).
+emission_pattern(Idx,[0|Es]) :-
+        Idx > 0,
+	Idx1 is Idx - 1,
+	emission_pattern(Idx1,Es).
+emission_pattern(Idx,[1|Es]) :-
+        Idx > 0,
+	Idx1 is Idx - 1,
+	emission_pattern(Idx1,Es).
+
+
+get_list_codons(L) :-
+        L = [ [a,a,a],[a,a,t],[a,a,c],[a,a,g],
+              [a,t,a],[a,t,t],[a,t,c],[a,t,g],
+              [a,c,a],[a,c,t],[a,c,c],[a,c,g],
+              [a,g,a],[a,g,t],[a,g,c],[a,g,g],
+              [t,a,a],[t,a,t],[t,a,c],[t,a,g],
+              [t,t,a],[t,t,t],[t,t,c],[t,t,g],
+              [t,c,a],[t,c,t],[t,c,c],[t,c,g],
+              [t,g,a],[t,g,t],[t,g,c],[t,g,g],
+              [c,a,a],[c,a,t],[c,a,c],[c,a,g],
+              [c,t,a],[c,t,t],[c,t,c],[c,t,g],
+              [c,c,a],[c,c,t],[c,c,c],[c,c,g],
+              [c,g,a],[c,g,t],[c,g,c],[c,g,g],
+              [g,a,a],[g,a,t],[g,a,c],[g,a,g],
+              [g,t,a],[g,t,t],[g,t,c],[g,t,g],
+              [g,c,a],[g,c,t],[g,c,c],[g,c,g],
+              [g,g,a],[g,g,t],[g,g,c],[g,g,g]].
+
+
+joint_model(Seq) :-
+        msw(begin,State),
+        joint_model_rec(State,Seq,Annotation).
+
+% End State
+joint_model_rec('end').
+
+joint_model_rec(c,[I|Is],[1,1,1|As]) :-
+        msw(emit(c),I),
+        msw(trans(c),NextState),
+        joint_model_rec(NextState,Is,As).
+
+joint_model_rec(n,[I|Is],[0,0,0|As]) :-
+        msw(emit(n),I),
+        msw(trans(n),NextState),
+        joint_model_rec(NextState,Is,As).
+
+
+
+joint_model_noannot(Seq) :-
+        msw(begin,State),
+        joint_model_rec(State,Seq).
+
+% End State
+joint_model_rec_noannot('end').
+
+joint_model_rec_noannot(c,[I|Is]) :-
+        msw(emit(c),I),
+        msw(trans(c),NextState),
+        joint_model_rec_noannot(NextState,Is).
+
+joint_model_rec_noannot(n,[I|Is]) :-
+        msw(emit(n),I),
+        msw(trans(n),NextState),
+        joint_model_rec_noannot(NextState,Is).
+
