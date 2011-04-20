@@ -5,10 +5,10 @@ values(begin,[n,c]).
 values(trans(c),[c,end]).
 values(trans(n),[c,n,end]).
 
-values(emit_codon(State),Emits) :-
+values(emit(State),Emits) :-
         member(State,[n,c]),
         get_list_codons(Codons_List),
-        findall([C,P],(member(P,[prediction(coding),prediction(noncoding)), member(C, Codons_List)), Emits).
+        findall([C,P],(member(P,[[0,0,0],[1,1,1]]), member(C, Codons_List)), Emits).
         
 get_list_codons(L) :-
         L = [ [a,a,a],[a,a,t],[a,a,c],[a,a,g],
@@ -29,12 +29,12 @@ get_list_codons(L) :-
               [g,g,a],[g,g,t],[g,g,c],[g,g,g]].
 
 
-combiner(Seq) :-
+combiner(Seq,Annotation) :-
         msw(begin,State),
         combiner_rec(State,Seq,Annotation).
 
 % End State
-combiner_rec('end').
+combiner_rec(end,[],[]).
 
 combiner_rec(c,[I|Is],[1,1,1|As]) :-
         msw(emit(c),I),
@@ -50,18 +50,18 @@ combiner_rec(n,[I|Is],[0,0,0|As]) :-
 
 combiner_noannot(Seq) :-
         msw(begin,State),
-        combiner_rec(State,Seq).
+        combiner_noannot_rec(State,Seq).
 
 % End State
-combiner_rec_noannot('end').
+combiner_noannot_rec(end,[]).
 
-combiner_rec_noannot(c,[I|Is]) :-
+combiner_noannot_rec(c,[I|Is]) :-
         msw(emit(c),I),
         msw(trans(c),NextState),
-        combiner_rec_noannot(NextState,Is).
+        combiner_noannot_rec(NextState,Is).
 
-combiner_rec_noannot(n,[I|Is]) :-
+combiner_noannot_rec(n,[I|Is]) :-
         msw(emit(n),I),
         msw(trans(n),NextState),
-        combiner_rec_noannot(NextState,Is).
+        combiner_noannot_rec(NextState,Is).
 
