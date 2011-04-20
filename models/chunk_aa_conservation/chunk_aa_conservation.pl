@@ -32,7 +32,8 @@
 % Blast Command Building
 %%%%%%
 
-blast_database('/opt/db/blast/EnteroBacterialesGB/EnteroBacterialesGB.nt').
+%blast_database('/opt/db/blast/EnteroBacterialesGB/EnteroBacterialesGB.nt').
+blast_database('/home/otl/NC_000913/NC_000913.fna').
 
 
 blast_command(Cmd) :-

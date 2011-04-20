@@ -23,8 +23,8 @@ annotate([ParamsFile,InputFile],_Options,OutputFile) :-
         restore_sw(ParamsFile),
         % Building of the Input for the annotations
         consult(InputFile),
-        findall((Cp,Cn),get_chunk((Cp,Cn)),List_CpCn),	 
-        findall([ID,Left,Right,Dir,Frame],chunk(ID,Left,Right,Dir,Frame,_),List_Ranges_Chunk),
+        findall((Cp,Cn),get_chunk((Cp,Cn)),List_CpCn),	
+	 findall([ID,Left,Right,Dir,Frame],chunk(ID,Left,Right,Dir,Frame,_),List_Ranges_Chunk),
 	 			% Computation of annotations
         open(OutputFile,write,Stream_Out),
         compute_and_save_annotations(Stream_Out,1,List_CpCn,List_Ranges_Chunk).
@@ -34,18 +34,18 @@ annotate([ParamsFile,InputFile],_Options,OutputFile) :-
         %save_annotation_to_sequence_file(genemark_genefinder,70,Annotation,OutputFile).
 
 parallel_annotate([ParamsFile,InputFile],_opts,OutputFile) :-
-        split_file(InputFile,500,'cod_pref_input', '.pl',ResultingFiles),
+        split_file(InputFile,500,'cp_cn_input', '.pl',ResultingFiles),
         open('input_files.list',write,OutS),
         forall(member(File,ResultingFiles), (write(OutS,File), write(OutS,'\n'))),
         close(OutS),
-        atom_concat_list(['./parallel_predict.sh ','10 ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
+        atom_concat_list(['./parallel_predict.sh ','14 ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
         system(Cmd).
 
 
 get_chunk((Cp,Cn)):-
-				chunk(_, _, _, D, _,Extra),
-				member(codon_pref(CpRev),Extra),
-				member(blastgf(CnRev),Extra),
+	chunk(_, _, _, D, _,Extra),
+	member(codon_pref(CpRev),Extra),
+	member(blastgf(CnRev),Extra),
         (D = '-' -> reverse(CpRev,Cp),reverse(CnRev,Cn)
         ;
         Cp = CpRev, Cn = CnRev
@@ -96,7 +96,7 @@ compute_and_save_annotations(Stream_Out,Nb_Iterations,[(Cp,Cn)|Rest_CpCn],[Range
         ),
         Nb_Iterations1 is Nb_Iterations+1,
         !,
-        compute_and_save_annotations(Stream_Out,Nb_Iterations1,Rest_ORF,Rest_Ranges) .
+        compute_and_save_annotations(Stream_Out,Nb_Iterations1,Rest_CpCn,Rest_Ranges) .
     
 
 
@@ -133,21 +133,21 @@ first_coding(Left,Value,[_Annotation|Rest_Annotations],Start) :-
 
 parallel_learn([InputFile],[],ParamsFile) :-
         lost_tmp_directory(Tmp),
-        atom_concat_list([Tmp,'codon_pref_full_train.pl'],TrainingFile),
+        atom_concat_list([Tmp,'cp_cn_voting_train.pl'],TrainingFile),
         make_training_file(InputFile,TrainingFile),
         split_file(TrainingFile,1000,'cpcn', '.pl',ResultingFiles),
         open('training_files.list',write,OutS),
         forall(member(File,ResultingFiles), (write(OutS,File), write(OutS,'\n'))),
         close(OutS),
-        atom_concat_list(['./parallel_train.sh ','10 ', ParamsFile, ' training_files.list'], Cmd),
+        atom_concat_list(['./parallel_train.sh ','7 ', ParamsFile, ' training_files.list'], Cmd),
         system(Cmd).
 
 
 % new verision using refseq'ed chunk in chunk_ref_file
 % Multitrack file has all neccessary tracks for all chunks.
 make_training_file(Multi_Track,Training_File):-
-	open(Multi_track,read,Chunk_Tracks_In,[alias(TracksIn)]),
-	open(Training_File,write,Train_Stream,[alias(trainout)]),
+	open(Multi_Track,read,Chunk_Tracks_In,[alias(tracksIn)]),
+	open(Training_File,write,Train_Stream,[alias(trainOut)]),
 		
 	read(Chunk_Tracks_In,Term),
 	make_training_file_rec(0,Term, Chunk_Tracks_In, Train_Stream),!,	% green cut, for tail-recursion optimization  
@@ -158,21 +158,19 @@ make_training_file(Multi_Track,Training_File):-
 
 make_training_file_rec(Count,end_of_file, _Input_Stream, _Train_Stream):- nl, write('ok - '), write(Count), writeln(' training goals constructed').	
 
-make_training_file_rec(Count,chunk(_Id,Left,Right,_Dir,_Frame,Extra), Input_Stream, Train_Stream):-
+make_training_file_rec(Count,chunk(_Id,_Left,_Right,_Dir,_Frame,Extra), Input_Stream, Train_Stream):-
 	member(codon_pref(Cp),Extra),
 	member(blastgf(Cn),Extra),
-	member(gb(Ref),Extra)
+	member(gb(Ref),Extra),
 	NewCount is Count + 1,
 	N is NewCount mod 500,
 	(N = 0 -> write('.')
 	; true
 	),
-	Num is (Right-Left+1)mod 3, 
-	append(Ref,[end(Num)],Ref2), % ... appending number of trailing nucleotides	
-	Training_Goal =.. [cp_cn_voting,Cp,Cn,Ref2],
+	Training_Goal =.. [cp_cn_voting,Cp,Cn,Ref],
 	writeq(Train_Stream,Training_Goal),	write(Train_Stream,'.'),
 	nl(Train_Stream),
 	read(Input_Stream,Next_Term),
-	make_training_file_rec(NewCount, Next_Term, Chunk_Stream, Train_Stream).
+	make_training_file_rec(NewCount, Next_Term, Input_Stream, Train_Stream).
 
 	
