@@ -110,6 +110,16 @@ parser_line_rec([Code|Rest_Codes],Token1-Token2,Ignored_Chars,List_Tokens) :-
 
 % Parse of Numbers
 
+% Fail if number is bigger than 268435455
+
+is_number([C1|Codes]) :-
+	length([C1|Codes],CodesLen),
+	CodesLen >= 9,
+	C1 >= 2,
+	!,
+	fail.
+	
+
 is_number([Code]) :-
         47 < Code,
         58 > Code,

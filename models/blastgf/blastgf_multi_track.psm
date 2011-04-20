@@ -1,0 +1,69 @@
+%:- set_prism_flag(scaling,log_exp).
+:-set_prism_flag(log_scale,on).
+:- set_prism_flag(learn_mode,both).
+
+number_of_tracks(8).
+
+% Initialization
+values(begin,['n','c']).
+
+% Transitions from Hiddens states
+values(trans('c'),['c','end']).
+
+values(trans('n'),['c','n','end']).
+
+% Emissions from hidden states
+
+%[0,1,2,3,4,5,6,7,8,9]). % Number of organism identity matches
+values(emit(State),Emits):- 
+        member(State,[c,n]),
+	number_of_tracks(N),
+	findall(EmitPattern,emission_pattern(N,EmitPattern), Emits).
+
+emission_pattern(0,[]).
+emission_pattern(Idx,[0|Es]) :-
+        Idx > 0,
+	Idx1 is Idx - 1,
+	emission_pattern(Idx1,Es).
+emission_pattern(Idx,[1|Es]) :-
+        Idx > 0,
+	Idx1 is Idx - 1,
+	emission_pattern(Idx1,Es).
+
+        
+blastgf(IdentitySeq,Annotation) :-
+        msw(begin,State),
+        blastgf_rec(State,IdentitySeq,Annotation).
+
+% End State
+blastgf_rec('end',[],[]).
+
+blastgf_rec('c',[I|Is],[1,1,1|As]) :-
+        msw(emit('c'),I),
+        msw(trans('c'),NextState),
+        blastgf_rec(NextState,Is,As).
+
+blastgf_rec('n',[I|Is],[0,0,0|As]) :-
+        msw(emit('n'),I),
+        msw(trans('n'),NextState),
+        blastgf_rec(NextState,Is,As).
+
+
+blastgf_noannot(IdentitySeq) :-
+        msw(begin,State),
+        blastgf_rec_noannot(State,IdentitySeq).
+
+blastgf_rec_noannot('end',[]).
+
+blastgf_rec_noannot('c',[I|Is]) :-
+        msw(emit('c'),I),
+        msw(trans('c'),NextState),
+        blastgf_rec_noannot(NextState,Is).
+
+blastgf_rec_noannot('n',[I|Is]) :-
+        msw(emit('n'),I),
+        msw(trans('n'),NextState),
+        blastgf_rec_noannot(NextState,Is).
+
+
+

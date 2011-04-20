@@ -1,0 +1,67 @@
+:- set_prism_flag(learn_mode,both).
+:-set_prism_flag(log_scale,on).
+
+values(begin,[n,c]).
+values(trans(c),[c,end]).
+values(trans(n),[c,n,end]).
+
+values(emit(State),Emits) :-
+        member(State,[n,c]),
+        get_list_codons(Codons_List),
+        findall([C,P],(member(P,[[0,0,0],[1,1,1]]), member(C, Codons_List)), Emits).
+        
+get_list_codons(L) :-
+        L = [ [a,a,a],[a,a,t],[a,a,c],[a,a,g],
+              [a,t,a],[a,t,t],[a,t,c],[a,t,g],
+              [a,c,a],[a,c,t],[a,c,c],[a,c,g],
+              [a,g,a],[a,g,t],[a,g,c],[a,g,g],
+              [t,a,a],[t,a,t],[t,a,c],[t,a,g],
+              [t,t,a],[t,t,t],[t,t,c],[t,t,g],
+              [t,c,a],[t,c,t],[t,c,c],[t,c,g],
+              [t,g,a],[t,g,t],[t,g,c],[t,g,g],
+              [c,a,a],[c,a,t],[c,a,c],[c,a,g],
+              [c,t,a],[c,t,t],[c,t,c],[c,t,g],
+              [c,c,a],[c,c,t],[c,c,c],[c,c,g],
+              [c,g,a],[c,g,t],[c,g,c],[c,g,g],
+              [g,a,a],[g,a,t],[g,a,c],[g,a,g],
+              [g,t,a],[g,t,t],[g,t,c],[g,t,g],
+              [g,c,a],[g,c,t],[g,c,c],[g,c,g],
+              [g,g,a],[g,g,t],[g,g,c],[g,g,g]].
+
+
+combiner(Seq,Annotation) :-
+        msw(begin,State),
+        combiner_rec(State,Seq,Annotation).
+
+% End State
+combiner_rec(end,[],[]).
+
+combiner_rec(c,[I|Is],[1,1,1|As]) :-
+        msw(emit(c),I),
+        msw(trans(c),NextState),
+        combiner_rec(NextState,Is,As).
+
+combiner_rec(n,[I|Is],[0,0,0|As]) :-
+        msw(emit(n),I),
+        msw(trans(n),NextState),
+        combiner_rec(NextState,Is,As).
+
+
+
+combiner_noannot(Seq) :-
+        msw(begin,State),
+        combiner_noannot_rec(State,Seq).
+
+% End State
+combiner_noannot_rec(end,[]).
+
+combiner_noannot_rec(c,[I|Is]) :-
+        msw(emit(c),I),
+        msw(trans(c),NextState),
+        combiner_noannot_rec(NextState,Is).
+
+combiner_noannot_rec(n,[I|Is]) :-
+        msw(emit(n),I),
+        msw(trans(n),NextState),
+        combiner_noannot_rec(NextState,Is).
+

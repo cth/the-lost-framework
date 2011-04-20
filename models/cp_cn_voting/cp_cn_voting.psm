@@ -1,0 +1,61 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  NAME :
+%      cp_cn_voting.psm
+%
+% VERSION :
+%     1.0
+%
+% AUTHOR : Ole Torp Lassen
+%
+% FUNCTION :
+%      paired out HMM for annoting genes given annotations for Codon Preference (Cp) and Conservatio (Cn).
+%				- Both input annotations are binary clasfiers, i.e., they consist of 1's and 0's.
+%				- Output annotation is also a binary classifiers, 1 indicates emission from a codong state, 0 form a noncoding state.	
+% HISTORIC :
+%  April 19 2011: creation                           OTL
+%
+% REMARKS : any problem, contact otl@ruc.dk
+%
+% NOTE TO THE USER: n/a
+%
+% REFERENCE: 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+:- dynamic(data/1).
+:- set_prism_flag(learn_mode,both).
+
+% PRISM 2 only:
+:-set_prism_flag(log_scale,on).
+
+% PRISM 1 only
+%:- set_prism_flag(log_viterbi,on).
+%:- set_prism_flag(scaling,log_exp).
+
+
+
+
+values(begin,['c','n']).
+values(trans('c'),['c',end]).
+values(trans('n'),['n','c',end]).
+values(emit('c'),[((0,0,0),(0,0,0)),((0,0,0),(1,1,1)),((1,1,1),(0,0,0)),((1,1,1),(1,1,1))]).
+values(emit('n'),[((0,0,0),(0,0,0)),((0,0,0),(1,1,1)),((1,1,1),(0,0,0)),((1,1,1),(1,1,1))]).
+
+
+
+% Classic implementation
+% Annotation: [0,0,0 (null region), 1,1,1, (coding region)]
+cp_cn_voting(Cp,Cn,--A):-
+	msw(begin,First),
+	cp_cn_rec(First,Cp,Cn,--A).
+
+cp_cn_rec('c',[Cp1,Cp2,Cp3|CpRest],[Cn1,Cn2,Cn3|CnRest],--[1,1,1|ARest]):-
+	msw(emit('c'),((Cp1,Cp2,Cp3),(Cn1,Cn2,Cn3))),
+	msw(trans('c'),Next),
+	cp_cn_rec(Next, CpRest, CnRest, --ARest).
+
+cp_cn_rec('n',[Cp1,Cp2,Cp3|CpRest],[Cn1,Cn2,Cn3|CnRest],--[0,0,0|ARest]):-
+	msw(emit('n'),((Cp1,Cp2,Cp3),(Cn1,Cn2,Cn3))),
+	msw(trans('n'),Next),
+	cp_cn_rec(Next, CpRest, CnRest, --ARest).
+
+cp_cn_rec(end,[],[],--[]).

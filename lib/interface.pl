@@ -24,7 +24,8 @@ Module that defines main predicates of the framework.
 :- op(1020, xfx, using).
 using(Goal,ModelName) :- run_lost_model(ModelName,Goal).
 
-
+% Doesnt use the annotation index to generate/lookup the output filename,
+% but assumes the filename to be given
 safe_run_model(Model,Goal) :-
       	writeq(run_lost_model(Model,Goal)),nl,
 	Goal =.. [ Functor, Inputs, Options, Filename ],
@@ -37,8 +38,9 @@ safe_run_model(Model,Goal) :-
         CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
         term2atom(CallGoal,GoalAtom),
         write(launch_prism_process(ModelFile,GoalAtom)),nl,
-        launch_prism_process(ModelFile,GoalAtom),
-        check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))).
+        launch_prism_process(ModelFile,GoalAtom)
+        %, check_or_warn(file_exists(Filename),interface_error(missing_annotation_file(Filename))) % FIXME: temporarily disbaled check /061010 OTL
+	 .
 
 
 % Run a Lost Model
@@ -51,18 +53,26 @@ run_model(Model,Goal) :-
 	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Check if a result allready exists:
 	lost_data_index_file(AnnotIndex),
+	writeq(lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename)
+),nl,
+	write(AnnotIndex),nl,
 	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename),
-	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
-	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
+	write(here),nl,
+	!,
+%	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
+%   There is a bug with the timestamp. Disabled untill fixed!	
+%	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
+	write('Filename: '), write(Filename),nl,
+	(file_exists(Filename) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
 	 CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
 	 %term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
 	 term2atom(CallGoal,GoalAtom),
-         write(launch_prism_process(ModelFile,GoalAtom)),nl,
-	 launch_prism_process(ModelFile,GoalAtom),
-	 check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
-	 lost_file_index_update_file_timestamp(AnnotIndex,Filename)
+     write(launch_prism_process(ModelFile,GoalAtom)),nl,
+     launch_prism_process(ModelFile,GoalAtom),
+     check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
+     lost_file_index_update_file_timestamp(AnnotIndex,Filename) 
 	).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -152,11 +162,46 @@ launch_prism_process(PrismPrologFile, Goal) :-
 	write('cmd: '), write(Cmd),nl,
 	% FIXME: Setup some stdout redirection (this may be troublesome on windows)
 	% Run PRISM
+	
+	% The following UGLY code is to catch arbitrary memory faults (ExitCode 11) - retry the command at most ten times **OTL**
+	% should be changed to wrap the one main system command	 **OTL**
 	system(Cmd,ExitCode),
-	write('--> PRISM process exits with code '), write(ExitCode),nl,
+	(
+	ExitCode == 11 ->
+		write('--> PRISM process exits with code 11 on first attempt, retrying ...'),nl,
+		retry_sys_command(Cmd,9,ExtraAttempts,ExitCode2)
+	;
+		ExitCode2 = ExitCode,
+		ExtraAttempts = 0
+	),
+	Attempts is 1 + ExtraAttempts,
+	
+	write('--> PRISM process exits with code '), write(ExitCode2), write(', total attempts '), write(Attempts),nl,
+
 	% Unfortunately bprolog/prism does get the concept of exit codes. DOH!!!
-	check_or_fail((ExitCode==0), error(launch_prism_process(PrismPrologFile,Goal))),
+	check_or_fail((ExitCode2==0), error(launch_prism_process(PrismPrologFile,Goal))),
         chdir(CurrentDir).
+
+
+%% retry_sys_command(+System Command,+MaxAttempts, -Attempts, -ExitCode)
+%
+% Retry a system command until exitcode differetn from 11 or MaxAttempts times:
+% return total number of attempts and final exitcode
+retry_sys_command(SysCommand, MaxTries, FinalTry, Code):-
+	retry_rec(SysCommand, MaxTries, 0 , FinalTry,Code).
+
+retry_rec(_SysCommand, MaxTries, MaxTries, MaxTries ,11).
+retry_rec( SysCommand, MaxTries, Counter,  FinalTry, Code):-
+	MaxTries > Counter,
+	ThisTry is Counter +1,
+	system(SysCommand,ExitCode),
+	(
+	ExitCode == 11 ->
+		retry_rec(SysCommand, MaxTries, ThisTry, FinalTry, Code)
+	;
+		FinalTry = ThisTry,
+		Code = ExitCode
+	).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -327,6 +372,11 @@ print_available_model_rec([Name|Rest]) :-
 % Directory and file management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+lost_testcase_directory(TestCaseDir) :-
+	lost_config(lost_base_directory,BaseDir),!,
+	atom_concat(BaseDir,'/test/', TestCaseDir).
+
+
 %% lost_models_directory(-TmpDir)
 lost_tmp_directory(TmpDir) :-
         lost_config(lost_base_directory,BaseDir),!,
@@ -413,10 +463,17 @@ lost_test_file(SequenceId, SequenceFile) :-
 %
 % is_generateted_file(File) is true iff File is a file generated by one of the model
 % of the framework
-is_generated_file(File_Path) :-
-        lost_data_directory(D),
-        atom_concat(D,Name_File,File_Path),
-        atom_concat(_,'.gen',Name_File).
+is_generated_file(File) :-
+        write(is_generated_file(File)),nl,
+        atom_codes(File,FileCodes),
+%        lost_data_directory(D),
+%        atom_codes(D,DCodes),
+  % %     atom_codes(FilePath,FPCodes),
+  %      write('dcodes:'),write(DCodes),nl,
+  %      write('fpcodes:'),write(FPCodes),nl,
+  %      append(DCodes,FileName,FpCodes),
+        atom_codes('.gen',ExtCodes),
+        append(_,ExtCodes,FileCodes). % true if FileName ends with .gen 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -549,7 +606,7 @@ lost_interface_defines_output_format(Model,InterfacePredicate) :-
 	Head =.. [ lost_output_format, InterfacePredicate, _options, _format],
 	Rule =.. [ :-, Head, _ ],
 	(member(Head, Terms) ; member(Rule,Terms)).
-
+	
 lost_interface_output_format_to_file(Model,InterfacePredicate, Options, OutputFormatFile) :-
 	lost_model_interface_file(Model, ModelFile),
 	lost_interface_defines_output_format(Model,InterfacePredicate),
@@ -715,6 +772,7 @@ move_data_file(OldFilename, NewFilename) :-
 %% list_lost_models_to_file(File)
 %
 % Write in File the list of lost models
+% This is used by the CLC gui
 list_lost_models_to_file(File) :-
 	open(File,write,OStream),
 	list_lost_models(Models),
@@ -759,7 +817,7 @@ write_model_options(OStream, [Option1|Rest]) :-
 %% lost_model_input_formats_to_file(+Model,+Goal,+OutputFile)
 %
 % Write the input formats of a Model called with Goal to the file OutputFile
-%
+% Used by the CLC gui 
 lost_model_input_formats_to_file(Model,Goal,OutputFile) :-
 	lost_interface_input_formats(Model,Goal,Formats),
 	open(OutputFile,write,OStream),
@@ -768,10 +826,13 @@ lost_model_input_formats_to_file(Model,Goal,OutputFile) :-
 	close(OStream).
 
 
-/*lost_model_output_format_to_file(Model,Goal,Options,OutputFile) :-
-	lost_interface_output_format(Model,Goal,Option,OutputFormat),
+%% lost_mode.output_format_to_file
+% 
+% Write the output formats of a Model called with Goal/Options to OutputFile
+% API call required by the CLC gui
+lost_model_output_format_to_file(Model,Goal,Options,OutputFile) :-
+	lost_interface_output_format(Model,Goal,Options,OutputFormat),
 	open(OutputFile,write,OStream),
 	write(OStream,lost_model_output_format(Model,Goal,Options,OutputFormat)),
 	write(OStream, '.\n'),
 	close(OStream).
-*/	

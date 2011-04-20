@@ -1,0 +1,75 @@
+% PRISM flags (PRISM v. 1.xx)
+
+:-set_prism_flag(log_scale,on).
+%:-set_prism_flag(log_viterbi,on).
+:-set_prism_flag(learn_mode,both).  
+
+max_consequtive_deletes(20).
+
+frames([1,2,3,4,5,6]).
+
+%% For learning with a single switch at a time
+dummy_pgoal(SwName,Outcome) :-
+        msw(SwName,Outcome).
+
+% parameters of model: 
+values(trans(_),Frames) :-
+        frames(Frames).
+
+% The score is emitted from the frame
+values(emit(F), SC) :- 
+        frames(Frames),
+        member(F,Frames),
+        score_categories(SC).
+        
+values(emit(delete),Outcomes) :-
+        score_categories(SC),
+        frames(Frames),
+        findall((F,S), (member(F,Frames), member(S,SC)), Outcomes).
+
+values(goto_delete,[yes,no]).
+
+% Should be approx 1/N, where N is the observation length
+values(terminate,[yes,no]).
+
+toggle_disable_delete(S) :-
+        retractall(disable_delete(_)),
+        assert(disable_delete(S)).
+
+% Initiation:
+model(Observations):-
+   % select initial frame:
+   % Can probably just have uniform probability
+   recursion(begin,Observations).
+
+% recursion structure:
+recursion(Del,F,XR) :-
+   % Terminate recursion?
+   msw(terminate,T),
+   ((T==yes) -> 
+        XR = [] 
+        ;
+        % Visit delete state?
+        catch(disable_delete(DisableDelete),_,DisableDelete=no),
+        ((DisableDelete==yes) ->
+                GotoDel = no 
+                ;
+                msw(goto_delete,GotoDel)),
+        ((GotoDel == yes) -> 
+                recursion_delete(Del,F,XR) 
+                ;
+                recursion_frame(F,XR))).
+
+recursion_frame(F,[(NextFrame,Score)|R]) :-
+     msw(trans(F), NextFrame),
+     msw(emit(NextFrame),Score),
+     recursion(0,NextFrame,R).
+
+% Arg1: previous frame
+recursion_delete(Del,F,[X|R]) :-
+	%   max_consequtive_deletes(MaxDel),
+	%   Del =< MaxDel,
+	%   NextDel is Del + 1,
+   %write('in delete state'),nl,
+   msw(emit(delete), X),
+   recursion(NextDel,F,R).

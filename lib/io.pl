@@ -700,7 +700,7 @@ db_terms_to_annotations_rec(Position,range(Range_Min,Range_Max),(Min,_Max),(Lett
         db_terms_to_annotations_rec(New_Position,range(Range_Min,Range_Max),(Min,_Max),(Letter_Out,_Letter_In),_Range_Position,_List_Terms,Annotations).
 
 
-% Inside the specified range but inside a specific region
+% Inside the specified range AND inside a specific region
 db_terms_to_annotations_rec(Position,range(Range_Min,Range_Max),(Min,Max),(Letter_Out,Letter_In),Range_Position,List_Terms,[Letter_In|Annotations]) :-
         Position >= Range_Min,
         Position =< Range_Max,
@@ -964,16 +964,15 @@ split_file_loop(IStream, ChunkSize, FileNo, OutputFilePrefix,OutputFileSuffix,Re
 	 terms_to_file(OutputFile,Terms),
 	 NextFileNo is FileNo + 1,
 	 length(Terms,NumTerms),
-	 ((NumTerms < ChunkSize) ->
-          ResultingFiles = []
-	 ;
-	  !,
-          ResultingFiles = [OutputFile|RestResultingFiles],
-	  split_file_loop(IStream,ChunkSize,NextFileNo,OutputFilePrefix,OutputFileSuffix,RestResultingFiles)
-	 )
+	 
+	 ((NumTerms < ChunkSize) ->									% if so, don't scan further
+          ResultingFiles = [OutputFile]
+	 ;																					% else, go again
+	        ResultingFiles = [OutputFile|RestResultingFiles],
+	  			split_file_loop(IStream,ChunkSize,NextFileNo,OutputFilePrefix,OutputFileSuffix,RestResultingFiles)
+	 )	 
 	).
 % Utils split_file
-
 read_next_n_terms(0,_,[]).
 read_next_n_terms(N,Stream,Terms) :-
 	read(Stream,Term),
@@ -985,6 +984,24 @@ read_next_n_terms(N,Stream,Terms) :-
 	 N1 is N - 1,
 	 read_next_n_terms(N1,Stream,RestTerms)
 	).
+
+
+%% concat_files(+SmallFiles_List,+BiggerFile_Name)
+%
+% concatenates the contents of a list of files into one
+concat_files(SmallFiles_List, BiggerFile_Name):-
+	open(BiggerFile_Name,write, OutStream),
+	concat_files_rec(SmallFiles_List,OutStream),
+	close(OutStream).
+	
+concat_files_rec([],_OutStream):-!.
+concat_files_rec([File|Files],OutStream):-
+	terms_from_file(File,Terms),
+	write_terms_to_stream(OutStream,Terms),
+	writeln(File),
+	writeln(Files), % (Prolog bug !!!) Files seems to interpreted as an atom rather than a list here ??? 
+	concat_files_rec(Files,OutStream).
+
 
 
 %% split_file_fasta(+Filename,+ChunkSize,+OutputFilePrefix,+OutputFileSuffix,-ResultFiles)

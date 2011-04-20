@@ -1,0 +1,47 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  NAME :
+%      random_file_fraction.psm
+%
+% VERSION :
+%     1.0
+%
+% AUTHOR : Ole Torp Lassen
+%
+% FUNCTION :
+%      extracts a random fraction of the terms in a data file
+% 
+% HISTORIC :
+%  April 14 2011: creation                           OTL
+%
+% REMARKS : any problem, contact otl@ruc.dk
+%
+% NOTE TO THE USER: Pedicate has 3 arguments: fraction size, i.e., 0.2 for 20%, Input file, Output file
+%
+% REFERENCE: 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+values(keep,[yes,no]).
+
+random_file_fraction(KeepChance,InFile, OutFile):-
+	SkipChance is 1-KeepChance,
+	set_sw(keep,[KeepChance,SkipChance]),
+	open(InFile,read,InStream,[alias(in)]),
+	open(OutFile,write,OutStream,[alias(out)]),
+	extract_rec(InStream,OutStream),
+	close(OutStream),
+	close(InStream),
+	writeln('ok - done').
+	
+extract_rec(InStream,OutStream):-
+	read(InStream,T),
+	( T \= end_of_file ->
+			msw(keep,Keep),
+			(
+			Keep = yes -> write(OutStream,T),writeln(OutStream,'.')
+			;
+			true
+			),
+		extract_rec(InStream,OutStream)
+	;
+	true
+	).
