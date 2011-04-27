@@ -1,9 +1,10 @@
 :- set_prism_flag(learn_mode,both).
+:-set_prism_flag(log_scale,on).
 
 min_orf_length(5).
 max_orf_length(1500).
 
-score_categories(100).
+score_categories(250).
 
 orf_lengths(Lengths) :-
 	min_orf_length(Min),
@@ -30,6 +31,50 @@ values(gene_length_range, Ranges) :-
 values(nongene_length_range, Ranges) :-
 	length_ranges(Ranges).
 	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Acyclic Phase Length in sequence model
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+values(trans(state1),[state1,state2]).
+values(trans(state2),[state2,state3]).
+values(trans(state3),[state3,end]).
+
+adph_model(Length) :-
+	adph_model(state1,Length).
+
+adph_model(end,0).
+adph_model(State,Length) :-
+	State \= end,
+	Length > 0,
+	msw(trans(State),NextState),
+	Length1 is Length - 1,
+	adph_model(NextState,Length1).
+
+adph_learn_gene_lengths(Lengths) :-
+	list_add_functor(adph_model,Lengths,Goals),
+	learn(Goals).
+
+%% Cyclic version:
+
+values(trans2(state1),[state2,end]).
+values(trans2(state2),[state2,state3,end]).
+values(trans2(state3),[state3,state1,end]).
+
+adph2_model(Length) :-
+	adph2_model(state1,Length).
+
+adph2_model(end,0).
+adph2_model(State,Length) :-
+	State \= end,
+	Length > 0,
+	msw(trans2(State),NextState),
+	Length1 is Length - 1,
+	adph2_model(NextState,Length1).
+
+adph2_learn_gene_lengths(Lengths) :-
+	list_add_functor(adph2_model,Lengths,Goals),
+	learn(Goals).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HMM type model                                     %
@@ -82,7 +127,7 @@ get_range(Len,out_of_range(too_short)) :-
 	min_orf_length(MinLen),
 	Len < MinLen.
 
-get_range(Len,out_of_range(too_long))	:-
+get_range(Len,out_of_range(too_long)) :-
 	max_orf_length(MaxLen),
 	Len > MaxLen.
 	

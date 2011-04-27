@@ -54,6 +54,74 @@ simple_range_model_annotate_orf(Counter,InStream,OutStream) :-
 		simple_range_model_annotate_orf(Counter1,InStream,OutStream)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Simple length range model
+% This model estimates a rough length distribution of coding ORFs. The length
+% distribution is divided into ranges of subsequent lengths scores. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% The goals used for learning. Takes a file with reference genes as input.
+adph_model_learn([GeneRefFile],_,OutputFile) :-
+			terms_from_file(GeneRefFile,GeneTerms),
+			extract_gene_lengths(GeneTerms,GeneLengths),
+			prism(length_model),
+			['length_model.psm'],
+			adph_learn_gene_lengths(GeneLengths),
+			save_sw(OutputFile).
+
+
+
+% The goals used for learning. Takes a file with reference genes as input.
+adph2_model_learn([GeneRefFile],_,OutputFile) :-
+			terms_from_file(GeneRefFile,GeneTerms),
+			extract_gene_lengths(GeneTerms,GeneLengths),
+			prism(length_model),
+			['length_model.psm'],
+			adph2_learn_gene_lengths(GeneLengths),
+			save_sw(OutputFile).
+
+% Perform annotation of ORFs using a trained model
+adph_model_annotate([OrfFile,ParameterFile],_,OutputFile) :-
+	prism(length_model),
+	restore_sw(ParameterFile),
+	['length_model.psm'],
+	open(OrfFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	simple_range_model_annotate_orf(0,InStream,OutStream),
+	close(InStream),
+	close(OutStream).
+
+adph_model_annotate_orf(Counter,InStream,OutStream) :-
+	Counter1 is Counter + 1,
+	((0 is Counter1 mod 100) -> write('procesed '), write(Counter1), write(' orfs'),nl ;	true),
+	read(InStream,ORF),
+	((ORF == end_of_file) ->
+		true
+	;
+		ORF =.. [Functor,SeqId,Left,Right,Dir,Frame,Extra],
+		member(starts(StartsList), Extra),
+		member(stop([Stop]), Extra),
+		findall(L,(member(Start,StartsList), length_in_codons(Start,Stop,L)), Lengths),!,
+		findall(P,(member(L,Lengths),prob(adph_model(L),P)),LengthScores),!,
+		NewExtra = [length_scores(LengthScores)|Extra],
+		NewAnnot =.. [Functor,SeqId,Left,Right,Dir,Frame,NewExtra],
+%		write(NewAnnot),
+		write(OutStream,NewAnnot),
+		write(OutStream,'\n'),
+		!,
+		adph_model_annotate_orf(Counter1,InStream,OutStream)).
+
+% Generate a file with probabilities of various lengths		
+adph_test_probs([ParameterFile],_,OutputFile) :-
+	prism(length_model),
+	restore_sw(ParameterFile),
+	['length_model.psm'],
+	orf_lengths(Lengths),
+	findall([L,P],(member(L,Lengths),prob(adph_model(L),P)),Distribution),
+	tell(OutputFile),
+	forall(member([L,P],Distribution),(write(L),write('\t'),write(P),nl)),
+	told.
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Significance model:
 % This model is trained using both positive and negative evidence
 % - The positive evidence is used to built a gene length distribution
