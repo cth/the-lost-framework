@@ -200,21 +200,142 @@ blastgf_singletrack_predict_testset :-
         run_model(blastgf,parallel_annotate_single_track([ParamsFile,MergedFile],[],OutFile)),
 	write('outfile is :'), write(OutFile), nl.
 
+%% Add prediction track(s) to chunks
+%
+add_pred_track :-
+        PredictionFile = '/tmp/ECML_DATA/blastgf_single_track_predict_test_orfs.pl',
+        ChunkFile = '/tmp/ECML_DATA/test_orfs.pl',
+        run_model(chunk_ref_annot,add_reference_track([ChunkFile,PredictionFile],[],OutFile)),
+        write('here: '), write(OutFile), nl.
 
-%%% codon pref train
+add_pred_track2 :-
+        PredictionFile = '/tmp/ECML_DATA/blastgf_single_track_predict_training_orfs.pl',
+        ChunkFile = '/tmp/ECML_DATA/test_chunks_w_blastgf.pl',
+        run_model(chunk_ref_annot,add_reference_track([ChunkFile,PredictionFile],[],OutFile)),
+        write('here: '), write(OutFile), nl.
 
-make_training_data(TrainingDataFile) :-
-        lost_data_directory(DatDir),
-        atom_concat(DatDir,'mini_train.pl',ChunkFile),
+add_pred_track3 :-
+        PredictionFile = '/tmp/ECML_DATA/blastgf_single_track_predict_training_orfs.pl',
+        ChunkFile = '/tmp/ECML_DATA/train_orfs.pl',
+        run_model(chunk_ref_annot,add_reference_track([ChunkFile,PredictionFile],[],OutFile)),
+        write('here: '), write(OutFile), nl.
+
+add_pred_track4 :-
+        PredictionFile = '/tmp/ECML_DATA/cod_pref_trainSet_predictions.pl',
+        ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf.pl',
+        run_model(chunk_ref_annot,add_reference_track([ChunkFile,PredictionFile],[],OutFile)),
+        write('here: '), write(OutFile), nl.
+
+add_pred_track5 :-
+        ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_and_codpref.pl',
         lost_sequence_file('NC_000913_ptt', RefFile),
         run_model(parser_ptt,annotate([RefFile],[],RefFileParsed)),
         run_model(chunk_ref_annot, add_reference_track([ChunkFile,RefFileParsed], [], OrfRef)),
-        run_model(codon_preference,parallel_learn([OrfRef],[],ParamsFile)).
+        write('here: '), write(OrfRef), nl.
 
-cod_pref_predict :-
-        lost_data_directory(DatDir),
-        atom_concat(DatDir,'mini_train.pl',ChunkFile),
-        ParamsFile = '/tmp/ECML_DATA/NC_000913_codpref_params.pl',
-        run_model(codon_preference,parallel_annotate([ParamsFile,ChunkFile],[],OutputFile)),
-        write('predictions written to :'), write(OutputFile),nl.
+
+%%%%%%
+% Combiner model (Straight version)
+
+train_combiner_model(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_and_codpref_and_ref.pl',
+        run_model(cons_and_codon,parallel_learn_combiner([TrainingDataFile],[],ParamsFile)). 
+
+combiner_predict_train(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_and_codpref.pl',
+        train_combiner_model(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_combiner([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+combiner_predict_test(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/test_chunks_w_blastgf_and_codpref.pl',
+        train_combiner_model(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_combiner([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+%%%%%%
+% Combiner model (Length version)
+
+train_combiner_length_model(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
+        run_model(cons_and_codon,parallel_learn_combiner_length([TrainingDataFile],[],ParamsFile)). 
+
+train_combiner_length_model_test(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/tmptest.pl',
+        run_model(cons_and_codon,parallel_learn_combiner_length([TrainingDataFile],[],ParamsFile)). 
+
+
+combiner_length_predict_train(PredictionsFile) :-
+        %ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl.test',
+        ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
+        train_combiner_length_model(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_combiner_length([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+combiner_length_predict_test(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/test_chunks_w_blastgf_and_codpref_and_length.pl',
+        train_combiner_model(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_combiner_length([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+
+%%% merge stuff:
+
+merge_stuff_train(OutFile) :-
+        ChunkFile = '/tmp/ECML_DATA/train_orfs.pl',
+        lost_sequence_file('NC_000913_ptt', RefFile),
+        run_model(parser_ptt,annotate([RefFile],[],RefFileParsed)),
+        run_model(chunk_ref_annot, add_reference_track([ChunkFile,RefFileParsed], [], OrfRef)),
+
+        big_blast_training_files(Files),
+        remove_duplicate_hits(Files,Files1),
+        add_identity_track(Files1,Files2),
+        merge_multiple(Files2,MergedFile),
+
+        run_model(chunk_ref_annot, merge_extra_fields([OrfRef,MergedFile],[],OutFile)).
+
+merge_stuff_test(OutFile) :-
+        ChunkFile = '/tmp/ECML_DATA/test_orfs.pl',
+
+        big_blast_test_files(Files),
+        remove_duplicate_hits(Files,Files1),
+        add_identity_track(Files1,Files2),
+        merge_multiple(Files2,MergedFile),
+
+        run_model(chunk_ref_annot, merge_extra_fields([ChunkFile,MergedFile],[],OutFile)).
+
+
+%%%%%
+% Joint model:
+%
+
+%%%%%%
+% Combiner model:
+
+train_joint_model(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/train_chunks_w_seq_identity_gb.pl',
+        run_model(cons_and_codon,parallel_learn_joint_model([TrainingDataFile],[],ParamsFile)). 
+
+
+%%% Create golden standard files:
+%
+%
+
+create_test_ref_file(F) :-
+        ChunkFile = '/tmp/ECML_DATA/test_orfs.pl',
+        lost_sequence_file('NC_000913_ptt', PTTFile),
+        run_model(parser_ptt, annotate([PTTFile],[genome_key('NC000913')],ParsedPTTFile)),
+        run_model(chunk_ref_annot, report_matches_to_chunks([ChunkFile,ParsedPTTFile],[],F)).
+
+create_train_ref_file(F) :-
+        ChunkFile = '/tmp/ECML_DATA/train_orfs.pl',
+        lost_sequence_file('NC_000913_ptt', PTTFile),
+        run_model(parser_ptt, annotate([PTTFile],[genome_key('NC000913')],ParsedPTTFile)),
+        run_model(chunk_ref_annot, report_matches_to_chunks([ChunkFile,ParsedPTTFile],[],F)).
+
+
+%% length model
+
+run_length_annot(AnnotatedChunkFile) :-
+        ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_and_codpref_and_ref.pl',
+        create_train_ref_file(F),
+        % Training is not really, necessary since we do not use the scores
+        run_model(orf_length, simple_range_model_learn([F],[],ParamsFile)),
+        run_model(orf_length, simple_range_model_annotate([ChunkFile,ParamsFile],[],AnnotatedChunkFile)).
 

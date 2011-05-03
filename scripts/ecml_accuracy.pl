@@ -38,7 +38,12 @@ train_voting_acc(Acc) :-
         run_model(accuracy_report,annotate([REF,PRED],[],Acc)),
         display_file(Acc).
 
-     
+train_combiner_length_acc(Acc) :-
+        PRED = '/tmp/ECML_DATA/combiner_length_predictions_trainset.pl',
+        REF = '/tmp/ECML_DATA/refseq_train.pl',
+        run_model(accuracy_report,annotate([REF,PRED],[],Acc)),
+        display_file(Acc).
+    
 
 
 

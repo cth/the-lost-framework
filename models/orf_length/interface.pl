@@ -36,22 +36,50 @@ simple_range_model_annotate_orf(Counter,InStream,OutStream) :-
 	Counter1 is Counter + 1,
 	((0 is Counter1 mod 100) -> write('procesed '), write(Counter1), write(' orfs'),nl ;	true),
 	read(InStream,ORF),
+%        write(ORF),nl,
 	((ORF == end_of_file) ->
 		true
 	;
 		ORF =.. [Functor,SeqId,Left,Right,Dir,Frame,Extra],
-		member(starts(StartsList), Extra),
-		member(stop([Stop]), Extra),
-		findall(L,(member(Start,StartsList), length_in_codons(Start,Stop,L)), Lengths),!,
-		findall(R,(member(L,Lengths),get_range(L,R)),Ranges),!,
-		findall(P,(member(R,Ranges),prob(msw_gene_length_range(R),P)),LengthScores),!,
-		NewExtra = [length_ranges(Ranges),length_scores(LengthScores)|Extra],
+                member(sequence(Seq),Extra),
+		((member(starts(StartsList), Extra), member(stop([Stop]), Extra)) ->
+		        findall(L,(member(Start,StartsList), length_in_codons(Start,Stop,L)), Lengths),!,
+		        findall(R,(member(L,Lengths),get_range(L,R)),Ranges),!,
+	%	        findall(P,(member(R,Ranges),prob(msw_gene_length_range(R),P)),LengthScores),!,
+	%	        NewExtra = [length_ranges(Ranges),length_scores(LengthScores)|Extra],
+                        (Dir=='+' ->
+                           %     write(create_length_range_annot(Left,Dir,Seq,StartsList,Ranges,RangeAnnot)),nl,
+                                create_length_range_annot(Left,Dir,Seq,StartsList,Ranges,RangeAnnot)
+                                ;
+                           %     write(create_length_range_annot(Right,Dir,Seq,StartsList,Ranges,RangeAnnot)),nl,
+                                create_length_range_annot(Right,Dir,Seq,StartsList,Ranges,RangeAnnot))
+                        ;
+                        create_length_range_annot(Left,Dir,Seq,[],[],RangeAnnot)),
+		NewExtra = [length_range_annot(RangeAnnot)|Extra],
 		NewAnnot =.. [Functor,SeqId,Left,Right,Dir,Frame,NewExtra],
-%		write(NewAnnot),
-		write(OutStream,NewAnnot),
-		write(OutStream,'\n'),
+%                write(NewAnnot),nl,
+	        write(OutStream,NewAnnot),
+	        write(OutStream,'.\n'),
 		!,
 		simple_range_model_annotate_orf(Counter1,InStream,OutStream)).
+
+create_length_range_annot(_Index,_Frame,[],[],[],[]).
+
+create_length_range_annot(Index,Frame,[_N1,_N2,_N3|SeqRest],[NextStart|RestStarts],[Range|RangesRest],[Range|AnnotRest]) :-
+        NextStart == Index,
+        !,
+        (Frame=='+' ->
+                Index1 is Index + 3
+                ;
+                Index1 is Index - 3),
+        create_length_range_annot(Index1,Frame,SeqRest,RestStarts,RangesRest,AnnotRest).
+
+create_length_range_annot(Index,Frame,[_N1,_N2,_N3|SeqRest],RestStarts,RangesRest,[nil|AnnotRest]) :-
+        (Frame=='+' ->
+                Index1 is Index + 3
+                ;
+                Index1 is Index - 3),
+        create_length_range_annot(Index1,Frame,SeqRest,RestStarts,RangesRest,AnnotRest).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Simple length range model
@@ -67,8 +95,6 @@ adph_model_learn([GeneRefFile],_,OutputFile) :-
 			['length_model.psm'],
 			adph_learn_gene_lengths(GeneLengths),
 			save_sw(OutputFile).
-
-
 
 % The goals used for learning. Takes a file with reference genes as input.
 adph2_model_learn([GeneRefFile],_,OutputFile) :-

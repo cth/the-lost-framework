@@ -1,10 +1,11 @@
 :- set_prism_flag(learn_mode,both).
 :-set_prism_flag(log_scale,on).
+:- table length_ranges/1.
 
 min_orf_length(5).
 max_orf_length(1500).
 
-score_categories(250).
+score_categories(50).
 
 orf_lengths(Lengths) :-
 	min_orf_length(Min),
@@ -14,7 +15,7 @@ orf_lengths(Lengths) :-
 length_ranges([out_of_range(too_short)|RangesWithOverflow]) :-
 	score_categories(NumCategories),
 	orf_lengths(GeneLengths),
-	divide_list(GeneLengths,NumCategories,SubSequences),
+	divide_list(GeneLengths,NumCategories,SubSequences),!,
 	findall(R,(member(Seq,SubSequences),sequence_range(Seq,R)),Ranges),
 	reverse(Ranges,RangesRev),
 	reverse([out_of_range(too_long)|RangesRev],RangesWithOverflow).
@@ -54,54 +55,35 @@ adph_learn_gene_lengths(Lengths) :-
 	list_add_functor(adph_model,Lengths,Goals),
 	learn(Goals).
 
-%% Cyclic version:
-
-values(trans2(state1),[state2,end]).
-values(trans2(state2),[state2,state3,end]).
-values(trans2(state3),[state3,state1,end]).
-
-adph2_model(Length) :-
-	adph2_model(state1,Length).
-
-adph2_model(end,0).
-adph2_model(State,Length) :-
-	State \= end,
-	Length > 0,
-	msw(trans2(State),NextState),
-	Length1 is Length - 1,
-	adph2_model(NextState,Length1).
-
-adph2_learn_gene_lengths(Lengths) :-
-	list_add_functor(adph2_model,Lengths,Goals),
-	learn(Goals).
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % HMM type model                                     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Model should reflect the regular expression:
 % before-coding* coding? after-coding*
+%
+% cs = coding start (a gene start),
+% ci = coding internal
+% nc = noncoding
 
-values(trans(start),['+','-']).
-values(trans('+'),['+']).
-values(trans('-'),['+','-']).
+values(trans(nc),[nc,cs]).
+values(trans(cs),[ci]).
+values(trans(ci),[ci]).
 
 hmm_model(Lengths,CodingAnnot) :- 
-	hmm_model(start,Lengths,CodingAnnot).
+	hmm_model(nc,Lengths,CodingAnnot).
 	
 hmm_model(_State,[],[]).
 hmm_model(State,[L|Ls],[NextState|Cs]) :-
 	msw(trans(State),NextState),
 	% Emission:
 	get_range(L,Range),
-	((NextState=='+') ->
+	((NextState==cs) ->
 		msw(gene_length_range,Range)
 		;
 		msw(nongene_length_range,Range)),
 	% Recursion
 	hmm_model(NextState,Ls,Cs).
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Another possibility
@@ -150,7 +132,7 @@ learn_gene_lengths(Lengths) :-
 	list_add_functor(msw_gene_length_range,Ranges,Goals),
 	learn(Goals).
 
-learn_gene_lengths(Lengths) :-
+learn_nongene_lengths(Lengths) :-
 	findall(R,(member(L,Lengths),get_range(L,R)),Ranges),
 	list_add_functor(msw_nongene_length_range,Ranges,Goals),
 	learn(Goals).
@@ -167,18 +149,30 @@ sequence_range(Seq,[First,Last]) :-
 %%
 % Divide a list (of msw gene_length) into continuous groups, e.g.
 % 1..20, 21...56, 57..62,....
+%
 
-divide_list([],_,[]).
+divide_list(L,NumChunks,Chunks) :-
+        length(L,ListLen),
+	ChunkSize is ListLen // NumChunks,
+        divide_list_rec(L,ChunkSize,Chunks),
+        !.
+        
+divide_list_rec([],_,[]) :- !.
 
-divide_list(L,0,L).
+divide_list_rec(List,ChunkSize,[Chunk]) :-
+	first_n(ChunkSize,List,Chunk),
+        length(Chunk,ChunkSizeReal),
+        ChunkSizeReal < ChunkSize,
+        !.
 
-divide_list(List,NumChunks,[Chunk|ChunksRest]) :-
-	length(List,ListLen),
-	ChunkLen is ListLen // NumChunks,
-	first_n(ChunkLen,List,Chunk),
-	append(Chunk,RestList,List),
-	RestNumChunks is NumChunks - 1,
-	divide_list(RestList,RestNumChunks,ChunksRest).
+divide_list_rec(List,ChunkSize,[Chunk|ChunksRest]) :-
+	first_n(ChunkSize,List,Chunk),
+        length(Chunk,ChunkSizeReal),
+        ChunkSizeReal >= ChunkSize,
+       	append(Chunk,RestList,List),
+        !,
+        divide_list_rec(RestList,ChunkSize,ChunksRest).
+
 
 upto(StartEnd,StartEnd,[StartEnd]).
 upto(Start,End,[Start|Rest]) :-

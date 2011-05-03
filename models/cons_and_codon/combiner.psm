@@ -1,16 +1,25 @@
-:- set_prism_flag(learn_mode,both).
+:-set_prism_flag(learn_mode,both).
 :-set_prism_flag(log_scale,on).
 
-values(begin,[n,c]).
+values(begin,[n,start]).
 values(trans(c),[c,end]).
-values(trans(n),[c,n,end]).
+values(trans(start),[c]).
+values(trans(n),[start,n,end]).
 
+
+values(emit(start),Emits) :-
+        start_codons(StartCodons),
+        findall([C,P],(member(P,[[0,0,0],[1,1,1]]), member(C, StartCodons)), Emits).
+
+% This allows the model to emit stop codons even inside codon 
+% However, we know that such does not occur in our data
 values(emit(State),Emits) :-
         member(State,[n,c]),
-        get_list_codons(Codons_List),
-        findall([C,P],(member(P,[[0,0,0],[1,1,1]]), member(C, Codons_List)), Emits).
-        
-get_list_codons(L) :-
+        all_codons(AllCodons),
+        findall([C,P],(member(P,[[0,0,0],[1,1,1]]), member(C, AllCodons)), Emits).
+
+      
+all_codons(L) :-
         L = [ [a,a,a],[a,a,t],[a,a,c],[a,a,g],
               [a,t,a],[a,t,t],[a,t,c],[a,t,g],
               [a,c,a],[a,c,t],[a,c,c],[a,c,g],
@@ -29,12 +38,23 @@ get_list_codons(L) :-
               [g,g,a],[g,g,t],[g,g,c],[g,g,g]].
 
 
+start_codons(L) :-
+        L = [[t,t,g],[c,t,g],[a,t,t],[a,t,c],[a,t,a],[a,t,g],[g,t,g]].
+
+stop_codons(L) :-
+        L = [[t,a,a],[t,g,a],[t,a,g]].
+
 combiner(Seq,Annotation) :-
         msw(begin,State),
         combiner_rec(State,Seq,Annotation).
 
 % End State
 combiner_rec(end,[],[]).
+
+combiner_rec(start,[I|Is],[1,1,1|As]) :-
+        msw(emit(start),I),
+        msw(trans(start),NextState),
+        combiner_rec(NextState,Is,As).
 
 combiner_rec(c,[I|Is],[1,1,1|As]) :-
         msw(emit(c),I),
@@ -46,8 +66,6 @@ combiner_rec(n,[I|Is],[0,0,0|As]) :-
         msw(trans(n),NextState),
         combiner_rec(NextState,Is,As).
 
-
-
 combiner_noannot(Seq) :-
         msw(begin,State),
         combiner_noannot_rec(State,Seq).
@@ -55,10 +73,16 @@ combiner_noannot(Seq) :-
 % End State
 combiner_noannot_rec(end,[]).
 
+combiner_noannot_rec(start,[I|Is]) :-
+        msw(emit(start),I),
+        msw(trans(start),NextState),
+        combiner_noannot_rec(NextState,Is).
+
 combiner_noannot_rec(c,[I|Is]) :-
         msw(emit(c),I),
         msw(trans(c),NextState),
         combiner_noannot_rec(NextState,Is).
+
 
 combiner_noannot_rec(n,[I|Is]) :-
         msw(emit(n),I),
