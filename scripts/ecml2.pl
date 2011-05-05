@@ -271,8 +271,84 @@ combiner_length_predict_train(PredictionsFile) :-
 
 combiner_length_predict_test(PredictionsFile) :-
         ChunkFile = '/tmp/ECML_DATA/test_chunks_w_blastgf_and_codpref_and_length.pl',
-        train_combiner_model(ParamsFile),
+        train_combiner_length_model(ParamsFile),
         run_model(cons_and_codon,parallel_annotate_combiner_length([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+
+
+
+
+
+
+%%%%%%
+% codpref_w_length
+
+codpref_w_length_train(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
+        run_model(cons_and_codon,parallel_learn_codpref_w_length([TrainingDataFile],[],ParamsFile)). 
+
+codpref_w_length_tinytrain(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/tmptest.pl',
+        run_model(cons_and_codon,parallel_learn_codpref_w_length([TrainingDataFile],[],ParamsFile)). 
+
+
+codpref_w_length_predict_trainset(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
+        codpref_w_length_train(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_codpref_w_length([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+codpref_w_length_predict_testset(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/test_chunks_w_blastgf_and_codpref_and_length.pl',
+        codpref_w_length_train(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_codpref_w_length([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+
+
+%%%%%%
+% codpref_w_blast
+
+codpref_w_blast_train(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
+        run_model(cons_and_codon,parallel_learn_codpref_w_blast([TrainingDataFile],[],ParamsFile)). 
+
+codpref_w_blast_tinytrain(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/tmptest.pl',
+        run_model(cons_and_codon,parallel_learn_codpref_w_blast([TrainingDataFile],[],ParamsFile)). 
+
+
+codpref_w_blast_predict_trainset(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
+        codpref_w_blast_train(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_codpref_w_blast([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+codpref_w_blast_predict_testset(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/test_chunks_w_blastgf_and_codpref_and_length.pl',
+        codpref_w_blast_train(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_codpref_w_blast([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+
+%%%%%%
+% just codpref (but with grammar)
+
+codpref_train(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
+        run_model(cons_and_codon,parallel_learn_codpref([TrainingDataFile],[],ParamsFile)). 
+
+codpref_tinytrain(ParamsFile) :-
+        TrainingDataFile = '/tmp/ECML_DATA/tmptest.pl',
+        run_model(cons_and_codon,parallel_learn_codpref([TrainingDataFile],[],ParamsFile)). 
+
+
+codpref_predict_trainset(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
+        codpref_train(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_codpref([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
+codpref_predict_testset(PredictionsFile) :-
+        ChunkFile = '/tmp/ECML_DATA/test_chunks_w_blastgf_and_codpref_and_length.pl',
+        codpref_train(ParamsFile),
+        run_model(cons_and_codon,parallel_annotate_codpref([ParamsFile,ChunkFile],[],PredictionsFile)). 
+
 
 
 %%% merge stuff:
@@ -332,10 +408,17 @@ create_train_ref_file(F) :-
 
 %% length model
 
-run_length_annot(AnnotatedChunkFile) :-
+run_length_annot_train(AnnotatedChunkFile) :-
         ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_and_codpref_and_ref.pl',
         create_train_ref_file(F),
         % Training is not really, necessary since we do not use the scores
         run_model(orf_length, simple_range_model_learn([F],[],ParamsFile)),
         run_model(orf_length, simple_range_model_annotate([ChunkFile,ParamsFile],[],AnnotatedChunkFile)).
 
+run_length_annot_test(AnnotatedChunkFile) :-
+        ChunkFile = '/tmp/ECML_DATA/test_chunks_w_blastgf_and_codpref.pl',
+        create_train_ref_file(F),
+        % Training is not really, necessary since we do not use the scores
+        run_model(orf_length, simple_range_model_learn([F],[],ParamsFile)),
+        run_model(orf_length, simple_range_model_annotate([ChunkFile,ParamsFile],[],AnnotatedChunkFile)).
+p
