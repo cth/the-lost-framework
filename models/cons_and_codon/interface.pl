@@ -24,7 +24,7 @@ annotate_joint_model([ParamsFile,InputFile],_Options,OutputFile) :-
         restore_sw(ParamsFile),
 	open(OutputFile,write,StreamOut),
 	open(InputFile,read,StreamIn),
-	compute_and_save_annotations(StreamIn,StreamOut,1),
+	compute_and_save_annotations_joint_model(StreamIn,StreamOut,1),
 	close(StreamOut),
 	close(StreamIn).
 
@@ -55,11 +55,8 @@ parallel_learn_joint_model([ChunkFileWithRef],_,ParamsFile) :-
         open('training_files.list',write,OutS),
         forall(member(File,ResultingFiles), (write(OutS,File), write(OutS,'\n'))),
         close(OutS),
-        atom_concat_list(['./parallel_train.sh ','6  ', 'joint_model ',  ParamsFile, ' training_files.list'], Cmd),
+        atom_concat_list(['./parallel_train.sh ','10  ', 'joint_model ',  ParamsFile, ' training_files.list'], Cmd),
         system(Cmd).
-
-
-
 
 make_training_file_joint_model(Chunk_Annot,Training_File):-
 	open(Chunk_Annot,read,Chunk_Stream),
@@ -71,6 +68,7 @@ make_training_file_joint_model(Chunk_Annot,Training_File):-
 
 make_training_file_rec_joint_model(InStream,OutStream) :-
 	read(InStream,Chunk),
+        write(Chunk),nl,
 	((Chunk==end_of_file) ->
 		true 
 		;
@@ -78,11 +76,76 @@ make_training_file_rec_joint_model(InStream,OutStream) :-
 		member(gb(RefAnnot),Extra),
 		member(identity_seq(IdSeq),Extra),
                 member(sequence(Nucleotides),Extra),
-                merge_nucleotides_and_identity(Nucleotides,IdSeq,Combined),
-                Goal =.. [ joint_model, Combined,  RefAnnot ], 
+                member(length_range_annot(LengthRangeAnnot), Extra),
+                write(member),nl,
+
+                length(IdSeq,L1),
+                length(Nucleotides,L2),
+                write('L1 is '), write(L1),nl,
+                write('L2 is '), write(L2),nl,
+
+                merge_nucleotides_and_identity(Nucleotides,IdSeq,Combined1),
+                write(test1),nl,
+                merge_length_annot(Combined1,LengthRangeAnnot,Combined2),
+                write(test2),nl,
+
+                Goal =.. [ joint_model, Combined2,  RefAnnot ], 
+                write(Goal),
 		write(OutStream,Goal), 
 		write(OutStream,'.\n'),
 		make_training_file_rec_joint_model(InStream,OutStream)).
+
+
+compute_and_save_annotations_joint_model(StreamIn,Stream_Out,Nb_Iterations) :-
+		read(StreamIn,Chunk),
+		((Chunk == end_of_file) ->
+			true,
+			write('compute_and_save_annotations_joint_model done.'),nl
+			;
+			Chunk =.. [ _F,SeqId, Left, Right, Strand, Frame, Extra],
+                        member(sequence(Nucleotides),Extra),
+		        member(identity_seq(IdSeq),Extra),
+                        member(length_range_annot(LengthRangeAnnot),Extra),
+                %nucleotide_triplets(Nucleotides,Triplets),
+                merge_nucleotides_and_identity(Nucleotides,IdSeq,Merged),
+                merge_length_annot(Merged,LengthRangeAnnot, Combined),
+                write(viterbit(joint_model_noannot(Combined),P,Tree)),nl,
+
+                % We use soft check instead, since some ORFs may not
+                % have stops and this will fail for those
+        	%check_or_fail(viterbit(combiner_noannot(Combined),_P,Tree),error('Viterbi computation faile (combiner length')),
+        	(viterbit(joint_model_noannot(Combined),P,Tree) ->
+                        true
+                        ;
+                        write('Viterbi computation failed for goal: '),
+                        write(joint_model_noannot(Combined))),
+                flatten(Tree,FlatTree),
+                findall(State,member(msw(emit(State),_),FlatTree),States),
+                reverse(States,RevStates),
+                write(RevStates),nl,
+                build_state_annotation(RevStates,Annotation),
+                write(Annotation),nl,
+        	write(build_term_for_annotation(joint_model,SeqId,[Left,Right],Strand,Frame,Annotation,P,Term)),nl, 
+        	build_term_for_annotation(joint_model,SeqId,[Left,Right],Strand,Frame,Annotation,P,Term), 
+                write('term is :'),
+                write(Term),nl,
+                (var(Term) ->
+            	        true
+        		;
+            	        write(Stream_Out,Term),write(Stream_Out,'.'),nl(Stream_Out)
+        	),
+        	Number is Nb_Iterations mod 500,
+        	(Number == 1 -> write(Nb_Iterations) ; write('.')),
+        	(Number == 0 ->
+            	table_remove(blastgf_annot(_,_)),
+            	table_remove(blastgf_rec_annot(_,_,_))
+        		;
+            	true
+        	),
+			Nb_Iterations1 is Nb_Iterations+1,
+        	!,
+        	compute_and_save_annotations_codpref_w_length(StreamIn,Stream_Out,Nb_Iterations1)).
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,7 +205,7 @@ compute_and_save_annotations_codpref(StreamIn,Stream_Out,Nb_Iterations) :-
                 % We use soft check instead, since some ORFs may not
                 % have stops and this will fail for those
         	%check_or_fail(viterbit(combiner_noannot(Combined),_P,Tree),error('Viterbi computation faile (combiner length')),
-        	(viterbit(combiner_noannot(Triplets),_P,Tree) ->
+        	(viterbit(combiner_noannot(Triplets),P,Tree) ->
                         true
                         ;
                         write('Viterbi computation failed for goal: '),
@@ -151,7 +214,7 @@ compute_and_save_annotations_codpref(StreamIn,Stream_Out,Nb_Iterations) :-
                 findall(State,member(msw(emit(State),_),FlatTree),States),
                 reverse(States,RevStates),
                 build_state_annotation(RevStates,Annotation),
-        	build_term_for_annotation(codpref,SeqId,[Left,Right],Strand,Frame,Annotation,Term), (var(Term) ->
+        	build_term_for_annotation(codpref,SeqId,[Left,Right],Strand,Frame,Annotation,P,Term), (var(Term) ->
             	true
         		;
             	write(Stream_Out,Term),write(Stream_Out,'.'),nl(Stream_Out)
@@ -210,7 +273,7 @@ parallel_annotate_combiner_length([ParamsFile,InputFile],_,OutputFile) :-
         open('input_files.list',write,OutS),
         forall(member(File,ResultingFiles),(write(OutS,File),write(OutS,'\n'))),
         close(OutS),
-        atom_concat_list(['./parallel_predict.sh ','10 ', 'annotate_combiner_length ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
+        atom_concat_list(['./parallel_predict.sh ','14 ', 'annotate_combiner_length ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
         system(Cmd).
 
 parallel_annotate_combiner_length([ParamsFile,InputFile],_,OutputFile) :-
@@ -218,7 +281,7 @@ parallel_annotate_combiner_length([ParamsFile,InputFile],_,OutputFile) :-
         open('input_files.list',write,OutS),
         forall(member(File,ResultingFiles),(write(OutS,File),write(OutS,'\n'))),
         close(OutS),
-        atom_concat_list(['./parallel_predict.sh ','10 ', 'annotate_combiner_length ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
+        atom_concat_list(['./parallel_predict.sh ','14 ', 'annotate_combiner_length ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
         system(Cmd).
 
 
@@ -242,7 +305,7 @@ compute_and_save_annotations_combiner_length(StreamIn,Stream_Out,Nb_Iterations) 
                 % We use soft check instead, since some ORFs may not
                 % have stops and this will fail for those
         	%check_or_fail(viterbit(combiner_noannot(Combined),_P,Tree),error('Viterbi computation faile (combiner length')),
-        	(viterbit(combiner_noannot(Combined),_P,Tree) ->
+        	(viterbit(combiner_noannot(Combined),P,Tree) ->
                         true
                         ;
                         write('Viterbi computation failed for goal: '),
@@ -253,8 +316,8 @@ compute_and_save_annotations_combiner_length(StreamIn,Stream_Out,Nb_Iterations) 
                 write(RevStates),nl,
                 build_state_annotation(RevStates,Annotation),
                 write(Annotation),nl,
-        	write(build_term_for_annotation(combiner_length,SeqId,[Left,Right],Strand,Frame,Annotation,Term)),nl, 
-        	build_term_for_annotation(combiner_length,SeqId,[Left,Right],Strand,Frame,Annotation,Term), 
+        	write(build_term_for_annotation(combiner_length,SeqId,[Left,Right],Strand,Frame,Annotation,P,Term)),nl, 
+        	build_term_for_annotation(combiner_length,SeqId,[Left,Right],Strand,Frame,Annotation,P,Term), 
                 write('term is :'),
                 write(Term),nl,
                 (var(Term) ->
@@ -363,7 +426,7 @@ compute_and_save_annotations_codpref_w_length(StreamIn,Stream_Out,Nb_Iterations)
                 % We use soft check instead, since some ORFs may not
                 % have stops and this will fail for those
         	%check_or_fail(viterbit(combiner_noannot(Combined),_P,Tree),error('Viterbi computation faile (combiner length')),
-        	(viterbit(combiner_noannot(Combined),_P,Tree) ->
+        	(viterbit(combiner_noannot(Combined),P,Tree) ->
                         true
                         ;
                         write('Viterbi computation failed for goal: '),
@@ -374,8 +437,8 @@ compute_and_save_annotations_codpref_w_length(StreamIn,Stream_Out,Nb_Iterations)
                 write(RevStates),nl,
                 build_state_annotation(RevStates,Annotation),
                 write(Annotation),nl,
-        	write(build_term_for_annotation(codpref_w_length,SeqId,[Left,Right],Strand,Frame,Annotation,Term)),nl, 
-        	build_term_for_annotation(codpref_w_length,SeqId,[Left,Right],Strand,Frame,Annotation,Term), 
+        	write(build_term_for_annotation(codpref_w_length,SeqId,[Left,Right],Strand,Frame,Annotation,P,Term)),nl, 
+        	build_term_for_annotation(codpref_w_length,SeqId,[Left,Right],Strand,Frame,Annotation,P,Term), 
                 write('term is :'),
                 write(Term),nl,
                 (var(Term) ->
@@ -444,7 +507,7 @@ make_training_file_codpref_w_length_rec(InStream,OutStream) :-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Combiner: codpref and length 
+% Combiner: codpref and blast
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 annotate_codpref_w_blast([ParamsFile,InputFile],_Options,OutputFile) :-
@@ -462,7 +525,7 @@ parallel_annotate_codpref_w_blast([ParamsFile,InputFile],_,OutputFile) :-
         open('input_files.list',write,OutS),
         forall(member(File,ResultingFiles),(write(OutS,File),write(OutS,'\n'))),
         close(OutS),
-        atom_concat_list(['./parallel_predict.sh ','10 ', 'annotate_codpref_w_blast ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
+        atom_concat_list(['./parallel_predict.sh ','14 ', 'annotate_codpref_w_blast ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
         nl,write(Cmd),nl,
         system(Cmd).
 
@@ -478,26 +541,27 @@ compute_and_save_annotations_codpref_w_blast(StreamIn,Stream_Out,Nb_Iterations) 
 
                 merge_nucleotides_and_prediction(Nucleotides,Prediction,Combined),
 
-                write(viterbit(combiner_noannot(Combined),P,Tree)),nl,
+                %write(viterbit(combiner_noannot(Combined),P,Tree)),nl,
 
                 % We use soft check instead, since some ORFs may not
                 % have stops and this will fail for those
         	%check_or_fail(viterbit(combiner_noannot(Combined),_P,Tree),error('Viterbi computation faile (combiner length')),
-        	(viterbit(combiner_noannot(Combined),_P,Tree) ->
+        	(viterbit(combiner_noannot(Combined),P,Tree) ->
                         true
                         ;
                         write('Viterbi computation failed for goal: '),
                         write(combiner_noannot(Combined))),
                 flatten(Tree,FlatTree),
-                findall(State,member(msw(emit(State),_),FlatTree),States),
+                findall(State,member(msw(emit_codon(State),_),FlatTree),States),
+                %findall(State,member(msw(emit_codon(State,_),_),FlatTree),States),
                 reverse(States,RevStates),
-                write(RevStates),nl,
+                %write(RevStates),nl,
                 build_state_annotation(RevStates,Annotation),
-                write(Annotation),nl,
-        	write(build_term_for_annotation(codpref_w_blast,SeqId,[Left,Right],Strand,Frame,Annotation,Term)),nl, 
-        	build_term_for_annotation(codpref_w_blast,SeqId,[Left,Right],Strand,Frame,Annotation,Term), 
-                write('term is :'),
-                write(Term),nl,
+                %write(Annotation),nl,
+        	%write(build_term_for_annotation(codpref_w_blast,SeqId,[Left,Right],Strand,Frame,Annotation,Term)),nl, 
+        	build_term_for_annotation(codpref_w_blast,SeqId,[Left,Right],Strand,Frame,Annotation,P,Term), 
+                %write('term is :'),
+                %write(Term),nl,
                 (var(Term) ->
             	        true
         		;
@@ -573,9 +637,14 @@ build_state_annotation([stop|StatesRest],[1,1,1|AnnotRest]) :-
 build_state_annotation([c|StatesRest],[1,1,1|AnnotRest]) :-
         build_state_annotation(StatesRest,AnnotRest).
 
-build_term_for_annotation(Functor,SeqId,[Left,Right],Dir,Frame,Annotation,Term) :-
+build_term_for_annotation(Functor,SeqId,[Left,Right],Dir,Frame,Annotation,Probability,Term) :-
         build_term_for_annotation_old(Functor,SeqId,[Left,Right],Dir,Frame,Annotation,TermOld),
-        quick_fix(TermOld,Term).
+        (var(TermOld) -> 
+                Term1 = TermOld
+                ;
+                quick_fix(TermOld,Term1)),
+        Term1 =..  [Functor1,SeqId1,Left1,Right1,Dir1,Frame1,Extra1],
+        Term =.. [Functor1,SeqId1,Left1,Right1,Dir1,Frame1,[score(Probability)|Extra1]].
 
 quick_fix(Prediction,FixedPrediction) :-
         Prediction =.. [Functor,SeqId,Left,Right,Dir,Frame,Extra],
@@ -589,7 +658,7 @@ quick_fix(Prediction,FixedPrediction) :-
                 NewLeft is Left,
                 NewRight is Right - (AnnotationLength - CodingLength)
         ),
-        FixedPrediction =.. [Functor,SeqId,NewLeft,NewRight,Dir,Frame,Extra].
+        FixedPrediction =.. [Functor,SeqId,NewLeft,NewRight,Dir,Frame,[orig_left(Left),orig_right(Right)|Extra]].
 
 
 
