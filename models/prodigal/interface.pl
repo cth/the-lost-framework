@@ -1,15 +1,10 @@
 :- ['../../lost.pl'].
 
 :- [config].
-:- [glimmer3_parser].
+:- [parser].
 :- lost_include_api(interface).
 
 % Interface file for model that runs the Prodigal Gene finder 
-% The annotate has the following required options,
-% mode: (corresponds to glimmer3 scripts)
-%    value=from-scratch: train using long-orfs and run prediction
-%    value=from-training: traing using data specified by option parameter_file
-%    value=iterated: ...
 
 annotate([InputFile], Options, OutputFile) :-
         prodigal_config(prodigal-binary, Prodigal),
