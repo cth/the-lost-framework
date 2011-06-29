@@ -458,6 +458,15 @@ lost_test_file(SequenceId, SequenceFile) :-
 	atom_concat(SequenceId,'.seq', Filename),
 	atom_concat(D, Filename, SequenceFile).
 
+%% lost_tmp_file(+Prefix, -TmpFile)
+lost_tmp_file(Prefix,TmpFile) :-
+        random_uniform(X), % prism specific
+        Y is X * 65536,
+        SuffixInt is round(Y),
+        atom_integer(Suffix,SuffixInt),
+        lost_tmp_directory(TmpDir),
+        atom_concat_list([TmpDir, '/' , Prefix, '-', Suffix],TmpFile).
+        
 
 %% is_generated_file(+File)
 %
