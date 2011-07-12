@@ -27,6 +27,12 @@ idseqs(InputFiles,OutputFiles) :-
 		),
 		OutputFiles).
 
+small_test_idseq :-
+	lost_sequence_file('blast_results_problem',SeqFile),
+	run_model(process_blast_matches,identity([SeqFile],[],OutFile)),
+	write('outfile is :'), write(OutFile), nl.
+	
+
 merge_idseq :-
 	lost_data_directory(DD),
 	atom_concat(DD,'blast_identity1.seq', BlastFile1),
@@ -55,6 +61,8 @@ sum_multiple(InputFiles,OutputFile) :-
 	run_model(process_blast_matches,sum_multiple(InputFiles,[],OutputFile)),
 	write('outfile is :'), write(OutputFile), nl.
 	
+
+%% 
 	
 	
 

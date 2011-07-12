@@ -1,16 +1,26 @@
 % This example illustrate how we use get_annotation to 
 % have models run a files generated automatically
 
-:- ['../lost.pl'].
+model2_params <- sample_model2::train(lost_data_file(tinytest)).
 
+model1_params <- lost_data_file('tiny-params').
 
-%:- write('test'), op(1020, xfx, using).
+tinyseq <- lost_data_file('tinytest.seq').
 
-% Prolog files in the shared directory can be consulted
-% like this from anywhere..
-:- lost_include_api(interface).
-:- lost_include_api(io).
+%refseq_nc00913 <- http::get(['http://ncbi/genomes/ecoli'])
 
+% CHR like rules:
+% annotation1, annotation2, model3(annotation1, annotation2) ==> annotation3.
+
+annotation1 <- write('simple guard') | sample_model1::annotate([tinyseq,model1_params]).
+
+annotation2 <- write('composite'), write(' guard') | sample_model2::annotate([tinyseq,annotation1,model2_params], [use_parameter_file(no)]).
+
+%annotation(X) <- model::annotate([X]).
+
+% ?- run(annotation(file1))
+
+/*
 run_model1(ResultFile) :-
 	lost_sequence_file(tinytest,TinySequence),
 	lost_model_parameter_file(sample_model1, test, Model1ParamFile),
@@ -35,3 +45,4 @@ test_train :-
 	run_model(sample_model2, train([InputSeqFile],[],ModelParameterFile)),
 	write('Resulting parameter file:'),nl,
 	write(ModelParameterFile),nl.
+*/
