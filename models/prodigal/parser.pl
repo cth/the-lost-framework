@@ -5,8 +5,8 @@
 
 parse_prodigal_file(ProdigalFile,PredictionsFile) :-
 	readFile(ProdigalFile,Contents),
-	prodigal_parse(Predictions,Contents,[]).
-	terms_to_file(Predictions,PredictionsFile).
+	prodigal_parse(Predictions,Contents,[]), 
+	terms_to_file(PredictionsFile,Predictions).
 	
 prodigal_parse(Predictions) -->
 	definition_line,
