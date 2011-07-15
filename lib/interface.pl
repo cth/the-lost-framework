@@ -6,6 +6,7 @@ Module that defines main predicates of the framework.
 % API used
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
+:- lost_include_api(script).
 
 
 %% run_lost_model(+Model,+Goal)
