@@ -96,7 +96,7 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], [GTStat|GTStatRest]) :-
 	((IncludeLengthStats == yes) ->
 	 gene_length(GT,GeneLength),
 	 NormGeneLength is GeneLength / MaxGeneLength,
-	 StatList4 = [normalized_gene_length(NormGeneLength)|StatList3]
+	 StatList4 = [gene_length(GeneLength), normalized_gene_length(NormGeneLength)|StatList3]
 	 ;
 	 StatList4 = StatList3
 	),!,
