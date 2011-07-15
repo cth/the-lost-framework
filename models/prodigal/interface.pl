@@ -12,6 +12,10 @@ annotate([InputFile], Options, OutputFile) :-
         prodigal_command(Prodigal, InputFile, TmpOutputFile, Command),
         system(Command),
         parse_prodigal_file(TmpOutputFile,OutputFile).
+
+parse([InputFile], _Options, OutputFile) :-
+	parse_prodigal_file(InputFile,OutputFile).
+
                 
 prodigal_command(Executable,InputFile,OutputFile,Command) :-
         atom_concat_list(['cat ', InputFile, '|', Executable, ' > ', OutputFile ], Command). 
