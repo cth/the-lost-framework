@@ -82,6 +82,9 @@ lost_option_values(annotate,match_protein_coding, [yes,no]).
 lost_option_values(annotate,gene_code,[11]). % FIXME: add more..
 lost_option_values(annotate,insert_results,[yes,no]).
 
+annotate([GeneListFile], Options, OutFile) :-
+	annotate([GeneListFile,_], Options, OutFile).
+
 annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
 	write('gene_filter: annotate called.'),nl,
 	terms_from_file(GeneListFile,GeneTerms),
@@ -127,18 +130,33 @@ annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
         
 	% Filter out any genes that do not match all of the specified
 	% regular expressions in match_extra_fields
-	write('Filtering genes not matching match_extra_fields'),nl,
+	write('Filtering genes not matching regex_match_extra_fields'),nl,
 	get_option(Options,regex_match_extra_fields,NoMatchRegexExtraFields),
 	regex_filter_non_matching(NoMatchRegexExtraFields,GeneTermsFilterRange,MatchRegexNo),
 	report_number_filtered(MatchRegexNo),	
 
 	% Filter out genes matching any of the regular expressions
 	% specified by no_match_extra_fields
-	write('Filtering genes matching no_match_extra_fields'),nl,
+	write('Filtering genes matching regex_no_match_extra_fields'),nl,
 	get_option(Options,regex_no_match_extra_fields,MatchRegexExtraFields),
 	regex_filter_matching(MatchRegexExtraFields,MatchRegexNo,MatchRegexYes),
 	report_number_filtered(MatchRegexYes),
+	
+	% Exact match extra fields
+	write('Filtering genes matching exact_match_extra_fields'),nl,	
+	get_option(Options,exact_match_extra_fields,ExactMatchers),
+	exact_filter_matching(ExactMatchers,MatchRegexYes,MatchExact1),
+	report_number_filtered(MatchExact1),
+	
 
+	% Exact non_match extra fields
+	write('Filtering genes not matching exact_no_match_extra_fields'),nl,
+	get_option(Options,exact_no_match_extra_fields,ExactNoMatchers),
+	exact_filter_non_matching(ExactNoMatchers,MatchExact1,MatchExact2),
+	report_number_filtered(MatchExact2),
+	
+	MatchFixpoint1 = MatchExact2,
+	
 	% Filter out genes which are not protein coding if requested
 	(get_option(Options,match_protein_coding,yes) ->
 	 write('filtering non-protein coding genes'),nl,
@@ -149,10 +167,10 @@ annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
 	 write('gene code:'),
 	 write(GeneCode),
 	 nl,
-	 filter_non_protein_coding(GeneCode,data_sequence,MatchRegexYes,MatchProtein)
+	 filter_non_protein_coding(GeneCode,data_sequence,MatchFixpoint1,MatchProtein)
 	;
 	 write('NOT filtering non-protein coding genes'),nl,
-	 MatchProtein=MatchRegexYes),
+	 MatchProtein=MatchFixpoint1),
 	report_number_filtered(MatchProtein),
 	MatchAll = MatchProtein, 
 
@@ -310,6 +328,42 @@ regex_match_geneterm(RegexCondition,GeneTerm) :-
 	re_compile(RegexAtom,Regex),!,
 	re_match(Regex,Data,_matches).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+
+exact_filter_matching(_,[],[]).
+
+exact_filter_matching(MatcherList,[GeneTerm|GeneTermsRest],UnmatchedGeneRest) :-
+	%write(MatcherList),nl,
+	%write(GeneTerm),nl,
+	GeneTerm =.. [ _func, _id, _left, _right, _strand, _frame, Extra ],
+	%write(Extra),nl,	
+	member(Matcher,MatcherList),
+	member(Matcher,Extra),
+	write('removing match:'), write(GeneTerm),nl,
+	!,
+	exact_filter_matching(MatcherList,GeneTermsRest,UnmatchedGeneRest).
+	
+exact_filter_matching(MatcherList,[GeneTerm|GeneTermsRest],[GeneTerm|UnmatchedGeneRest]) :-
+	exact_filter_matching(MatcherList,GeneTermsRest,UnmatchedGeneRest).
+
+exact_filter_non_matching(_,[],[]).
+
+exact_filter_non_matching(MatcherList,[GeneTerm|GeneTermsRest],UnmatchedGeneRest) :-
+	%write(MatcherList),nl,
+	%write(GeneTerm),nl,	
+	GeneTerm =.. [ _func, _id, _left, _right, _strand, _frame, Extra ],
+	%write(Extra),nl,
+	write(MatcherList),nl,
+	write(Extra),nl,
+	member(Matcher,MatcherList),
+	not(member(Matcher,Extra)),
+	write('removing match:'), write(GeneTerm),nl,
+	!,
+	exact_filter_non_matching(MatcherList,GeneTermsRest,UnmatchedGeneRest).
+
+exact_filter_non_matching(MatcherList,[GeneTerm|GeneTermsRest],[GeneTerm|UnmatchedGeneRest]) :-
+	exact_filter_non_matching(MatcherList,GeneTermsRest,UnmatchedGeneRest).
 
 	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
