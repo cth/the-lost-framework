@@ -24,8 +24,11 @@ lost_option(annotate,genecode,11,'The genetic code to use for translation').
 % The main model predicate:
 annotate([GenesFile,GenomeFile], Options, OutputFile) :-
   terms_from_file(GenesFile,Terms),
+  write('loaded genes...'),nl,
   load_sequence(genome,GenomeFile),
+   writeln('loaded sequence..'),nl,
   max_gene_length(Terms,0,MaxGeneLength),
+	writeln('calculate max length'),nl,
   add_gene_statistics(Options,MaxGeneLength,Terms,TermsWithStats),
   terms_to_file(OutputFile,TermsWithStats).
 
@@ -41,7 +44,7 @@ max_gene_length([GT|GTRest],CurrentMax,BestMax) :-
         max_gene_length(GTRest,NextCurrentMax,BestMax).
 
 gene_length(GeneTerm, Length) :-
-	GeneTerm =.. [ _, Start, End, _, _, _ ],
+	GeneTerm =.. [ _, _, Start, End, _, _, _ ],
         Length is (End - Start) + 1.
 
 
@@ -50,7 +53,7 @@ add_gene_statistics(_,_,[],[]).
 add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], [GTStat|GTStatRest]) :-
         write('add_gene_statistics'),nl,
         !,
-	GT =.. [ Functor, Start, End, Frame, Strand, ExtraList ],
+	GT =.. [ Functor, _, Start, End, Frame, Strand, ExtraList ],
 	write(GT),nl,
 
 	StatList1 = [], % List to collect computed statistics
