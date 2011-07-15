@@ -45,7 +45,10 @@ safe_run_model(Model,Goal) :-
 
 % Run a Lost Model
 run_model(Model,Goal) :-
-	writeq(run_lost_model(Model,Goal)),nl,
+	run_model(Model,Goal,[caching(true)]).
+
+run_model(Model,Goal,RunModelOptions) :-
+	writeq(run_lost_model(Model,Goal,RunModelOptions)),nl,
 	Goal =.. [ Functor, Inputs, Options, Filename ],
 	lost_model_interface_file(Model, ModelFile),
 	check_valid_model_call(Model,Functor,3,Options),
@@ -53,17 +56,17 @@ run_model(Model,Goal) :-
 	sort(ExpandedOptions,ExpandedSortedOptions),
 	% Check if a result allready exists:
 	lost_data_index_file(AnnotIndex),
-	writeq(lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename)
-),nl,
-	write(AnnotIndex),nl,
+%	writeln(here),		
+%	writeq(lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename)),nl,
+%	write(AnnotIndex),nl,
 	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,Filename),
-	write(here),nl,
 	!,
+%	writeln(here),		
 %	lost_file_index_get_file_timestamp(AnnotIndex,Filename,Timestamp),
 %   There is a bug with the timestamp. Disabled untill fixed!	
 %	((file_exists(Filename),rec_files_older_than_timestamp(Inputs,Timestamp)) ->
-	write('Filename: '), write(Filename),nl,
-	(file_exists(Filename) ->
+%	write('Filename: '), write(Filename),nl,
+	((member(caching(true),RunModelOptions),file_exists(Filename)) ->
 	 write('Using existing annotation file: '), write(Filename),nl
 	;
 	 CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
@@ -401,6 +404,10 @@ lost_tests_directory(Dir) :-
 	lost_config(lost_base_directory, Basedir),!,
 	atom_concat(Basedir,'/data/tests/',Dir).
 
+%% lost_script_directory(+ScriptName,-Dir)
+lost_script_directory(Dir) :-
+	lost_config(lost_base_directory, Basedir),!,
+	atom_concat(Basedir,'/scripts/',Dir).
 
 %% lost_model_directory(+Model,-ModelDir)
 lost_model_directory(Model,ModelDir) :-
@@ -417,6 +424,7 @@ lost_model_parameters_directory(Model,Dir) :-
 lost_model_annotations_directory(Model,Dir) :-
 	lost_model_directory(Model, ModelDir),
 	atom_concat(ModelDir, 'annotations/',Dir).
+	
 
 %% lost_model_interface_file(+Model,-ModelFile)
 lost_model_interface_file(Model,ModelFile) :-
@@ -442,16 +450,15 @@ lost_data_index_file(IndexFile) :-
 	atom_concat(AnnotDir,'annotations.idx',IndexFile).
 
 %% lost_data_file(+SequenceId, -SequenceFile)
-lost_data_file(SequenceId, SequenceFile) :-
+lost_sequence_file(SequenceId, SequenceFile) :-
 	lost_data_directory(D),
 	atom_concat(SequenceId,'.seq', Filename),
 	atom_concat(D, Filename, SequenceFile).
 
-%% lost_sequence_file(+SequenceId, -SequenceFile)
-lost_sequence_file(SequenceId, SequenceFile) :-
-	lost_data_file(SequenceId, SequenceFile).
-
-
+lost_data_file(Filename, DataFile) :-
+	lost_data_directory(D),
+	atom_concat(D, Filename, DataFile).
+	
 %% lost_test_file(+SequenceId, -SequenceFile)
 lost_test_file(SequenceId, SequenceFile) :-
         lost_tests_directory(D),
@@ -484,6 +491,21 @@ is_generated_file(File) :-
         atom_codes('.gen',ExtCodes),
         append(_,ExtCodes,FileCodes). % true if FileName ends with .gen 
 
+%% load_script
+% 
+load_script(ScriptName) :-
+	lost_script_directory(D),
+	atom_concat(D,ScriptName,ScriptFile),
+	file_exists(ScriptFile),
+	consult(ScriptFile).
+
+load_script(ScriptName) :-
+	lost_script_directory(D),
+	atom_concat(ScriptName,'.pl',ScriptNamePl),
+	atom_concat(D,ScriptNamePl,ScriptFile),
+	file_exists(ScriptFile),
+	consult(ScriptFile).
+		
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lost annotation index.
@@ -834,7 +856,6 @@ lost_model_input_formats_to_file(Model,Goal,OutputFile) :-
 	write(OStream, '.\n'),
 	close(OStream).
 
-
 %% lost_mode.output_format_to_file
 % 
 % Write the output formats of a Model called with Goal/Options to OutputFile
@@ -845,3 +866,11 @@ lost_model_output_format_to_file(Model,Goal,Options,OutputFile) :-
 	write(OStream,lost_model_output_format(Model,Goal,Options,OutputFormat)),
 	write(OStream, '.\n'),
 	close(OStream).
+	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% System 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+clear :-
+		system(clear).
+

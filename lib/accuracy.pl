@@ -337,7 +337,7 @@ combine_gene_scores(_,[],[],[]).
 combine_gene_scores(RefFunctor,
 			[[coding,From,To,Strand,Frame]|RefGenesRest],
 			[GeneScoreList|GeneScoresRest],
-			[gene(From,To,Strand,Frame,ExtraList)|CombinedRest]) :-
+			[gene(na,From,To,Strand,Frame,ExtraList)|CombinedRest]) :-
 	annotation(RefFunctor,From,To,Strand,Frame,ExtraOrig),
 	append(ExtraOrig,[found_by_genefinders(GeneScoreList),gene_finding_difficulty_score(CombinedScore)],ExtraList),
 	length(GeneScoreList,NumGeneFinders),
@@ -616,7 +616,7 @@ fill_range_gaps([[AnnotType,Curpos,End,Elems]|IRest],[[AnnotType,Curpos,End,Elem
 
 annotation(Type, From, To, Strand, ReadingFrame, Extra) :-
 	Goal =.. [ Type,_, From, To, Strand, ReadingFrame, Extra ],
-        write(Goal),nl,
+%        write(Goal),nl,
 	catch(call(Goal),_,fail).
 
 annotations_in_range(Type, From, To, Strand, ReadingFrame, Name, RangeMin, RangeMax) :-

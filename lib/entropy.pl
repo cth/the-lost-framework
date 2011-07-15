@@ -80,3 +80,11 @@ entropy_switch_rec([X|Tail],H):-
 	entropy_switch_rec(Tail,Rest_H),
 	H is This_H + Rest_H.
 	
+joint_entropy() :-
+	
+	
+conditional_entropy(Switch1,Switch2) :-
+	entropy_switch(Switch1,Entropy1),
+	entropy_switch(Switch2,Entropy2),
+	
+	

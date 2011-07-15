@@ -10,7 +10,8 @@
 
 list_lost_rules :-
 	listing('<-'/2).
-	
+
+/* FIXME:	
 show_lost_rules :-
 	clause('<-'(Output,Y),Body),
 	nl,
@@ -23,21 +24,37 @@ show_lost_rules :-
 	writeln(Body),
 	fail.
 show_lost_rules.
+*/
 		
-run(Output) :-
-	write('run:'), write(Output),nl,
-	run(Output,File),
+rerun(Target) :-
+	run(Target,[rerun(once)]).
+
+rerun_recursive(Target) :-
+	run(Target,[rerun(recursive)]).
+	
+view(Target) :-
+	run(Target,[],File),
+	atom_concat('vim ', File,ViewCmd),
+	system(ViewCmd).
+
+run(Target) :-
+	run(Target,[]).
+	
+run(Target,Opts) :-
+ 	write('run: '), write(Target),nl,
+	run(Target,Opts,File),
+	write(run(Target,Opts,File)),nl,
 	write('Success '),
-	write(Output),
+	write(Target),
 	write(' ==> '),
 	write(File),
-	nl.
+	nl.	
 	
-run(lost_data_file(Identifier),File) :-
+run(lost_data_file(Identifier),_RunOpts,File) :-
 	atom(Identifier),
 	lost_data_file(Identifier,File).
 
-run(file(File),File) :-
+run(file(File),_RunOpts,File) :-
 	atom(File),
 	% Check that file exists
 	(file_exists(File) ->
@@ -47,38 +64,45 @@ run(file(File),File) :-
 		throw(ErrMsg)).
 
 % Run with procotol identifiers
-run(Target,File) :-
+run(Target,_RunOpts,File) :-
 	atom(Target),
 	atom_codes(Target,TargetSyms),
 	atom_codes('file://', MatchSyms),
 	append(MatchSyms,FileCodes,TargetSyms),
 	atom_codes(File,FileCodes).
 
-run(Target,Target) :-
+run(Target,_RunOpts,Target) :-
 	atom(Target),
 	atom_codes(Target,TargetSyms),
-	map(atom_codes,['ftp://','http://'],Matchers),
+	map(atom_codes,['ftp://','http://', '"ftp://', '"http://'],Matchers),
 	member(MatchSyms,Matchers),
-	atom_codes('ftp://',MatchSyms),
 	append(MatchSyms,_,TargetSyms).
-		
-run(Output,_File) :-
-	writeln(run(Output,file)),
-	fail.
-
-run(Output,File) :-
-	clause('<-'(Output,Rule),true),
-	write(here),
+	
+run(Target,RunOpts,File) :-
+	clause('<-'(Target,Rule),true),
 	parse_guard_and_body(Rule,Guard,Model,TaskSpec),
 	call(Guard),
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
-	findall(DependencyFile,(member(Dependency,Inputs),run(Dependency,DependencyFile)), InputFiles),
+	run_options(RunOpts,RunModelOptions,NewRunOpts),
+	findall(DependencyFile,(member(Dependency,Inputs), writeln(run(Dependency,NewRunOpts,DependencyFile)),run(Dependency,NewRunOpts,DependencyFile)), InputFiles),
 	RealTaskSpec =.. [ Task, InputFiles, Options, File ],
-	run_model(Model,RealTaskSpec).
+	run_model(Model,RealTaskSpec,RunModelOptions).
 
+run(Target,_RunOpts,_File) :-
+	write('failed to run target: '), 
+	write(Target),nl,
+%	writeln('Valid targets are: '),
+%	findall(T1,clause('<-',T1,_),Targets),
+%	forall(member(T,Targets),(write('\t* '),write(T),nl)),
+	!,
+	fail.
 	
+run_options([rerun(recursive)],[caching(false)],rerun(recursive)).
+run_options([rerun(once)],[caching(false)],[]).
+run_options([],[caching(true)],[]).
+
 parse_guard_and_body(Spec, true, Model, TaskSpec) :-
-	write(Spec),nl,
+%	write(Spec),nl,
 	Spec =.. [ '::', Model, TaskSpec].
 	
 parse_guard_and_body(Spec, Guard, Model, TaskSpec) :-
@@ -90,21 +114,30 @@ parse_guard_and_body(Spec, Guard, Model, TaskSpec) :-
 % process different forms of specifying patterns for running a 
 % particular task within a model
 % e.g. 
-% task1([file1,file2]).
+%   task1([file1,file2]).
 parse_task_specification(TaskSpecification,Task,Inputs,[]) :-
 	TaskSpecification =.. [ Task, Inputs ],
 	is_list(Inputs).
 % or
-% task1([file1,file2],[opt1(foo),opt2(bar)]).		
+%   task1([file1,file2],[opt1(foo),opt2(bar)]).		
 parse_task_specification(TaskSpecification,Task,Inputs,Options) :-
 	TaskSpecification =.. [ Task, Inputs, Options ],
 	is_list(Inputs),
 	is_list(Options).
+	
+% or 
+% 	task1(file,[opt1(foo)])
+parse_task_specification(TaskSpecification,Task,[Inputs],Options) :-
+	TaskSpecification =.. [ Task, Inputs, Options ],
+	not(is_list(Inputs)),
+	is_list(Options),
+	!.
+
 % or
-% task1(file1,file2).
+%    task1(file1,file2).
 parse_task_specification(TaskSpecification,Task,Inputs,[]) :-
 	TaskSpecification =.. [ Task | Inputs ],
-	is_list(Inputs).
-		
-				
+	is_list(Inputs),
+	write(TaskSpecification),nl,
+	forall(member(L,Inputs),not(is_list(L))).
 	

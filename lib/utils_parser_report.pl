@@ -265,12 +265,3 @@ read_n_spaces(File,N):-
 	get_code(File,32),
 	M is N-1,
 	read_n_spaces(File,M).	
-
-
-
-
-
-
-
-
-

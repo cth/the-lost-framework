@@ -183,6 +183,7 @@ list_atom_codes([CodeList|CodeListRest],[Atom|AtomsRest]) :-
 	atom_codes(Atom,CodeList),
 	list_atom_codes(CodeListRest,AtomsRest).
 
+% Match the empty string 
 re_match([],[]) --> [].
 
 re_match([grouped(R)|Rest],[Match|MatchRest]) -->
@@ -196,6 +197,8 @@ re_match([ungrouped(R)|Rest],MatchRest) -->
 	 
 re_match([group,Left],[group(Match)]) -->
 	re_match(Left,Match).
+
+%% Choice
 
 re_match([or, Left, _Right],Match) -->
 	re_match(Left,Match).
