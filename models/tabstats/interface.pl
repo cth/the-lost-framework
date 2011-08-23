@@ -7,7 +7,7 @@
 :- lost_include_api(misc_utils).
 
 % Simple Prolog debugging trick
-codon_stats([StatsFile],_Options,TabFile) :-
+tabstats([StatsFile],_Options,TabFile) :-
 	writeln(codon_stats),
 	terms_from_file(StatsFile,Genes),
 	length(Genes,NumGenes),
