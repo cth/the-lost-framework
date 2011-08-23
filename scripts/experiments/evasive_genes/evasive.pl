@@ -71,8 +71,12 @@ evasive_rank <-
 evasive <- gene_filter::annotate(evasive_rank, [exact_no_match_extra_fields([gene_finding_difficulty_score(1.0)])]).
 non_evasive <- gene_filter::annotate(evasive_rank, [exact_match_extra_fields([gene_finding_difficulty_score(1.0)])]).
 
-evasive_gene_stats <- range_stats::annotate([evasive, genome_sequence], [max_nucleotide_order(6),max_amino_acid_order(2)]).
-non_evasive_gene_stats <- range_stats::annotate([non_evasive, genome_sequence], [max_nucleotide_order(6),max_amino_acid_order(2)]).
+evasive_gene_stats <- range_stats::annotate([evasive, genome_sequence], [max_nucleotide_order(3),max_amino_acid_order(1)]).
+
+evasive_tab_stats <- tabstats::tabstats(evasive_gene_stats).
+non_evasive_tab_stats <- tabstats::tabstats(non_evasive_gene_stats).
+
+non_evasive_gene_stats <- range_stats::annotate([non_evasive, genome_sequence], [max_nucleotide_order(3),max_amino_acid_order(1)]).
 
 
 

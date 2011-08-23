@@ -28,8 +28,9 @@ annotate([GenesFile,GenomeFile], Options, OutputFile) :-
   load_sequence(genome,GenomeFile),
    writeln('loaded sequence..'),nl,
   max_gene_length(Terms,0,MaxGeneLength),
-	writeln('calculate max length'),nl,
+  writeln('calculate max length'),nl,
   open(OutputFile,write,OutStream),
+  !,
   add_gene_statistics(Options,MaxGeneLength,Terms,OutStream),
   close(OutStream).
 %  terms_to_file(OutputFile,TermsWithStats).
@@ -53,8 +54,8 @@ gene_length(GeneTerm, Length) :-
 add_gene_statistics(_,_,[],_).
 
 add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
-        write('add_gene_statistics'),nl,
-        !,
+    write('add_gene_statistics'),nl,
+    !,
 	GT =.. [ Functor, _, Start, End, Frame, Strand, ExtraList ],
 	write(GT),nl,
 
@@ -93,7 +94,7 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 	 StatList3 = StatList2
 	),!,
 
-        % Add normalized gene length measure
+    % Add normalized gene length measure
 	get_option(Options,length_stats,IncludeLengthStats),
 	((IncludeLengthStats == yes) ->
 	 gene_length(GT,GeneLength),
@@ -108,6 +109,8 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 	GTStat =.. [ Functor, Start, End, Frame, Strand, NewExtraList ],
 	!,
 	writeq(OutStream,GTStat),
+	write(OutStream,'.\n'),
+	!,
 	add_gene_statistics(Options,MaxGeneLength,GTRest,OutStream).
 	
 calculate_multiple_stats(_,[],_,[]).
