@@ -79,5 +79,3 @@ get_noncoding_list(0, [start_codon,end]) :- !.
 get_noncoding_list(A, [non_coding(A)|B]) :-
         C is A+1,
         get_noncoding_list(C, B).
-
-
