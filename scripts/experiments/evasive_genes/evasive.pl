@@ -59,24 +59,24 @@ predictions(genemark_hmm) <- genemark_hmm::parse(report(genemark_hmm)).
 
 predictions(easygene) <- easygene::parse(report(easygene)).
 
+% Statistics: 
+stats(GeneFinder) <- gene_finder(GeneFinder) | range_stats::annotate([predictions(GeneFinder),genome_sequence], [max_nucleotide_order(3),max_amino_acid_order(1)]).
+stats(Group) <- 
+	member(Group,[evasive,non_evasive, trivial]) |
+	range_stats::annotate([evasive, genome_sequence], [max_nucleotide_order(3),max_amino_acid_order(1)]).
+	
+tabstats(Group) <- tabstats::tabstats(stats(Group)).
+
 % Accuracy reports
 accuracy(GF) <- gene_finder(GF) | accuracy_report::annotate(reference_genes,predictions(GF)).
 
+% Groupings: (evasive, non_evasive, trival)
 evasive(GF) <- hard_to_find_genes::annotate(reference_genes, predictions(GF)).
 
 evasive_rank <- 
 	findall(predictions(GF),gene_finder(GF),GFResults)
 	| hard_to_find_genes::annotate([reference_genes|GFResults],[sort(difficulty)]).
-	
+
 evasive <- gene_filter::annotate(evasive_rank, [exact_no_match_extra_fields([gene_finding_difficulty_score(1.0)])]).
 non_evasive <- gene_filter::annotate(evasive_rank, [exact_match_extra_fields([gene_finding_difficulty_score(1.0)])]).
-
-evasive_gene_stats <- range_stats::annotate([evasive, genome_sequence], [max_nucleotide_order(3),max_amino_acid_order(1)]).
-
-evasive_tab_stats <- tabstats::tabstats(evasive_gene_stats).
-non_evasive_tab_stats <- tabstats::tabstats(non_evasive_gene_stats).
-
-non_evasive_gene_stats <- range_stats::annotate([non_evasive, genome_sequence], [max_nucleotide_order(3),max_amino_acid_order(1)]).
-
-
-
+trivial <- gene_filter::annotate(evasive_rank, [exact_match_extra_fields([gene_finding_difficulty_score(0.0)])]).
