@@ -84,7 +84,7 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 	),!,
 	
 	
-	writeln("calc nuc stats"),
+	writeln('calc nuc stats'),
 
 	% Calculate amino acid stats
 	get_option(Options,amino_acid_stats,IncludeAminoAcidStats),
@@ -99,7 +99,7 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 	 StatList3 = StatList2
 	),!,
 	
-	writeln("calc amino stats"),
+	writeln('calc amino stats'),
 
     % Add normalized gene length measure
 	get_option(Options,length_stats,IncludeLengthStats),
@@ -117,7 +117,7 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 	!,
 	writeq(OutStream,GTStat),
 	write(OutStream,'.\n'),
-	write('about to recurse'),nl
+	write('about to recurse'),nl,
 	
 	!,
 	add_gene_statistics(Options,MaxGeneLength,GTRest,OutStream).
