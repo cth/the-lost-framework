@@ -22,15 +22,24 @@ prediction(glimmer(na,Left,Right,Strand,Frame,[score(Score)])) -->
 	"orf",
 	integer(Id),
 	spaces,
-	integer(Left),
+	integer(Start),
 	spaces ,
-	integer(Right),
+	integer(End),
 	spaces,
 	strand(Strand),
 	integer(Frame),
 	spaces,
 	float(Score),
-	end_of_line.
+	end_of_line,
+	{
+		((Start < End) ->
+			Left = Start,
+			Right = End
+			;
+			Left = End,
+			Right = Start
+		)
+	}.
 	
 strand('+') --> "+".
 strand('-') --> "-".
