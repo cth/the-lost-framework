@@ -24,9 +24,10 @@ lost_option(annotate,genecode,11,'The genetic code to use for translation').
 % The main model predicate:
 annotate([GenesFile,GenomeFile], Options, OutputFile) :-
   terms_from_file(GenesFile,Terms),
-  write('loaded genes...'),nl,
+  length(Terms,NumGenes),
+  write('loaded genes...'), write(NumGenes),nl,
   load_sequence(genome,GenomeFile),
-   writeln('loaded sequence..'),nl,
+  writeln('loaded sequence..'),nl,
   max_gene_length(Terms,0,MaxGeneLength),
   writeln('calculate max length'),nl,
   open(OutputFile,write,OutStream),
@@ -66,9 +67,10 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 		get_sequence_range(genome,Start,End,Nucleotides)
 		;
 		get_sequence_range(genome,Start,End,NucleotidesRevComp),
-                reverse(NucleotidesRevComp,NucleotidesComp),
+        reverse(NucleotidesRevComp,NucleotidesComp),
 		dna_seq_complement(NucleotidesComp,Nucleotides)
 	),
+	writeln(Nucleotides),
 
 	% Calculate nucleotide stats
 	get_option(Options,nucleotide_stats,IncludeNucleotideStats),
@@ -80,6 +82,9 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 	 ;
 	 StatList2 = StatList1
 	),!,
+	
+	
+	writeln("calc nuc stats"),
 
 	% Calculate amino acid stats
 	get_option(Options,amino_acid_stats,IncludeAminoAcidStats),
@@ -93,6 +98,8 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 	;
 	 StatList3 = StatList2
 	),!,
+	
+	writeln("calc amino stats"),
 
     % Add normalized gene length measure
 	get_option(Options,length_stats,IncludeLengthStats),
@@ -110,6 +117,8 @@ add_gene_statistics(Options,MaxGeneLength,[GT|GTRest], OutStream) :-
 	!,
 	writeq(OutStream,GTStat),
 	write(OutStream,'.\n'),
+	write('about to recurse'),nl
+	
 	!,
 	add_gene_statistics(Options,MaxGeneLength,GTRest,OutStream).
 	
