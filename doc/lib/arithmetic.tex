@@ -1,0 +1,33 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{arithmetic.pl -- arithmetic}
+
+\label{sec:arithmetic}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+\end{tags}
+
+Various arithmetic predicates.\vspace{0.7cm}
+
+\begin{description}
+    \predicate[det]{abs}{2}{+Number, -AbsoluteNumber}
+\arg{AbsoluteNumber} is the absolute value of the integer \arg{Number}.
+
+    \predicate[det]{min}{3}{+Number1, +Number2, Smallest}
+\arg{Smallest} is the smallest of \arg{Number1} and \arg{Number2}
+
+    \predicate[det]{max}{3}{+Number1, +Number2, Largest}
+\arg{Largest} is the largest of \arg{Number1} and \arg{Number2}
+
+    \predicate{list_min}{2}{+List, -SmallestElement}
+\arg{SmallestElement} is the smallest element in the list.
+
+    \predicate{list_max}{2}{+List, -LargestElement}
+\arg{LargestElement} is the largest element in the list.
+\end{description}
+

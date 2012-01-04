@@ -4,13 +4,24 @@
 :- lost_include_api(genedb).
 :- lost_include_api(io).
 
+:- task(filter([text(prolog(ranges(gene)))],[prediction_functor(auto),score_functor(not_set)],text(prolog(ranges(gene))))).
+
 lost_option(annotate,prediction_functor,auto,'The functor of the facts used in the prediction file. The default value \"auto\" means that the model will try to figure it out automatically').
 lost_option(annotate,score_functor,not_set,'This model expects a fact in the extra list argument, which contains a score for the each gene prediction. score_functor determines the functor of this fact.').
 
 lost_input_formats(annotate, [text(prolog(ranges(gene)))]).
 lost_output_format(annotate, _, text(prolog(ranges(gene)))).
 
-annotate([InputFile],Options,OutputFile) :-
+
+%% filter(+InputFiles,+Options,+OutputFile)
+% For each distinct stop codon in the predictions in the the input file, write prediction which has has the highest
+% score to the output file. 
+% The functor of predictions in the input file will be automatically inferred if option =|prediction_functor=auto|= and the file contains only the same type of functor. Otherwise the value of =|prediction_functor|= should be set.
+% The =|score_functor|= option _must_ be set. The predictions are expected to have an extra field indicating the score of a prediction as numeric value, .e.g. in the example below, the you would use =|score_functor(score)|=.
+% ==
+% prediction(org,123,456,+,1,[score(0.99)])
+% ==
+filter([InputFile],Options,OutputFile) :-
         write('--------------------  start'),nl,
 	consult(InputFile),
 	get_option(Options,prediction_functor,PredFunctorOpt),

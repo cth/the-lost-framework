@@ -1,0 +1,42 @@
+Augments predicted genes or orfs with information from a golden standard/reference file. 
+
+Currently, there are two principal ways of using this module. For both methods, it 
+is the case that their InputFiles is a list 
+== 
+InputFiles = [ ReferenceFile, PutativeFile ]
+==
+
+The two methods can be summarized as follows:
+
+1. =|add_reference_track|= : adding an "extra" field with a reference annotation to a each "gene"/orf in a file.
+E.g. if we have a =|PutativeFile|= with an entry,
+==
+gene(seqid, 1, 10, +, 1, []).
+==
+
+And a golden standard =|ReferenceFile|= with the entry, 
+==
+ref(seqid,4,10,+,1,[]).
+==
+
+Then the updated gene record (OutputFile) will look as follows,
+==
+gene(seqid,1,10,+,1,[ref_annot([0,0,0,0,1,1,1,1,1,1])]).
+==
+
+A term with a list is added to the =|extra|= list (sixth argument). 
+The list has zeroes in all non-coding positions and ones in the coding positions (of the same strand reading frame).
+
+2. =|maching_genes|= : Write to the OutputFile all genes from the =|ReferenceFile|= which partially overlap with a gene from the =|PutativeFile|= (must have same Strand and Frame).
+
+This may be useful for instance when creating cross-validation sets, e.g. if you want to measure accuracy wrt to a smaller set. 
+
+@author: Christian Theil Have
+
+
+
+
+
+
+
+

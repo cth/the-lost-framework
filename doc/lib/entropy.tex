@@ -1,0 +1,43 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{entropy.pl -- Tools for calculating entropy of distributions.}
+
+\label{sec:entropy}
+
+\begin{tags}
+    \tag{author}
+: Ole Torp Lassen
+\end{tags}
+
+NOTE TO THE USER: \predref{entropy}{2} works for
+
+\begin{itemize}
+    \item single random variables that have been declared using \predref{values}{2} and have been instatniated, i.e.:
+
+\begin{code}
+values(t,[1,2]).
+msw(t,V),
+entropy(t,1.0.)
+\end{code}
+
+    \item lists of random variables that have been declared using \predref{values}{2} and have been instatniated, i.e.:
+
+\begin{code}
+nvalues(t,[1,2]).values(u,[1,2]).
+msw(t,T),msw(u,U),
+entropy([t,u],2.0).
+\end{code}
+
+    \item parameterfiles that been saved with \predref{save_sw}{1}
+
+\begin{code}
+entropy(Filename,E).
+\end{code}
+
+\predref{entropy}{1} writes to output.
+\end{itemize}
+
+\vspace{0.7cm}

@@ -3,9 +3,29 @@
 
 
 
-\section{chmm.pl}
+\section{chmm.pl -- Constrained Hidden Markov Models}
 
 \label{sec:chmm}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+\end{tags}
+
+This module is an implementation of Constrained Hidden Markov Models in PRISM. The implementation includes
+a few well-known global constraints which may be used with the model. The implementation is described in detail in
+ICLP 2010 paper:
+
+Henning Christiansen, Christian Theil Have, Ole Torp Lassen and Matthieu Petit
+"Inference with Constrained Hidden Markov Models in PRISM".
+
+\textit{Abstract: A Hidden Markov Model (HMM) is a common statistical model which is widely used for analysis
+of biological sequence data and other sequential phenomena. In the present paper we show how HMMs can
+be extended with side-constraints and present constraint solving techniques for efficient inference.
+Defining HMMs with side-constraints in Constraint Logic Programming have advantages in terms of more compact
+expression and pruning opportunities during inference. We present a PRISM-based framework for extending HMMs
+with side-constraints and show how well-known constraints such as cardinality and all_different are integrated.
+We experimentally validate our approach on the biologically motivated problem of global pairwise alignment.}\vspace{0.7cm}
 
 \begin{description}
     \predicate{init_store}{0}{}
@@ -17,7 +37,7 @@ The predicate get the current store or remove it
     \predicate{get_store}{1}{S}
 Get the current store
 
-    \predicate{init_constraint_stores}{2}{+Constraints, -Store}
+    \predicate[private]{init_constraint_stores}{2}{+Constraints, -Store}
 Recursive predicate that gets every initial \arg{Store} associated
 with each constraint of \arg{Constraints}
 \end{description}

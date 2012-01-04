@@ -4,11 +4,42 @@
 :- ['../../lost.pl'].
 :- lost_include_api(io).
 
+:- task(add_reference_track([text(prolog(ranges(gene))), text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
+:- task(matching_genes([text(prolog(ranges(gene))), text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
+
+%% add_reference_track(+InputFiles,+Options,+OutputFile)
+% ==
+% InputFiles = [ PutativeFile, ReferenceFile ]
+% ==
+% adds and extra field to each gene in =|PutativeFile|= if the are a (partically) overlapping gene in =|ReferenceFile|= with same strand+frame.
+% The extra field contains a list, which 
+% has zeroes in all non-coding positions and ones in the coding positions (of the same strand reading frame).
+add_reference_track([ChunkFile,GoldenStandardFile],_,OutFile) :-
+	file_functor(GoldenStandardFile,RefFunctor),
+	open(ChunkFile,read,InStream),
+	open(OutFile,write,OutStream),
+	[GoldenStandardFile],
+	add_reference_track_stream(RefFunctor,InStream,OutStream),
+	close(InStream),
+	close(OutStream).
+
+%% matching_genes(+InputFiles,+Options,+OutputFile)
+% InputFiles = [ File1, File2 ]
+% OutputFile is all the gene entries in File1 which have identical the Left, Right, Frame and Strand to an of entry in File2.
+matching_genes([ChunkFile,RefFile],_,OutputFile) :-
+	file_functor(RefFile,RefFunctor),
+	open(ChunkFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	[RefFile],
+	report_matches_to_chunks_stream(RefFunctor,InStream,OutStream),
+	close(InStream),
+	close(OutStream).
+
 merge_extra_fields([ChunkFile1,ChunkFile2],_,OutFile) :-
 	open(ChunkFile1,read,InStream1),
 	open(ChunkFile2,read,InStream2),
 	open(OutFile,write,OutStream),
-        merge_chunk_extra_fields_stream(InStream1,InStream2,OutStream),
+    merge_chunk_extra_fields_stream(InStream1,InStream2,OutStream),
 	close(InStream),
 	close(OutStream).
 
@@ -28,15 +59,7 @@ merge_chunk_extra_fields_stream(InStream1,InStream2,OutStream) :-
 		merge_chunk_extra_fields_stream(InStream1,InStream2,OutStream)).
 
 
-add_reference_track([ChunkFile,GoldenStandardFile],_,OutFile) :-
-	file_functor(GoldenStandardFile,RefFunctor),
-	open(ChunkFile,read,InStream),
-	open(OutFile,write,OutStream),
-	[GoldenStandardFile],
-	add_reference_track_stream(RefFunctor,InStream,OutStream),
-	close(InStream),
-	close(OutStream).
-	
+
 add_reference_track_stream(RefFunctor,InStream,OutStream) :-
 	read(InStream,Chunk),
 	((Chunk==end_of_file) ->
@@ -62,7 +85,7 @@ add_reference_track_stream(RefFunctor,InStream,OutStream) :-
 			ChunkLength is 1 + abs(Left - Right),
 			makelist(ChunkLength,0,RefAnnot)
 		),
-                RefAnnotFact =.. [RefFunctor,RefAnnot],
+        RefAnnotFact =.. [RefFunctor,RefAnnot],
 		NewExtra = [RefAnnotFact|Extra],
 		NewChunk =.. [ Functor,SeqId,Left,Right,Strand,Frame,NewExtra],
 		writeq(OutStream,NewChunk),
@@ -70,26 +93,17 @@ add_reference_track_stream(RefFunctor,InStream,OutStream) :-
 		!,
 		add_reference_track_stream(RefFunctor,InStream,OutStream)).
 
-report_matches_to_chunks([ChunkFile,RefFile],_,OutputFile) :-
-	file_functor(RefFile,RefFunctor),
-	open(ChunkFile,read,InStream),
-	open(OutputFile,write,OutStream),
-	[RefFile],
-        report_matches_to_chunks_stream(RefFunctor,InStream,OutStream),
-	close(InStream),
-        close(OutStream).
-
 report_matches_to_chunks_stream(RefFunctor,InStream,OutStream) :-
 	read(InStream,Chunk),
 	((Chunk==end_of_file) ->
 		true
 	;
-                write('.'),
+        write('.'),
 		Chunk =.. [ _, _, Left, Right, Strand, Frame, _],
-                findall(M,find_matches(RefFunctor,Left,Right,Strand,Frame,M),Matches),
-                forall(member(Match,Matches),( writeq(OutStream,Match), write(OutStream,'.\n'))),
-	        !,
-	        report_matches_to_chunks_stream(RefFunctor,InStream,OutStream)).
+        findall(M,find_matches(RefFunctor,Left,Right,Strand,Frame,M),Matches),
+        forall(member(Match,Matches),( writeq(OutStream,Match), write(OutStream,'.\n'))),
+	    !,
+	    report_matches_to_chunks_stream(RefFunctor,InStream,OutStream)).
 
 % This disregards overlapping genes in same frame, just pick first match..
 lookup_ref_term(RefFunctor,Left,Right,Strand,Frame,FirstMatch) :-
@@ -110,6 +124,7 @@ find_matches(RefFunctor,MinLeft,MaxRight,Strand,Frame,Match) :-
 	Left >= MinLeft,
 	Right =< MaxRight.
 	
+% create a list if containing N 
 makelist(0,_,[]).
 makelist(N,X,[X|Rest]):-
    		N > 0,

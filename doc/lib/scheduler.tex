@@ -1,0 +1,55 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{scheduler.pl -- Task scheduler}
+
+\label{sec:scheduler}
+
+\begin{tags}
+    \tag{author}
+Christian Theil Have
+\end{tags}
+
+The Task scheduler is a mechanism for running PRISM processes with dependencies in parallel.
+It is used behing the scenes by the script language.
+It uses the scheduler tree structure to repreent tasks and their dependencies and
+calls an external shell script (\$LOST_BASE_DIR/utilities/procrun.sh) to launch new processes.
+Communicates with the shell script via two files:
+
+It writes tasks to be run to \file{pending_tasks_file.txt} and reads signals about completion
+of tasks from the file \file{completed_tasks_file.txt}.\vspace{0.7cm}
+
+\begin{description}
+    \predicate{scheduler_init}{0}{}
+Open communication input and output files of the scheduler and starts
+the shell script based PRISM process runner.
+
+    \predicate{scheduler_shutdown}{0}{}
+Close files associated with the scheduler
+
+    \predicate{scheduler_loop}{2}{+SchedulerTree, +RunQueue}
+This is the main loop that runs the scheduler
+
+    \predicate[private]{schedule_task}{3}{+TaskId, +Model, +Goal}
+Start a new tas
+
+    \predicate[private]{scheduler_wait}{4}{+SchedulerTree, +Queue, -UpdatedSchedulerTree, -UpdatedQueue}
+This will block until a task has completed
+When the task has completed, it will be removed from the queue and the scheduler tree
+resulting in the updated ouput variables.
+
+    \predicate[private]{scheduler_wait_for}{1}{-TaskId}
+Read the next task id from the completed tasks file and unify \arg{TaskId} to this id
+If there are no (next) completed task yet, then it will wait for 500 msecs and loop
+
+    \predicate[private]{scheduler_wait_for_shutdown}{1}{+Count}
+Gracefully wait for scheduler shutdown. Wait for hangup signal from process runner for a number of seconds
+before terminating.
+
+    \predicate[private]{scheduler_update_index}{2}{+Model, +Goal}
+This will update the state and result file of the task associated \arg{Model} and \arg{Goal}
+to symbolize the the task completed.
+\end{description}
+

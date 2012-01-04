@@ -1,30 +1,12 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%NAME :
-%      utils_db.pl -- LOST tool v0.0
-%
-%FUNCTION :
-%        Utils for db building
-%
-%HISTORY :
-%      M.P 14/01/2010: Creation 
-%      M.P 14/01/2010: Add of Reader predicates (author: OTL)
-%  
-%DESCRIPTION : n/a
-%          
-%REMARK : n/a
-%          
-%NOTE : n/a
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- module(utils_parser_report,[parser_line/3, read_tab/2, read_token/2]).
 
-% Command module not avalaible in B-Prolog
-%:- module(utils_db,[
-%                    readline/2,
-%                    read_tab/2,
-%                    read_token/2
-%                   ]).
+/** <module> Report parsing utilities 
 
+Various utilities for parsing text files. 
 
+@author: Ole Torp Lassen and Matthieu Petit
 
+*/
 
 
 %---------
@@ -32,13 +14,12 @@
 %---------
 
 
-%%%%%%%
-% parser_line(++List_Codes,--List_Tokens)
-% Description: Translate a list of ASCII code into a list of tokens. Parsing is based on the
+%% parser_line(+List_Codes,-List_Tokens)
+% Translate a list of ASCII code into a list of tokens. Parsing is based on the
+%
 % grammar: Tokens ::= Token | Token Ignore_Characters Tokens
+%
 % Default: Ignore Caracters = [9,32] (space and tab)
-% parser_line(++List_Codes,++Ignore_Character,--List_Tokens)
-%%%%%%%
 
 
 % Default: parser_line/2 
@@ -99,18 +80,16 @@ parser_line_rec([Code|Rest_Codes],Token1-Token2,Ignored_Chars,List_Tokens) :-
         parser_line_rec(Rest_Codes,Token1-Token3,Ignored_Chars,List_Tokens).
 
 
-%%%%%%%
-% is_number(++List_Codes)
-%%%%%%
-% Description: predicate is true iff List_Codes can be parsed by the following grammar
+%% is_number(+List_Codes)
+% predicate is true iff List_Codes can be parsed by the following grammar
+%
 % Numbers :== Number | Number . Rest Numbers | Number Numbers 
+% 
 % Rest Numbers :== Number | Number Rest Numbers
+%
 % Number :== 0|1|2|3|4|5|6|7|8|9 (Ascci 48..57) 
-%%%%%%
-
-% Parse of Numbers
-
-% Fail if number is bigger than 268435455
+%
+% bug: Fail if number is bigger than 268435455
 
 is_number([C1|Codes]) :-
 	length([C1|Codes],CodesLen),
@@ -155,12 +134,9 @@ rest_number([Code|Rest_Number]) :-
 % readline/2, read_tab/2, read_token/2
 %---------------------
 
-%%%%%%%%%%%%%%%%%%%
-% readline(++Stream,--CodeList)
-% Description: reads in a line or a tab or a token with no spaces of data from specified input-stream 
+%% readline(+Stream,-CodeList)
+% Reads in a line or a tab or a token with no spaces of data from specified input-stream 
 % and represents it as a list of character codes..
-%%%%%%%%%%%%%%%%%%%
-
 readline(Stream,CodeList):-
           at_end_of_stream(Stream),
           !,
@@ -191,10 +167,8 @@ read_rest_of_line(Stream,CodeList):-
             CodeList=[Code|RestOfCodes]
 	).
 
-%%%%%%%%%%%%%%
-% read_tab(++Stream,--Codelist)
+%% read_tab(++Stream,--Codelist)
 % Description: n/a
-%%%%%%%%%%%%%%
 
 read_tab(File,CodeList):-
 	get_code(File,Code),
@@ -217,11 +191,9 @@ read_rest_of_tab(File,CodeList):-
 	CodeList=[Code|RestOfCodes]
 	).
 
-%%%%%%%%%%%%%%%%%%
-% read_token(++Stream,--N_Spaces,--CodeList)
-% Description: reads next nonspace-initiated token, terminated by a some whitespace
+%% read_token(+Stream,-N_Spaces,-CodeList)
+% Reads next nonspace-initiated token, terminated by a some whitespace
 % counts number of spaces encounterd before first nonspace
-%%%%%%%%%%%%%%%%%%%
 
 read_token(File,N_spaces,CodeList):-
 	next_nonspace(File,N_spaces,Code),

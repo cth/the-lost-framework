@@ -1,0 +1,5 @@
+
+The cluster gene finder is attempt to investigate whether there are clusters of
+genes and to automatically build individual models for these clusters.
+
+@author: Christian Theil Have

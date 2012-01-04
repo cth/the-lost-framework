@@ -3,6 +3,8 @@
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 
+:- task(chop([text(prolog(sequence(dna)))],[strand('+'), frame(1)],text(prolog(ranges(gene))))).
+
 lost_input_formats(annotate, [text(prolog(sequence(_)))]).
 lost_output_format(annotate, _Options, text(prolog(ranges(gene)))).
 
@@ -15,11 +17,12 @@ lost_option(annotate,maximal_length,undefined,'Specified a maximal length for th
 lost_option_values(annotate,direction,['+','-']).
 lost_option_values(annotate,frame,[1,2,3]).
 
-% This is what is used to get the best annotation
-% requires direction (+/-) and frame (1,2,3)
-annotate([Sequence_File],Options,Orf_Chunk_File) :-
+%% chop(+InputFiles,+Options,+OutputFile)
+% 
+% Extract all open reading frames on the specified =|strand|= {'+','-'} in the specified reading =|frame|= {1,2,3}.
+chop([Sequence_File],Options,Orf_Chunk_File) :-
 	write('LoSt orf chopper: '),nl,
-        get_option(Options,direction,Dir),
+        get_option(Options,strand,Dir),
         get_option(Options,frame,Frame),
         get_option(Options,minimal_length,Min_Length),
         get_option(Options,maximal_length,Max_Length),

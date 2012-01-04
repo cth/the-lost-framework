@@ -1,22 +1,27 @@
-:- ['../../lost.pl'].
+:- use(interface).
 
 :- [config].
-%:- [glimmer3_parser].
 :- [parser].
-:- lost_include_api(interface).
+
+
+:- task(parse([text(glimmer3_report)]),[],text(prolog(ranges(gene)))).
 
 % Interface file for model that runs Glimmer3
 
+%% parse(+InputFiles,+Options,+OutputFile)
+% Parse a Glimmer 3 report file.
 parse([InputFile],_,OutputFile) :-
 	writeln(parse_glimmer_file),
 	parse_glimmer_file(InputFile,OutputFile).
 
-% The annotate has the following required options,
-% mode: (corresponds to glimmer3 scripts)
-%    value=from-scratch: train using long-orfs and run prediction
+%% annotate(+InputFiles,+Options,+OutputFile)
+% ==
+% InputFiles = [ InputFile, TrainingDataInputFile ]
+% ==
+% The =|mode|= (corresponds to glimmer3 scripts)
+%    value=from-scratch: train using =|long-orfs|= and run prediction. Long-orfs is a glimmer specific program that extracts long orfs.
 %    value=from-training: traing using data specified by option parameter_file
 %    value=iterated: ...
-
 annotate([InputFile,TrainingInputFile], Options, OutputFile) :-
   get_option(Options,mode,from-scratch),
   glimmer3_config(scripts_directory, ScriptsDir),

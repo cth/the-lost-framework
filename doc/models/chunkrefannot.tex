@@ -1,0 +1,90 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\subsection{chunk_ref_annot}
+
+\label{sec:chunkrefannot}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+\end{tags}
+
+Augments predicted genes or orfs with information from a golden standard/reference file.
+
+Currently, there are two principal ways of using this module. For both methods, it
+is the case that their InputFiles is a list
+
+\begin{code}
+InputFiles = [ ReferenceFile, PutativeFile ]
+\end{code}
+
+The two methods can be summarized as follows:
+
+\begin{enumerate}
+    \item \verb$add_reference_track$ : adding an "extra" field with a reference annotation to a each "gene"/orf in a file.
+E.g. if we have a \verb$PutativeFile$ with an entry,
+
+\begin{code}
+gene(seqid, 1, 10, +, 1, []).
+\end{code}
+
+And a golden standard \verb$ReferenceFile$ with the entry,
+
+\begin{code}
+ref(seqid,4,10,+,1,[]).
+\end{code}
+
+Then the updated gene record (OutputFile) will look as follows,
+
+\begin{code}
+gene(seqid,1,10,+,1,[ref_annot([0,0,0,0,1,1,1,1,1,1])]).
+\end{code}
+
+A term with a list is added to the \verb$extra$ list (sixth argument).
+The list has zeroes in all non-coding positions and ones in the coding positions (of the same strand reading frame).
+    \item \verb$maching_genes$ : Write to the OutputFile all genes from the \verb$ReferenceFile$ which partially overlap with a gene from the \verb$PutativeFile$ (must have same Strand and Frame).
+This may be useful for instance when creating cross-validation sets, e.g. if you want to measure accuracy wrt to a smaller set.
+\end{enumerate}
+
+\vspace{0.7cm}
+
+\begin{description}
+    \predicate{add_reference_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(ranges(gene)))
+    2. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(ranges(gene)))
+Options:
+\end{code}
+
+\begin{code}
+InputFiles = [ PutativeFile, ReferenceFile ]
+\end{code}
+
+adds and extra field to each gene in \verb$PutativeFile$ if the are a (partically) overlapping gene in \verb$ReferenceFile$ with same strand+frame.
+The extra field contains a list, which
+has zeroes in all non-coding positions and ones in the coding positions (of the same strand reading frame).
+
+    \predicate{matching_genes}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(ranges(gene)))
+    2. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(ranges(gene)))
+Options:
+\end{code}
+
+\arg{InputFiles} = [ File1, File2 ]
+\arg{OutputFile} is all the gene entries in File1 which have identical the Left, Right, Frame and Strand to an of entry in File2.
+\end{description}
+

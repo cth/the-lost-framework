@@ -1,4 +1,5 @@
-/** <module> Module of Constrained Hidden Markov Model
+:- module(chmm,[init_store/0, forward_store/1, get_store/1]).
+/** <module> Constrained Hidden Markov Models
 
 This module is an implementation of Constrained Hidden Markov Models in PRISM. The implementation includes
 a few well-known global constraints which may be used with the model.  The implementation is described in detail in
@@ -6,13 +7,17 @@ ICLP 2010 paper:
 
 Henning Christiansen, Christian Theil Have, Ole Torp Lassen and Matthieu Petit
 "Inference with Constrained Hidden Markov Models in PRISM".
-Abstract: A Hidden Markov Model (HMM) is a common statistical model which is widely used for analysis
+
+_|Abstract: A Hidden Markov Model (HMM) is a common statistical model which is widely used for analysis
 of biological sequence data and other sequential phenomena. In the present paper we show how HMMs can
 be extended with side-constraints and present constraint solving techniques for efficient inference.
 Defining HMMs with side-constraints in Constraint Logic Programming have advantages in terms of more compact
 expression and pruning opportunities during inference. We present a PRISM-based framework for extending HMMs
 with side-constraints and show how well-known constraints such as cardinality and all_different are integrated.
-We experimentally validate our approach on the biologically motivated problem of global pairwise alignment.
+We experimentally validate our approach on the biologically motivated problem of global pairwise alignment.|_
+
+@author: Christian Theil Have
+
 */
 
 

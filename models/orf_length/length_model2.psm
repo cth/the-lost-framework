@@ -1,0 +1,88 @@
+min_gene_length(5).
+max_gene_length(2500).
+
+upto(StartEnd,StartEnd,[StartEnd]).
+upto(Start,End,[Start|Rest]) :-
+	NewStart is Start + 1,
+	upto(NewStart,End,Rest).
+
+values(gene_length,Lengths) :-
+	min_gene_length(Min),
+	max_gene_length(Max),
+	upto(Min,Max,Lengths).
+	
+values(score_categories, [low,mid,high]).
+
+score_categories(C) :-
+	msw(score_categories,C).
+
+gene_length(L) :-
+	msw(gene_length,L).
+	
+get_distribution(SwitchName,Probs) :-
+	values(SwitchName,Outcomes),
+	findall(P,(member(O,Outcomes),SwitchGoal=..[SwitchName,O],prob(SwitchGoal,P)),Probs).
+
+test_learn :-
+	gene_lengths(L),
+	add_functor(gene_length,L,LGoals),
+	learn(LGoals).
+	
+get_length_score(Length,Score) :-
+	values(gene_length,Values),
+	get_distribution(gene_length,Probs),
+	accumulate_smaller(Length, Values, Probs,0,SumProbAfter),
+	values(score_categories,ScoreValues),
+	get_distribution(score_categories,ScoreProbs),
+	lookup_category(SumProbAfter,ScoreValues,ScoreProbs,0,Score).
+
+range_prob(StartLen,EndLen,RangeProb) :-
+	values(gene_length,Values),
+	findall(L,(member(L,Values),L<=StartLen,L>=EndLen), Lengths),
+	findall(P,(member(O,Lengths),SwitchGoal=..[SwitchName,O],prob(SwitchGoal,P)),Probs),
+	sumlist(Probs,RangeProb).
+	
+outcome_ranges(NumRanges,Ranges) :-
+	values(gene_length,Outcomes),
+	divide_list(OutComes,NumRanges,Divided),
+	findall(Range,(member(Seq,DivideD),sequence_range(Seq,Range)),Ranges).
+	
+sequence_range(Seq,[First,Last]),
+	reverse(Seq,RevSeq),
+	Seq = [First|_],
+	RevSeq = [Last|_].
+
+%
+% Divide the outcomes (of msw gene_length) into continuous groups, e.g.
+% 1..20, 21...56, 57..62,....
+% The number of groups is specificed via a parameter
+%make_groups(NumGroups,Groups) :-
+
+divide_list([],_,[]).
+
+divide_list(L,0,L).
+
+divide_list(List,NumChunks,[Chunk|ChunksRest]) :-
+	length(List,ListLen),
+	ChunkLen is ListLen // NumChunks,
+	first_n(ChunkLen,List,Chunk),
+	append(Chunk,RestList,List),
+	NextNumChunks is NumChunks - 1,
+	divide_list(RestList,RestNumChunks,ChunksRest).
+
+lookup_category(TargetProb, [_|Vs],[P|Ps],AccProb,TargetCategory) :-
+	NewAccProb is AccProb + P,
+	NewAccProb < TargetProb,
+	lookup_category(TargetProb,Vs,Ps,NewAccProb,TargetCategory).
+
+lookup_category(TargetProb, [V|_], _, AccProb, V) :-
+	AccProb =< TargetProb.
+	
+accumulate_smaller(V, [V|_],[P|_],SumProbBefore,SumProbAfter) :-
+	SumProbAfter is SumProbBefore + P.
+
+accumulate_smaller(TargetValue, [V|Vs],[P|Ps],SumProbBefore,SumProbAfter) :-
+	TargetValue \= V,
+	NewSumProbBefore is SumProbBefore + P,
+	accumulate_smaller(TargetValue, Vs,Ps,NewSumProbBefore,SumProbAfter).
+

@@ -1,38 +1,43 @@
 :- ['../../lost.pl'].                                                                   
 :- lost_include_api(interface).                                                         
-%:- [autoAnnotations].
-:- lost_include_api(autoAnnotations). % (bug i denne her ?)
+:- lost_include_api(autoAnnotations).
 :- lost_include_api(prism_parallel).
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).                                                                                                                                        
 :- lost_include_api(stats).
 :- lost_include_api(viterbi_learn).
 
-% Option declaration
+:- task(annotate([text(prolog(prism_parameters)),text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
+:- task(parallel_annotate([text(prolog(prism_parameters)),text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
+:- task(parallel_learn([text(prolog(ranges(gene)))],[],text(prolog(prism_parameters)))).
 
-
-% Input Format Specification
-lost_input_formats(annotate,[prolog(sequence(_))]).
-% Output Format Specification
-lost_output_format(annotate,_,text(prolog(ranges(_)))).
 set_params:- restore_sw('params_half.gen').
-% 
-annotate([ParamsFile,InputFile],_Options,OutputFile) :-                                 
-	write('Codon preference genefinder: '),nl,                                                         
-        prismAnnot('codon_pref'), % Load the actual PRISM model                                         
-        restore_sw(ParamsFile),
-        % Building of the Input for the annotations
-        consult(InputFile),
-        findall(Chunk,get_chunk(Chunk),List_Chunk),	 
-        findall([ID,Left,Right,Dir,Frame],chunk(ID,Left,Right,Dir,Frame,_),List_Ranges_Chunk),
-	 % Computation of annotations
-        open(OutputFile,write,Stream_Out),
-        compute_and_save_annotations(Stream_Out,1,List_Chunk,List_Ranges_Chunk).
-        % Save the annotations in the right format
-        %write(save_annotation(lost_prediction,List_Ranges_ORF,List_Annotations,Dir,Frame,OutputFile)),nl,
-        %save_annotation(lost_prediction,List_Ranges_ORF,Dir,Frame,List_Annotations,OutputFile). % Måske, something more generic to include in io 
-        %save_annotation_to_sequence_file(genemark_genefinder,70,Annotation,OutputFile).
 
+%% annotate(+InputFiles,+Options,+OutputFile)
+% ==
+% InputFiles = [ ParamsFile, InputFile ]
+% == 
+% Model is first parameterized using ParamsFile. 
+% Eaah putative gene/orf/chunk (range facts) in InputFile is annotated using the model.
+% The gene range facts are expected to have a =|sequence|= extra field, which holds a list with nucleotide sequence spanned by the range.
+% If a input orf is annotated entirely as non-coding, then it will _not_ be written to the output file.
+% Otherwise, the orf will be written to the output file with and additional extra field =|codon_pref(AnnotList)|=. 
+% AnnotList is a list of zeroes and ones where 0 means annotated as non-coding and 1 annotated as coding.
+annotate([ParamsFile,InputFile],_Options,OutputFile) :-
+	write('Codon preference genefinder: '),nl,
+	prismAnnot('codon_pref'), % Load the actual PRISM model
+	restore_sw(ParamsFile),
+	% Building of the Input for the annotations
+    consult(InputFile),
+    findall(Chunk,get_chunk(Chunk),List_Chunk),
+    findall([ID,Left,Right,Dir,Frame],chunk(ID,Left,Right,Dir,Frame,_),List_Ranges_Chunk),
+	% Computation of annotations
+    open(OutputFile,write,Stream_Out),
+    compute_and_save_annotations(Stream_Out,1,List_Chunk,List_Ranges_Chunk).
+
+
+%% parallel_annotate(+InputFiles,+Options,+OutputFile)
+% Same as annotate/3 but runs with 10 threads in parallel.
 parallel_annotate([ParamsFile,InputFile],_opts,OutputFile) :-
         split_file(InputFile,500,'cod_pref_input', '.pl',ResultingFiles),
         open('input_files.list',write,OutS),
@@ -41,34 +46,17 @@ parallel_annotate([ParamsFile,InputFile],_opts,OutputFile) :-
         atom_concat_list(['./parallel_predict.sh ','10 ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
         system(Cmd).
 
-
 get_chunk(Chunk):-
-				chunk(_, _, _, D, _,[sequence(ChunkRev),_,_]),
+		chunk(_, _, _, D, _,[sequence(ChunkRev),_,_]),
         (D = '-' -> reverse(ChunkRev,Chunk)
         ;
         Chunk = ChunkRev).
-	
-
-
-%annotate([InputFile],Options,OutputFile) :-
-%	get_option(Options,optimized,true),
-%	subtract(Options,[optimized(true)],NewOptions1),
-%	append([optimized(false)], NewOptions1, NewOptions2),
-%	terms_to_file('options.pl',[original_options(NewOptions2)]),
-%	lost_tmp_directory(Tmp),
-%	atom_concat(Tmp,'lost_genefinder_chunk',Prefix),
-%	split_file(InputFile, 10, Prefix, '.pl'),
-%	atom_concat(Tmp,'lost_genefinder_chunk*pl',InputFilePattern),
-%	atom_concat_list(['sh parallel_predict.sh ', OutputFile, ' ', InputFilePattern], Cmd),
-%	system(Cmd).
-	
 
 test :-
 	annotate(['test_chunks.gen'],[], 'testout.pl').
 
-% compute_and_save_annotations(++Stream,++ORF,++Type_Gene,++List_Ranges,++Dir,++Frame)
+% compute_and_save_annotations(+Stream,+ORF,+Type_Gene,+List_Ranges,+Dir,+Frame)
 % Compute the annotation and write into Stream when a coding region is found.
-
 compute_and_save_annotations(Stream_Out,_Nb_Iterations,[],[]) :-
         !,
         close(Stream_Out).
@@ -93,10 +81,7 @@ compute_and_save_annotations(Stream_Out,Nb_Iterations,[ORF|Rest_ORF],[Range|Rest
         ),
         Nb_Iterations1 is Nb_Iterations+1,
         !,
-        compute_and_save_annotations(Stream_Out,Nb_Iterations1,Rest_ORF,Rest_Ranges) .
-    
-
-
+        compute_and_save_annotations(Stream_Out,Nb_Iterations1,Rest_ORF,Rest_Ranges).
 
 % build_term_for_annotation : Terms is a variable if the annotation is a list of 0, otherwise a term with a range for the coding region
 build_term_for_annotation(Functor,[ID,Left,Right,Dir,Frame],AnnotationRev,Term) :-
@@ -128,7 +113,12 @@ first_coding(Left,Value,[_Annotation|Rest_Annotations],Start) :-
 %%%% learning %
 %%%%%%%%%%%%%%%
 
-
+%% parallel_learn(+InputFiles, +Options, +OutputFile)
+% ==
+% InputFiles = [ TrainingDataFile ]
+% ==
+% Train the gene finder using the genes/orfs/chunks in TrainingDataFile. 
+% TrainingDataFile is expected to contain two =|extra|= fields: =|sequence|= contains the nucleotide sequence as a list and a =|ref_annot|= which contains a list of zeros (non-coding) and ones (coding) according to a golden standard.
 parallel_learn([InputFile],[],ParamsFile) :-
         lost_tmp_directory(Tmp),
         atom_concat_list([Tmp,'codon_pref_full_train.pl'],TrainingFile),
@@ -186,17 +176,6 @@ train(Training_file,Parameter_file):-
 	prismAnnot('codon_pref'), % Load the actual PRISM model
 	viterbi_learn_file(Training_file),
 	save_sw(Parameter_file).
-
-%%%%%%%%%%%%%%%%%%%%%%%
-% Parallel Execution  %
-%%%%%%%%%%%%%%%%%%%%%%%
-parallel_codpref(InFile,OutFile) :-
-       split_file_fasta(InFile,1000,codpref_split_in,'seq',InFileParts),
-       map(codpref_split_out,InFileParts,OutFileParts),
-       %write(OutFileParts),nl,
-       create_goals(InFileParts,OutFileParts,1,FilePartGoals),
-       prism_parallel(FilePartGoals).
-
 
 out_file_name(InFile,OutFile) :-
         atom_concat(InFile,'.processed',OutFile).

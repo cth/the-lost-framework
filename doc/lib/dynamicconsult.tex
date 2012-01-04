@@ -1,0 +1,25 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{dynamic_consult.pl -- dynamic consulting and unconsulting of Prolog files}
+
+\label{sec:dynamicconsult}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+\end{tags}
+
+This library allows you to consult a file, perform some queries on the contents of consulted file, and later
+"unconsult" the file again.\vspace{0.7cm}
+
+\begin{description}
+    \predicate{dynamic_consult}{1}{+File}
+Consult the prolog file \arg{File}. All terms in the file will be asserted.
+
+    \predicate{dynamic_unconsult}{1}{+File}
+Undo consult of \arg{File}. All asserted terms associated with \arg{File} are retracted.
+\end{description}
+

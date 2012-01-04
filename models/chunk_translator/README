@@ -1,0 +1,3 @@
+Translates a file of frame specific nucleotide chunks into a file of equivalent fastaformatted amino-acid sequences.
+
+@author: Ole Torp Lassen

@@ -3,6 +3,74 @@
 
 
 
-\section{genedb.pl}
+\section{genedb.pl -- working with text(prolog(ranges(_))) files}
 
 \label{sec:genedb}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+\end{tags}
+
+This library contains utility predicates for working with the \verb$text(prolog(ranges(_)))$ format.
+This format, which is descibed in detail in the manuals section on file formats contain
+facts,
+
+\begin{code}
+gene(SequenceId,Left,Right,Strand,Frame,Extra)
+\end{code}
+
+Note that the functor 'gene' may vary.
+\verb$Left$ and \verb$Right$ are integers indicating the left and right position of the gene in the genome.
+They are both inclusive. \verb$Strand$, which is either '+' or '-' indicates whether the gene is located
+on the direct or reverse strand. \verb$Frame$ is an integer in [1,2,3,4,5,6] which indicates the reading
+frame of the gene. \verb$Extra$ is a list of key/value pairs, e.g.
+
+\begin{code}
+[product('hypothetical protein'), cid(12351)]
+\end{code}
+
+The format does not dictate which key/value pairs are required, so this may vary depending on the
+application and how the database was generated.\vspace{0.7cm}
+
+\begin{description}
+    \predicate[det]{gene_sequence_id}{2}{+GeneRecord, -SequenceId}
+Extract the \arg{SequenceId} field from a \arg{GeneRecord}
+
+    \predicate[det]{gene_left}{2}{+GeneRecord, -Left}
+Extract the \arg{Left} position of \arg{GeneRecord}
+
+    \predicate[det]{gene_right}{2}{+GeneRecord, -Right}
+Extract the \arg{Right} position of \arg{GeneRecord}
+
+    \predicate[det]{gene_strand}{2}{+GeneRecord, -Strand}
+Extract the \arg{Strand} (+,-) from a \arg{GeneRecord}
+
+    \predicate[det]{gene_frame}{2}{+GeneRecord, -Frame}
+Extract the \arg{Frame} from a \arg{GeneRecord}
+
+    \predicate{gene_extra_field}{3}{+GeneRecord, +Key, -Value}
+Extract the \arg{Value} of the extra field which has \arg{Key} as its functor.
+
+    \predicate{genedb_distinct_predictions}{3}{+GeneDBFunctor, GeneEnds, PredictionsForEnd}
+Find all distinct predictions in a \textit{consulted} genedb:
+\arg{GeneEnds} is a list of stop codon positions for the predictions
+and \arg{PredictionsForEnd} is a list of lists. The list has the same length
+as \arg{GeneEnds} and each element corresponds to to an element in \arg{GeneEnds}.
+The elements of the list are lists of predictions in
+list predictions for the parstop codon 
+
+    \predicate[det]{genedb_distinct_stop_codons}{2}{+GeneDBFunctor, -DistinctStops}
+\arg{DistinctStops} is a list (a set) of all stop codons of predictions in the database.
+
+    \predicate{genedb_predictions_for_stop_codon}{3}{+GeneDBFunctor, +StopMatchPattern, -Predictions}
+Finds all predictions that matches \arg{StopMatchPattern}. \arg{StopMatchPattern} is a list:
+
+\begin{code}
+[+StopCodonEnd,?Strand,?Frame]
+\end{code}
+
+StopCodonEnd is position of the last nucleotide in the stop codon (i.e. right-most on direct strand and
+left-most on reverse strand). Strand is '+' or '-' and frame is one of [1,2,3,4,5,6].
+\end{description}
+

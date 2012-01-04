@@ -1,0 +1,151 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\subsection{blastgf}
+
+\label{sec:blastgf}
+
+\begin{tags}
+\mtag{author}- : Christian Theil Have \\- : Ole Torp Lassen
+\end{tags}
+
+Blast based gene finder.
+
+This gene finder predicts genes based on blast hits.
+
+This is based on Oles (now defunct it seeems) chunk_aa_conservtion model, but considerably rewritten by Christian Theil Have.
+The \verb$blastgf$ model only contains the probabilistic HMM and prism model related to prediction of
+genes based on blast matches and more mundane tasks like preprocessing, blast xml parsing, running of
+blast have been omitted from this model.
+
+FIXME: More documentation needs to be done.\vspace{0.7cm}
+
+\begin{description}
+    \predicate{annotate_single_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(prism_parameters))
+    2. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(ranges(gene)))
+Options:
+\end{code}
+
+\arg{InputFiles} = [ ParamsFile, OrfsFile ]
+This task creates annotations for the ORFs of OrfsFile.
+The Orfs in OrfsFile are expected to have an extra field, \verb$identity_seq$, a list of 0 and 1's in which ones identity positions with a blast hit.
+Such an extra field can be added with the \verb$orf_blaster$ model.
+If part of and ORF in OrfsFile is predicted as coding, then the ORF will be written to \arg{OutputFile}.
+The term written to output file will have an additional extra field \verb$blastgf(AnnotList)$ where \verb$AnnotList$ is a list of 0 and 1, where one 0 means predicted as non-coding and 1 means predicted as coding.
+
+    \predicate{annotate_multi_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(prism_parameters))
+    2. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(ranges(gene)))
+Options:
+\end{code}
+
+\arg{InputFiles} = [ ParamsFile, OrfsFile ]
+This task creates annotations for the ORFs of OrfsFile.
+The Orfs in OrfsFile are expected to have an extra fields, \verb$identity_seq$, a list of integers 0-8, there the number indicates the number identity positions with a blast hits to one of eight other organisms.
+In the future, the number of organisms may be made configurable.
+Such an extra field can be added with the \verb$orf_blaster$ model.
+If part of and ORF in OrfsFile is predicted as coding, then the ORF will be written to \arg{OutputFile}.
+The term written to output file will have an additional extra field \verb$blastgf(AnnotList)$ where \verb$AnnotList$ is a list of 0 and 1, where one 0 means predicted as non-coding and 1 means predicted as coding.
+
+    \predicate{parallel_annotate_multi_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(prism_parameters))
+    2. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(ranges(gene)))
+Options:
+\end{code}
+
+Same as \verb$annotate_multi_track$ but running with 10 parallel threads.
+This task is deprecated.
+
+    \predicate{parallel_annotate_single_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(prism_parameters))
+    2. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(ranges(gene)))
+Options:
+\end{code}
+
+Same as \verb$annotate_single_track$ but running with 10 parallel threads.
+This task is deprecated.
+
+    \predicate{learn_single_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(prism_parameters))
+Options:
+\end{code}
+
+The Orfs in the input file are expected to have an extra field, \verb$identity_seq$, a list of 0 and 1's in which ones identity positions with a blast hit.
+Also, the Orfs in the input file are expected to have an extra field, \verb$ref_annot$, a list of 0 and 1's in which ones indicate a that (part of) the orf is real gene.
+The result of running the task is PRISM parameter file.
+
+    \predicate{learn_multi_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(prism_parameters))
+Options:
+\end{code}
+
+The Orfs in the input file are expected to have an extra field, \verb$identity_seq$, a list of integers 0-8, there the number indicates the number identity positions with a blast hits to one of eight other organisms.
+Also, the Orfs in the input file are expected to have an extra field, \verb$ref_annot$, a list of 0 and 1's in which ones indicate a that (part of) the orf is real gene.
+The result of running the task is PRISM parameter file.
+
+    \predicate{parallel_learn_single_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(prism_parameters))
+Options:
+\end{code}
+
+Same as \verb$learn_single_track$, but running with 10 parallel threads.
+
+    \predicate{parallel_learn_multi_track}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(prism_parameters))
+Options:
+\end{code}
+
+Same as \verb$learn_multi_track$, but running with 10 parallel threads.
+\end{description}
+

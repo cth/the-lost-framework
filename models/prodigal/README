@@ -1,0 +1,12 @@
+Wrapper for the Prodigal gene finder.
+
+The model allows running the gene finder and parsing reports produced by the gene finder.
+
+To run Prodigal via this model you must have the Prodigal software installed locally.
+After installation, alter the file =|config.pl|= to point to the executable binary of Prodigal, e.g. 
+==
+prodigal_config(prodigal_binary, '/opt/genefinders/prodigal/prodigal.v2_50.linux').
+==
+
+
+@author: Christian Theil Have

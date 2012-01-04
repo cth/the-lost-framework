@@ -3,9 +3,15 @@
 
 
 
-\section{fasta.pl}
+\section{fasta.pl -- working with the FASTA file-format}
 
 \label{sec:fasta}
+
+\begin{tags}
+\mtag{author}- : Christian Theil Have \\- : Matthieu Petit \\- : Ole Torp Lassen
+\end{tags}
+
+This file includes some utilities for working with the FASTA format\vspace{0.7cm}
 
 \begin{description}
     \predicate{fasta_load_sequence}{4}{+InputFile, +SequenceIdentifier, -FastaHeaderLine, -Sequence}
@@ -16,5 +22,9 @@ in a Prolog format
 Given a header and a sequence of data, this predicate
 writes in Outputfile \arg{SequenceData} and \arg{Header} in the fasta
 format.
+
+    \predicate{split_file_fasta}{5}{+Filename, +ChunkSize, +OutputFilePrefix, +OutputFileSuffix, -ResultFiles}
+Split a FASTA composed of several header ($>$ ...) into multiple files. We consider that a chunk
+has been seen each time that the symbol $>$ appears at the beginning of a line
 \end{description}
 

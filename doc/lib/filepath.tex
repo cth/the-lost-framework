@@ -1,0 +1,74 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{filepath.pl -- filepath}
+
+\label{sec:filepath}
+
+\begin{tags}
+    \tag{author}
+Christian Theil Have
+
+Directory and file management in the LoSt framework.
+\end{tags}
+
+\vspace{0.7cm}
+
+\begin{description}
+    \predicate[det,private]{lost_testcase_directory}{1}{-TestCaseDir}
+\arg{TestCaseDir} is the absolute path to the directory containing test cases:
+
+\begin{code}
+$LOST_BASE_DIR/test/
+\end{code}
+
+    \predicate[det,private]{lost_models_directory}{1}{-TmpDir}
+\arg{TmpDir} is the absolute path to the directory containing temporary files:
+
+\begin{code}
+$LOST_BASE_DIR
+\end{code}
+
+    \predicate[det,private]{lost_utilities_directory}{1}{-Dir}
+\arg{Dir} is the absolutate path to the directory containing utility scripts
+
+\begin{code}
+$LOST_BASE_DIR/utilities/
+\end{code}
+
+    \predicate[det,private]{lost_models_directory}{1}{-ModelsDir}
+\arg{ModelsDir} is absolutate path to the directory containing models:
+
+\begin{code}
+$LOST_BASE_DIR/models/
+\end{code}
+
+    \predicate[det,private]{lost_data_directory}{1}{-Dir}
+\arg{Dir} is the absolutate path to the directory containing data files
+
+\begin{code}
+$LOST_BASE_DIR/data/
+\end{code}
+
+    \predicate[det,private]{lost_script_directory}{1}{-Dir}
+\arg{Dir} is the absolutate path to the directory containing LoSt scripts
+
+\begin{code}
+$LOST_BASE_DIR/scripts/
+\end{code}
+
+    \predicate[det,private]{lost_model_directory}{2}{+Model, -ModelDir}
+\arg{ModelDir} is the absolute path to the directory containing the the model with name \arg{Model}
+
+    \predicate[det,private]{lost_model_interface_file}{2}{+Model, -ModelFile}
+\arg{ModelFile} is the absolute path the '\file{interface.pl}' file for the model with name \arg{Model}
+
+    \predicate[private]{lost_data_index_file}{1}{-IndexFile}
+\arg{IndexFile} is absolute path to the database containing the an index of Lost script result files
+
+    \predicate[det,private]{lost_tmp_file}{2}{+Prefix, -TmpFile}
+Creates a temporary file in the \$LOST_TMP_DIR directory with a unique name starting with \arg{Prefix}
+\end{description}
+

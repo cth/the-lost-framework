@@ -1,0 +1,30 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{termdb.pl -- termdb - accessing Prolog source files.}
+
+\label{sec:termdb}
+
+\begin{tags}
+    \tag{author}
+Christian Theil Have
+\end{tags}
+
+Predicates for working with Prolog source files, i.e. in the format \verb$text(prolog(_any))$.\vspace{0.7cm}
+
+\begin{description}
+    \predicate{file_functor}{2}{+File, ?Functor}
+True if all terms in \arg{File} have the functor \arg{Functor}.
+
+    \predicate[det]{file_functors}{2}{+File, ?Functors}
+\arg{Functors} is a set of the functors in \arg{File}
+
+    \predicate{terms_from_file}{2}{+File, -Terms}
+Reads all \arg{Terms} from named file \arg{File}
+
+    \predicate[private]{collect_stream_terms}{2}{+Stream, -Terms}
+\arg{Terms} is a list of all \arg{Terms} read from \arg{Stream} untill end_of_file
+\end{description}
+

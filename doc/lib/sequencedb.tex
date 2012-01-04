@@ -1,0 +1,89 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{sequencedb.pl -- sequencedb}
+
+\label{sec:sequencedb}
+
+\begin{tags}
+    \tag{author}
+: Matthieu Petit and Christian Theil Have
+\end{tags}
+
+This library contains predicates for working with files of the \verb$prolog(sequence(_any))$.
+
+The typical \verb$prolog(sequence(_))$ file contains facts,
+
+\begin{code}
+data(somekey, 1, 4, [a,b,c,d]).
+data(somekey, 5, 8, [e,f,g,h]).
+\end{code}
+
+The size of list may vary and is often tweaked for the efficiency of applications, e.g.
+in the extreme case the file will only contain one fact where the fourth argument is a long list.
+This, may however be quite inefficient to access.
+
+Often, these files may even be prohibitively large to consult and predicates for accessing
+the files without consulting are necessary.
+
+The predicate \verb$seqdb_data_from_file$ address this problem by accessing the file in
+a sequential fashion and extracting data from one fact at a time.
+
+If many repeated queries are going to be made to the file, then repeated sequential access
+may be to slow. If the file is not to big to fit in memory then loaded into memory and accessed
+via the predicate, \verb$seqdb_memory_map_file$. Then, the predicate \predref{get_sequence_range}{4} can then be used
+to extract a part of the sequence. This is fairly efficient, but depends on the size of the data terms,
+{\tt\string|}t{\tt\string|}, in the file. The running time of the predicate is bounded by O(2{\tt\string|}t{\tt\string|} × n), where n = Max − Min.\vspace{0.7cm}
+
+\begin{description}
+    \predicate{sequence_from_file}{3}{+File, +Options, -Data}
+This predicate aims at efficiently extracting data (for instance, a list of nucleotides) from a file
+with a format \verb$text(prolog(sequence(_any)))$.
+Given of file composed of prolog facts, this predicate generates a list, \arg{Data}.
+By default, data predicate is in the form but the predicate is able to handle
+slightly different formats as well.
+
+\begin{code}
+Functor(Key,LeftPosition,RightPosition,Data,...)
+\end{code}
+
+Type of \arg{Data} is a list
+
+\arg{Options}: - data_position(Pos): Where Pos is an integer that specifies the argument that contains the list with of data, i.e. it is 4, meaning the fourth argument.
+
+\begin{itemize}
+    \item left_position(Left): Left is and integer that specifies the argument of which holds Leftposition. If left unspecified, it has default value 2. If the term has no argument to indicate left position, then \verb$left_position(none)$ should be used.
+    \item right_position(Right): Right is and integer that specifies the argument of which holds Rightposition. If left unspecified, it has default value 3. If the term has no argument to indicate right position, then \verb$right_position(none)$ should be used.
+\end{itemize}
+
+By default, the predicate extracts and collects in \arg{Data} all the data available in \arg{File}.
+However, two options are available to ask for partial information:
+
+\begin{itemize}
+    \item range(Min,Max): extract a range of data
+    \item ranges(List_Ranges): extract a list of data given a list of Range
+\end{itemize}
+
+Note that data extraction is made without taking care about the strand (for a DNA sequence).
+
+\begin{tags}
+    \tag{author}
+: Matthieu Petit
+\end{tags}
+
+    \predicate{sequence_to_file}{4}{+KeyIndex, +ChunkSize, +Sequence, +File}
+Stores List to \arg{File} in the \verb$text(prolog(sequence(_)))$ format, e.g. Prolog facts on the form:
+
+\begin{code}
+data(KeyIndex,1,5, [a,t,c,c,g]).
+\end{code}
+
+The first argument \arg{KeyIndex} is used as an identifier.
+\arg{ChunkSize} is the number of elements from \arg{Sequence} to store with each fact, e.g. it is 5 in the example above.
+The second and third argument of a stored fact, corresponds to the start and end position in \arg{Sequence} (indexing starts at position one).
+The fourth argument of the fact is a list containing the relevant elements of the \arg{Sequence} list.
+Note that if the the length of \arg{Sequence} is not a multiple of \arg{ChunkSize}, then the last fact stored will have a shorter range.
+\end{description}
+

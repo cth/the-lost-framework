@@ -3,12 +3,28 @@
 
 
 
-\section{stats.pl}
+\section{stats.pl -- Statistics computation module}
 
 \label{sec:stats}
 
+NOM ET VERSION :
+
+\file{stats.pl} -- Version 0.0
+
+\begin{quote}
+GOAL :
+Computation of several statistics
+\end{quote}
+
+\begin{quote}
+HISTORIQUE :
+M.P 10/03/2010
+\end{quote}
+
+DESCRIPTION :\vspace{0.7cm}
+
 \begin{description}
-    \predicate{normalize}{3}{+Type, +Counting, -Probabilities}
+    \predicate[private]{normalize}{3}{+Type, +Counting, -Probabilities}
 Predicate used to normalize the result of a counting
 Probabilies is a list composed of element with the format
 
@@ -16,7 +32,7 @@ Probabilies is a list composed of element with the format
 (Past,(Domain,Distribution))
 \end{code}
 
-    \predicate{build_stat_facts}{2}{+Stats, -StatsFacts}
+    \predicate[private]{build_stat_facts}{2}{+Stats, -StatsFacts}
 builds a list of facts, one for each statistic
 
 \begin{code}

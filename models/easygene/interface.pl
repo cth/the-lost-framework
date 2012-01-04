@@ -2,15 +2,10 @@
 :- lost_include_api(interface). 
 :- lost_include_api(utils_parser_report).
 
-% Generate a file of predicate based on Easygene report.
+:- task(parse([text(easygene_report)],[],[test(prolog(ranges(gene)))])).
 
-
-% Input Format Specification
-lost_input_formats(parse,[text(easygene_report)]).
-% Output Format Specification
-lost_output_format(parse,_,[text(prolog(ranges(_)))]).
-
-
+%% parse(+InputFiles,+Options,+OutputFile)
+% Parse a report in the easygene format.
 parse([Easygene_Report],_Options,OutputFile) :-
 	consult('eg_parser.pl'),  % Not nice 
 	eg_parser(Easygene_Report,OutputFile).

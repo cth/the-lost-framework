@@ -1,17 +1,19 @@
-:- ['../../lost.pl'].
-:- lost_include_api(interface). 
-:- lost_include_api(utils_parser_report).
+%:- ['../../lost.pl'].
+:- use(interface). 
+:- use(utils_parser_report).
+:- use(errorcheck).
 
-% Generate a file of predicate based on Easygene report.
+:- task(parse([text(ptt)],[genome_key('n/a')], text(prolog(ranges(gene))))). 
 
-lost_input_formats(parse, [text(ptt)]).
-lost_output_format(parse, _Options, text(prolog(ranges(gene)))).
-
-
-% Option
-lost_option(parse,genome_key,'U00096', 'Specify the genome key of GeneBank.'). % Note: information not available in the PTT file
-
+%% parse(+InputFiles, +Options, +OutputFile) 
+% ==
+% InputFiles = [ PTTFile ]
+% ==
+% Parses a PTT file creates a gene fact for each line in ptt file.
+% The value supplied option =|genome_key|= is the first argument in the gene records
+% produced in the OutputFile.
 parse([InputFile],Options,OutputFile) :-
         consult(ptt_parser),
         get_option(Options,genome_key,Key),
-        gb_parser(InputFile,Key,OutputFile).
+        check_or_fail(gb_parser(InputFile,Key,OutputFile),error('Parser error')),
+		writeln('here').	

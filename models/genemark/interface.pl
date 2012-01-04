@@ -8,6 +8,11 @@
 :- lost_include_api(interface).
 :- lost_include_api(misc_utils).
 
+:- invalidate_on_change('ldata_parser.pl').
+:- invalidate_on_change('config.pl').
+
+:- task annotate([text(fasta(fna))],[parameters('Escherichia_coli_K12'),threshold(0.5)], text(prolog(ranges(gene)))).
+
 lost_option(annotate,parameters,'Escherichia_coli_K12','The named parameter set to use for prediction. Should be similar to organism of the sequence').
 
 lost_option(annotate,threshold,0.5,'Any predictions with probability below this threshold are discarded').

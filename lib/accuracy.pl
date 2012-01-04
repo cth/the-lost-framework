@@ -1,16 +1,19 @@
-/** <module> Module accuracy.pl
+:- module(accuracy, []).
 
- This is a tool to calculate the accuracy of gene finder predictions
- against a reference annotation. It expects to find facts representing
- the predictions and the reference annation. These facts are expected
- to be on the form functor(From, To, Strand, ReadingFrame, Name).
+/** <module> accuracy measures for gene predictions
 
- @author Christian Theil Have
- @date dec. 2009.
+This is a tool to calculate the accuracy of gene finder predictions
+against a reference annotation. It expects to find facts representing
+the predictions and the reference annation. These facts are expected
+to be on the form functor(From, To, Strand, ReadingFrame, Name).
+
+@author: Christian Theil Have
 
 */
 
 :- lost_include_api(misc_utils).
+
+:- use(arithmetic).
 
 %% Tabling declarations:
 

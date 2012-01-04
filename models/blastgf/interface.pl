@@ -8,6 +8,15 @@
 
 % Option declaration
 
+:- task(annotate_single_track([text(prolog(prism_parameters)),text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
+:- task(annotate_multi_track([text(prolog(prism_parameters)),text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
+:- task(parallel_annotate_single_track([text(prolog(prism_parameters)),text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
+:- task(parallel_annotate_multi_track([text(prolog(prism_parameters)),text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
+:- task(learn_single_track([text(prolog(ranges(gene)))],[],text(prolog(prism_parameters)))).
+:- task(learn_multi_track([text(prolog(ranges(gene)))],[],text(prolog(prism_parameters)))).
+:- task(parallel_learn_single_track([text(prolog(ranges(gene)))],[],text(prolog(prism_parameters)))).
+:- task(parallel_learn_multi_track([text(prolog(ranges(gene)))],[],text(prolog(prism_parameters)))).
+
 % Input Format Specification
 lost_input_formats(annotate,[prolog(sequence(_))]).
 % Output Format Specification
@@ -17,26 +26,45 @@ lost_output_format(annotate,_,text(prolog(ranges(_)))).
 % Prediction  %
 %%%%%%%%%%%%%%%
 
+%% annotate_single_track(+InputFiles,+Options,+OutputFile)
+% InputFiles = [ ParamsFile, OrfsFile ]
+% This task creates annotations for the ORFs of OrfsFile. 
+% The Orfs in OrfsFile are expected to have an extra field, =|identity_seq|=, a list of 0 and 1's in which ones identity positions with a blast hit. 
+% Such an extra field can be added with the =|orf_blaster|= model.
+% If part of and ORF in OrfsFile is predicted as coding, then the ORF will be written to OutputFile.
+% The term written to output file will have an additional extra field =|blastgf(AnnotList)|= where =|AnnotList|= is a list of 0 and 1, where one 0 means predicted as non-coding and 1 means predicted as coding.
 annotate_single_track([ParamsFile,InputFile],_Options,OutputFile) :-
 	write('BLAST genefinder: '),nl,
    	prismAnnot('blastgf_single_track'), % Load the actual PRISM model
-        restore_sw(ParamsFile),
+    restore_sw(ParamsFile),
 	open(OutputFile,write,StreamOut),
 	open(InputFile,read,StreamIn),
 	compute_and_save_annotations(StreamIn,StreamOut,1),
 	close(StreamOut),
 	close(StreamIn).
-
-annotate_multi_track([ParamsFile,InputFile],_Options,OutputFile) :-                                 
+	
+	
+%% annotate_multi_track(+InputFiles,+Options,+OutputFile)
+% InputFiles = [ ParamsFile, OrfsFile ]
+% This task creates annotations for the ORFs of OrfsFile. 
+% The Orfs in OrfsFile are expected to have an extra fields, =|identity_seq|=, a list of integers 0-8, there the number indicates the number identity positions with a blast hits to one of eight other organisms.
+% In the future, the number of organisms may be made configurable.
+% Such an extra field can be added with the =|orf_blaster|= model.
+% If part of and ORF in OrfsFile is predicted as coding, then the ORF will be written to OutputFile.
+% The term written to output file will have an additional extra field =|blastgf(AnnotList)|= where =|AnnotList|= is a list of 0 and 1, where one 0 means predicted as non-coding and 1 means predicted as coding.
+annotate_multi_track([ParamsFile,InputFile],_Options,OutputFile) :-
 	write('BLAST genefinder: '),nl,
    	prismAnnot('blastgf_multi_track'), % Load the actual PRISM model
-        restore_sw(ParamsFile),
+    restore_sw(ParamsFile),
 	open(InputFile,read,StreamIn),
 	open(OutputFile,write,StreamOut),
 	compute_and_save_annotations(StreamIn,StreamOut,1),
 	close(StreamOut),
 	close(StreamIn).
 
+%% parallel_annotate_multi_track(+InputFiles,+Options,+OutputFile)
+% Same as =|annotate_multi_track|= but running with 10 parallel threads. 
+% This task is deprecated.
 parallel_annotate_multi_track([ParamsFile,InputFile],_,OutputFile) :-
         split_file(InputFile,500,'blastgf_multi_input', '.pl', ResultingFiles),
         open('input_files.list',write,OutS),
@@ -45,6 +73,9 @@ parallel_annotate_multi_track([ParamsFile,InputFile],_,OutputFile) :-
         atom_concat_list(['./parallel_predict.sh ','10 ', 'annotate_multi_track ', ParamsFile, ' ', OutputFile, ' input_files.list'], Cmd),
         system(Cmd).
 
+%% parallel_annotate_single_track(+InputFiles,+Options,+OutputFile)
+% Same as =|annotate_single_track|= but running with 10 parallel threads. 
+% This task is deprecated.
 parallel_annotate_single_track([ParamsFile,InputFile],_,OutputFile) :-
         split_file(InputFile,1000,'blastgf_single_input', '.pl', ResultingFiles),
         open('input_files.list',write,OutS),
@@ -119,32 +150,32 @@ first_coding(Left,Value,[_Annotation|Rest_Annotations],Start) :-
 %%%% learning %
 %%%%%%%%%%%%%%%
 
+%% learn_single_track(+InputFiles, +Options, +OutputFile)
+% The Orfs in the input file are expected to have an extra field, =|identity_seq|=, a list of 0 and 1's in which ones identity positions with a blast hit. 
+% Also, the Orfs in the input file are expected to have an extra field, =|ref_annot|=, a list of 0 and 1's in which ones indicate a that (part of) the orf is real gene.
+% The result of running the task is PRISM parameter file.
 learn_single_track([ChunkFileWithRef],_,ParamsFile) :-
 	TrainingFile = 'training_data.pl',
 	make_training_file(ChunkFileWithRef,TrainingFile),
-        write(here),nl,
+    write(here),nl,
 	save_sw(ParamsFile).
+	
 
-parallel_learn_multi_track([ChunkFileWithRef],_,ParamsFile) :-
-        lost_tmp_directory(Tmp),
-        atom_concat_list([Tmp,'blastgf_full_train.pl'],TrainingFile),
-        make_training_file(ChunkFileWithRef,TrainingFile),
-        split_file(TrainingFile,1000,'blastgf_multi', '.pl',ResultingFiles),
-        open('training_files.list',write,OutS),
-        forall(member(File,ResultingFiles), (write(OutS,File), write(OutS,'\n'))),
-        close(OutS),
-        atom_concat_list(['./parallel_train.sh ','10 ', 'blastgf_multi_track ',  ParamsFile, ' training_files.list'], Cmd),
-        system(Cmd).
-
+%% learn_multi_track(+InputFiles, +Options, +OutputFile)
+% The Orfs in the input file are expected to have an extra field, =|identity_seq|=, a list of integers 0-8, there the number indicates the number identity positions with a blast hits to one of eight other organisms.
+% Also, the Orfs in the input file are expected to have an extra field, =|ref_annot|=, a list of 0 and 1's in which ones indicate a that (part of) the orf is real gene.
+% The result of running the task is PRISM parameter file.
 learn_multi_track([ChunkFileWithRef],_,ParamsFile) :-
 	TrainingFile = 'training_data.pl',
 	make_training_file(ChunkFileWithRef,TrainingFile),
 	prismAnnot('blastgf_multi_track',direct),
-        prism(blastgf_multi_trackEX),
-        ['blastgf_multi_trackEX.psm'],
+    prism(blastgf_multi_trackEX),
+    ['blastgf_multi_trackEX.psm'],
 	viterbi_learn_file(TrainingFile),
 	save_sw(ParamsFile).
 
+%% parallel_learn_single_track(+InputFiles, +Options, +OutputFile)
+% Same as =|learn_single_track|=, but running with 10 parallel threads.
 parallel_learn_single_track([ChunkFileWithRef],_,ParamsFile) :-
         lost_tmp_directory(Tmp),
         atom_concat_list([Tmp,'blastgf_full_train.pl'],TrainingFile),
@@ -156,6 +187,18 @@ parallel_learn_single_track([ChunkFileWithRef],_,ParamsFile) :-
         atom_concat_list(['./parallel_train.sh ','10 ', 'blastgf_single_track ',  ParamsFile, ' training_files.list'], Cmd),
         system(Cmd).
 
+%% parallel_learn_multi_track(+InputFiles, +Options, +OutputFile)
+% Same as =|learn_multi_track|=, but running with 10 parallel threads.
+parallel_learn_multi_track([ChunkFileWithRef],_,ParamsFile) :-
+        lost_tmp_directory(Tmp),
+        atom_concat_list([Tmp,'blastgf_full_train.pl'],TrainingFile),
+        make_training_file(ChunkFileWithRef,TrainingFile),
+        split_file(TrainingFile,1000,'blastgf_multi', '.pl',ResultingFiles),
+        open('training_files.list',write,OutS),
+        forall(member(File,ResultingFiles), (write(OutS,File), write(OutS,'\n'))),
+        close(OutS),
+        atom_concat_list(['./parallel_train.sh ','10 ', 'blastgf_multi_track ',  ParamsFile, ' training_files.list'], Cmd),
+        system(Cmd).
 
 make_training_file(Chunk_Annot,Training_File):-
 	open(Chunk_Annot,read,Chunk_Stream),

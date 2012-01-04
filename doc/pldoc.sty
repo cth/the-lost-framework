@@ -17,19 +17,18 @@
 \usepackage{makeidx}
 \usepackage{url}
 
-\ifpdf
-  \usepackage[pdftex,colorlinks=true,urlcolor=blue]{hyperref}
-  \pdfcompresslevel=9
+%\ifpdf
+%  \usepackage[pdftex,colorlinks=true,urlcolor=blue]{hyperref}
 %  \pdfcatalog{
 %    /PageMode /UseOutLines
 %  }
-  \usepackage[pdftex]{graphicx}
-  \DeclareGraphicsExtensions{.pdf,.jpg,.png}
-\else
-  \usepackage[dvips]{graphicx}
-  \DeclareGraphicsExtensions{.eps,.ps}
-\fi
-\graphicspath{{figs/}{./}}
+%  \usepackage[pdftex]{graphicx}
+%  \DeclareGraphicsExtensions{.pdf,.jpg,.png}
+%\else
+%  \usepackage[dvips]{graphicx}
+%  \DeclareGraphicsExtensions{.eps,.ps}
+%\fi
+%\graphicspath{{figs/}{./}}
 
 %	Other styles
 
@@ -48,6 +47,7 @@
 \newcommand{\onlinebreak}{}
 
 %	References
+
 
 \newcommand{\secref}[1]{section~\ref{sec:#1}}
 \newcommand{\appref}[1]{appendix~\ref{sec:#1}}
@@ -422,6 +422,8 @@
 \newcommand{\opfuncsummary}[5]{#1/#2 & #5 \\}
 \newcommand{\opsummary}[4]{#3 & #1 & #2 & #4 \\}
 \newcommand{\hook}[1]{(hook)}
+
+\newenvironment{shortlist}[1]{\begin{enumerate}#1\end{enumerate}}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

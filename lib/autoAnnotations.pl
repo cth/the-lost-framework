@@ -1,55 +1,60 @@
-% cl(autoAnnotations).  or [autoAnnotations].  % cl for compile
-%
-% Version 2.1 for PRISM 1.12 and higher. January 2009
-% Changes:
-%  - PRISM has a viterbit that produces a proper tree (so the code gets cleaner).
-%  - PRISMs target declaration is obsolete - which is fine as previous version of
-%           autoAnnotations did not treat it correctly.
-%
-% This file defines a preprocessor for PRISM programs that include
-% annotations, which are redundant arguments intended to present
-% abstract descriptions from the data being modelled.
-%
-% Such annotations can be extracted from the proof trees generated
-% by PRISM's viterbi predicates, but this is quite tedious to program
-%
-% Such annotations in a model tend to make PRISM's viterbi calculations run very slow
-% (in many cases, prohibitively slow).
-% On the other hand, annotations are
-% 1. essential for doing supervised learning
-% 2. convenient when presenting predictions (most probably analyses) for the user.
-%
-% The autoAnnotations snystem takes a PRISM program that includes annotations;
-% the user must indicate which arguments that are annotations by a special syntax
-% illustrated in the supplied sample file.
-% It can produce automatically, the following programs
-% (1) a version of the PRISM program without annotations
-%     - useful for viterbi analyses
-% (2) an executable version of the PRISM program with annotations
-%     - useful for initial testing of the model, for sampling and for supervised learning
-%       Probabilities found by learning with program (2) can be used with program (1)
-% (3) a translator from the proof trees produced by program (1) under viterbi prediction
-%
-% The main advantage of using autoAnnotations is that you need only maintain
-% a single program containing the 'logic' of your model.
+:- module(autoAnnotations,[prismAnnot/1,prismAnnot/2,viterbiAnnot/2]).
 
-% %%Written by Henning Christiansen, henning@ruc.dk, (c) 2008
-% %%Beta version, December 2008; testing still very limited
-%  %% Beta was tested extensively by students - no bugs were found
-%
-% Version 2 is developed Jan 2009 - based on new facilities of PRISM 1.12 
-%% 
-% Bug fixed 30 mar 2009 -> v 2.1
-% - nb: fix is based on undocumented prism predicate '$is_prob_pred'(Pname,Parity)
-%
-% Fixed to use $pd_is_prob_pred instead of deprecated $is_prob_pred (works with PRISM ver. 2.x)
-%
-% STILL NEEDS TO BE TRIMMED FOR OPTIMAL STORAGE UTILIZATION
+/** <module> autoAnnotations
 
-:- write(user,'autoAnnotations in PRISM, version 2.1, (c) Henning Christiansen 2009'),
-   nl(user),
-   write(user,'  to be used with PRISM 1.12 or higher.'),
-   nl(user), nl(user).
+This file defines a preprocessor for PRISM programs that include
+annotations, which are redundant arguments intended to present
+abstract descriptions from the data being modelled.
+
+Such annotations can be extracted from the proof trees generated
+by PRISM's viterbi predicates, but this is quite tedious to program
+
+Such annotations in a model tend to make PRISM's viterbi calculations run very slow
+(in many cases, prohibitively slow).
+On the other hand, annotations are
+1. essential for doing supervised learning
+2. convenient when presenting predictions (most probably analyses) for the user.
+
+The autoAnnotations snystem takes a PRISM program that includes annotations;
+the user must indicate which arguments that are annotations by a special syntax
+illustrated in the supplied sample file.
+It can produce automatically, the following programs
+1. a version of the PRISM program without annotations
+    - useful for viterbi analyses
+2. an executable version of the PRISM program with annotations
+    - useful for initial testing of the model, for sampling and for supervised learning
+      Probabilities found by learning with program (2) can be used with program (1)
+3. a translator from the proof trees produced by program (1) under viterbi prediction
+
+The main advantage of using autoAnnotations is that you need only maintain
+a single program containing the 'logic' of your model.
+
+Version 2.1 for PRISM 1.12 and higher. January 2009
+Changes:
+ - PRISM has a viterbit that produces a proper tree (so the code gets cleaner).
+ - PRISMs target declaration is obsolete - which is fine as previous version of
+   autoAnnotations did not treat it correctly.
+
+Written by Henning Christiansen, henning@ruc.dk, (c) 2008
+Beta version, December 2008; testing still very limited
+Beta was tested extensively by students - no bugs were found
+
+Version 2 is developed Jan 2009 - based on new facilities of PRISM 1.12 
+ 
+Bug fixed 30 mar 2009 -> v 2.1
+- nb: fix is based on undocumented prism predicate '$is_prob_pred'(Pname,Parity)
+- Fixed to use $pd_is_prob_pred instead of deprecated $is_prob_pred (works with PRISM ver. 2.x)
+
+STILL NEEDS TO BE TRIMMED FOR OPTIMAL STORAGE UTILIZATION
+
+@author: Henning Christiansen
+
+*/
+
+:- write(user,'autoAnnotations in PRISM, version 2.1, (c) Henning Christiansen 2009').
+:- nl(user).
+:- write(user,'  to be used with PRISM 1.12 or higher.').
+:- nl(user), nl(user).
 
 :- op(901, fy, --).
 
@@ -57,8 +62,19 @@
 %
 %  Top level predicates
 
+%% prismAnnot(+File) is det
+% Should be called to load a PRISM file. This will transform the progrram and subsequent
+% calls to viterbiAnnot/2 will work efficiently using the transformed program. 
+% Note that this some intermediate Prolog files files.
 prismAnnot(File):- prismAnnot(File,separate).
 
+%% prismAnnot(+File,+Mode) is det
+% Mode is =|direct|= or =|separate|=
+% For learning you need to work with the 'direct' program, and then
+% put probabilities into a file - and then load them in when you have compiler
+% the separate program.
+% Using both =|prismAnnot(|=File=|,separate)|= and =|prismAnnot(|=File=|,direct)|= at the same
+% time is not possible; only the most recent one counts.
 prismAnnot(File,separate):-
    annotModelToAbstract(File,ExecFile),
    prism(ExecFile),
@@ -69,6 +85,9 @@ prismAnnot(File,direct):-
    annotModelToExcutableAnnot(File,ExecFile),
    prism(ExecFile).
 
+%% viterbiAnnot(+Call,-P) is det
+% viterbiAnnot is analogous to PRISMs viterbig/2 
+% Use PRISM's tools for executing the direct version of the program
 viterbiAnnot(Call,P):-
     remove_annot_args_from_actual_call(Call,CallNoAtt,_AnnList),
     viterbit(CallNoAtt, P, T),

@@ -1,40 +1,35 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  NAME :
-%      entropy.pl
-%
-% VERSION :
-%     1.0
-%
-% AUTHOR : Ole Torp Lassen
-%
-% FUNCTION :
-%      		entropy/1, entropy/2
-%					tools for calculating entropy of distribtions
-% 
-% HISTORIC :
-%  April 15 2011: creation                           OTL
-%
-% REMARKS : any problem, contact otl@ruc.dk
-%
-% NOTE TO THE USER: entropy/2 works for 
-%
-%				- single random variables that have been declared using values/2 and have been instatniated, i.e.:
-%					values(t,[1,2]).
-%					msw(t,V),
-%					entropy(t,1.0.)
-%
-%				- lists of random variables that have been declared using values/2 and have been instatniated, i.e.:
-%					values(t,[1,2]).values(u,[1,2]).
-%					msw(t,T),msw(u,U),
-%					entropy([t,u],2.0).
-%
-%				- parameterfiles that been saved with save_sw/1
-%					entropy(Filename,E).
-%
-%		entropy/1 writes to output. 	 
-%
-% REFERENCE: 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- module(entropy, [entropy/1, entropy/2]).
+
+/** <module>  Tools for calculating entropy of distributions. 
+	
+	
+NOTE TO THE USER: entropy/2 works for 
+
+- single random variables that have been declared using values/2 and have been instatniated, i.e.:
+==
+values(t,[1,2]).
+msw(t,V),
+entropy(t,1.0.)
+==
+
+- lists of random variables that have been declared using values/2 and have been instatniated, i.e.:
+==
+nvalues(t,[1,2]).values(u,[1,2]).
+msw(t,T),msw(u,U),
+entropy([t,u],2.0).
+==
+
+- parameterfiles that been saved with save_sw/1
+==
+entropy(Filename,E).
+==
+
+entropy/1 writes to output. 	 
+
+@author: Ole Torp Lassen
+
+
+*/
 
 
 entropy(Params):-

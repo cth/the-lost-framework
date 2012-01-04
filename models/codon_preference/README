@@ -1,0 +1,22 @@
+This is a simple gene finder based on codon preference. 
+It is a two-state Hidden Markov Model that emit the codons of a sequence from either a coding state or a non-coding state.
+Once a transition to a coding state has occurred, the model stays in the coding state until the end state, as can be observed
+from the following transitions.
+
+==
+values(trans('c'),['c','end']).
+values(trans('n'),['c','n','end']).
+==
+
+The following assumes the following about input sequences:
+(1) The sequence length is a multiple of three (since codons are emitted)
+(2) The "codingness" of the sequence follows the regular expression pattern: "n\*c\*" 
+
+The gene finder was written by Ole, based on an earlier gene finder by Matthieu. 
+Part of "the infrastructure" later rewritten by Christian.
+
+@author: Ole Torp Lassen
+@author: Christian Theil Have
+@author: Matthieu Petit
+
+

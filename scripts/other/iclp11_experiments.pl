@@ -262,7 +262,6 @@ train_combiner_length_model_test(ParamsFile) :-
         TrainingDataFile = '/tmp/ECML_DATA/tmptest.pl',
         run_model(cons_and_codon,parallel_learn_combiner_length([TrainingDataFile],[],ParamsFile)). 
 
-
 combiner_length_predict_train(PredictionsFile) :-
         %ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl.test',
         ChunkFile = '/tmp/ECML_DATA/train_chunks_w_blastgf_codpref_length_and_ref.pl',
@@ -358,12 +357,10 @@ merge_stuff_train(OutFile) :-
         lost_sequence_file('NC_000913_ptt', RefFile),
         run_model(parser_ptt,annotate([RefFile],[],RefFileParsed)),
         run_model(chunk_ref_annot, add_reference_track([ChunkFile,RefFileParsed], [], OrfRef)),
-
         big_blast_training_files(Files),
         remove_duplicate_hits(Files,Files1),
         add_identity_track(Files1,Files2),
         merge_multiple(Files2,MergedFile),
-
         run_model(chunk_ref_annot, merge_extra_fields([OrfRef,MergedFile],[],OutFile)).
 
 merge_stuff_test(OutFile) :-

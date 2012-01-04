@@ -50,7 +50,7 @@ strand_frame_token(Strand,Frame) -->
        atom_codes(StrandFrameToken, [StrandCode,FrameCode]),
        atom_codes(Strand,[StrandCode]),
        atom_codes(FrameAtom,[FrameCode]),
-       atom2integer(FrameAtom,Frame)
+       atom_integer(FrameAtom,Frame)
     }.
     
 

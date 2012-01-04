@@ -3,12 +3,23 @@
 
 
 
-\section{misc_utils.pl}
+\section{misc_utils.pl -- predicates that doesn't fit anywhere else}
 
 \label{sec:miscutils}
 
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+\end{tags}
+
+Various useful utility predicates that doesn't fit anywhere else.\vspace{0.7cm}
+
 \begin{description}
-    \predicate{zip}{3}{+List1, +List2, ZippedList}
-Combines two lists into one
+    \predicate[private]{terms_has_rule_with_head}{3}{+Terms, +Functor, +Arity}
+True if the list \arg{Terms} has a rule with a given \arg{Functor} and \arg{Arity}
+
+    \predicate[private]{atom_integer}{2}{?Atom, ?Integer}
+Converts between atom representing an integer number to an
+integer usuable in arithmetic operationes and vice versa
 \end{description}
 

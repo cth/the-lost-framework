@@ -1,0 +1,15 @@
+
+Blast based gene finder.
+
+This gene finder predicts genes based on blast hits.
+
+This is based on Oles (now defunct it seeems) chunk_aa_conservtion model, but considerably rewritten by Christian Theil Have.
+The =|blastgf|= model only contains the probabilistic HMM and prism model related to prediction of 
+genes based on blast matches and more mundane tasks like preprocessing, blast xml parsing, running of 
+blast have been omitted from this model.
+
+FIXME: More documentation needs to be done.
+
+@author: Christian Theil Have
+@author: Ole Torp Lassen
+

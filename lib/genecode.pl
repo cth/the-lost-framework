@@ -1,12 +1,21 @@
-/** <module> Genecode Table
- genecode.pl
-table 11 : bacterial
+:- module(genecode, [genecode/3,genecode_start_codon/2,genecode_start_codons/2,genecode_stop_codon/2,genecode_stop_codons/2]).
+/** <module> Table of genetic codes.
+
+This library contains various genetic code tables, i.e. what codons are start codons and stop codons.
+See, http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi for further information.
+
 */
 
-%% genecode(+TableNum,?Codon,?AA)
+%% genecode(+TableNum,?Codon,?AminoAcid)
 %
-% This predicate defines the relationship between amino acids and codon with respect
-% to TableNum
+% This predicate defines the relationship between amino acids and codons with respect to a genetic code identifier, TableNum.
+% Codon is a list of of three nucleotides symbols from the alphabet [a,g,c,t].
+% The argument AminoAcid is a symbol from the alphabet:
+% ==
+% [a,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,y,*]
+% ==
+% where all symbols except =|*|= represents an amino acid (the name of which starts which that letter).
+% The special symbol =|*|= signifies a stop codon in the specified genetic code.
 
 genecode(11,[t,t,t],f).
 genecode(11,[t,c,t],s).
@@ -86,19 +95,17 @@ genecode_start_codon(11,[a,t,g]).
 genecode_start_codon(11,[g,t,g]).
 
 
-%% genecode_start_codons(+TableNum,-StartCodons)
-%
-% This predicate computes a list of start codon given a TableNum
-	
-genecode_start_codons(GeneCode,StartCodons) :-
-	findall(Codon,genecode_start_codon(GeneCode,Codon),StartCodons).
-
-
-%% genecode_stop_codon(+TableNum,-StopCodon)
+%% genecode_stop_codon(+TableNum,-StopCodon)s
 %
 % This predicate specifies Stop codon given a TableNum
 genecode_stop_codon(N,Codon) :-
 	genecode(N,Codon,'*').
+
+%% genecode_start_codons(+TableNum,-StartCodons)
+%
+% StartCodons is a list of all start codons given a genetic code TableNum.
+genecode_start_codons(GeneCode,StartCodons) :-
+	findall(Codon,genecode_start_codon(GeneCode,Codon),StartCodons).
 
 %% genecode_stop_codons(+TableNum,-StopCodons)
 %

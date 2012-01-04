@@ -1,0 +1,81 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{scheduler_tree.pl -- Scheduler tree data structure}
+
+\label{sec:schedulertree}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+
+The scheduler tree is a data tree data structure to represent call graphs
+of scripts written for the lost framework.
+
+It is used by the process scheduler to infer which tasks can be run in parallel.
+
+A Task may be in several states
+
+\begin{itemize}
+    \item ready (in the tree, but not yet running)
+    \item Running (but not yet completed)
+    \item Completed (in which case it is removed from the tree)
+\end{itemize}
+\end{tags}
+
+\vspace{0.7cm}
+
+\begin{description}
+    \predicate[private]{scheduler_tree_create}{1}{-EmptyTree}
+Creates a new scheduler tree which is initially empty 
+
+    \predicate[private]{scheduler_tree_add}{6}{+Model, +Goal, +ParentId, +Tree, -UpdatedTree, -NextId}
+\arg{UpdatedTree} is \arg{Tree} with a node inserted as a child to \arg{ParentId}.
+\arg{NextId} is the Id of the newly inserted node.
+If there are allready an existing node for the same \arg{Model} and Gaol, but possibly
+a different parent, then the new node is given the same task id
+
+    \predicate[private]{scheduler_tree_remove}{3}{+TaskId, +InitialTree, -UpdatedTree}
+\arg{UpdatedTree} is the initial tree without the subtrees rooted at the nodes with \arg{TaskId} 
+
+    \predicate[private]{scheduler_tree_replace}{3}{+Node, +Tree, UpdatedTree}
+\arg{Node} replaces the subtree of the root node has the same task id as node
+
+    \predicate[private]{scheduler_tree_replace_by_taskid}{4}{+TaskId, +Node, +Tree, UpdatedTree}
+\arg{Node} replaces the subtree of the root node has the same task id as node
+
+    \predicate[private]{scheduler_tree_reduce}{2}{+Tree, -ReducedTree}
+This reduces a scheduler tree by compacting nodes which are structurally the same (i.e. only differing in the task id)
+Such task will be given the same task id
+
+    \predicate[private]{scheduler_tree_lookup}{3}{+TaskId, +Tree, -Node}
+\arg{Node} is the subtree which rooted at the node identified by \arg{TaskId}
+
+    \predicate[private]{scheduler_tree_change_taskid}{4}{+TaskId, +TaskIdUpdated, +TreeIn, +TreeOut}
+
+\begin{quote}
+scheduler_tree_change_taskid(\arg{TaskId},\arg{TaskIdUpdated},\arg{TreeIn},\arg{TreeOut}) \Sneck{}
+scheduler_tree_lookup(\arg{TaskId},\arg{TreeIn},[node(\arg{TaskId},State,Model,Goal,Children)]),
+scheduler_tree_replace(\arg{TaskId},[node(\arg{TaskId},State,Model,Goal,Children)],\arg{TreeIn},\arg{TreeOut}).
+\end{quote}
+
+    \predicate[private]{scheduler_tree_ready_task}{2}{+Tree, -TaskId}
+Find a process in the tree which is ready to run. This process must be a node which
+a) is a leaf node and b) has the state 'ready'.
+
+    \predicate[private]{scheduler_tree_set_running}{3}{+TaskId, +Tree, -UpdatedTree}
+True if, a) \arg{TaskId} points to leaf node and b) that node has state 'ready'
+
+    \predicate[private]{scheduler_tree_set_completed}{3}{+TaskId, +InitialTree, -UpdatedTree}
+1) \arg{TaskId} \Sdcg{} leaf node
+2) Node as state 'running'
+
+    \predicate[private]{scheduler_tree_empty}{1}{+Tree}
+True if \arg{Tree} is empty
+
+    \predicate[private]{scheduler_tree_print}{1}{+Tree}
+Pretty-prints a scheduler tree
+\end{description}
+

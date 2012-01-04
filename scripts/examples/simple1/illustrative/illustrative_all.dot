@@ -1,0 +1,10 @@
+digraph G {
+	rankdir=BT
+	node [ shape="box"]; "input.txt";
+	node [ shape="circle" ]; "m::a"; "m::b"; "m::c"; "m::d";
+	"input.txt" -> "m::d" 
+	"m::b" -> "m::a"
+	"m::c" -> "m::a"
+	"m::d" -> "m::b"
+	"m::d" -> "m::c"
+}

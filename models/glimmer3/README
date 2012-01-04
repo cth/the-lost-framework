@@ -1,1 +1,5 @@
-g3_from_scratch 
+This is an interface to the Glimmer 3 gene finder. 
+
+It contains tasks for running glimmer using various options and a task for parsing the Glimmer 3 report file.
+
+

@@ -1,4 +1,11 @@
-This is a simple "top model", that given a set of predictions with
-scores selects the best scoring gene prediction for each stop codon.
-E.g. the final set of predictions will only contain one prediction per
-stop codon
+This is a simple model for excluding several overlapping predictions 
+with the same stop-codon. Instead,  given a set of predictions with
+scores (as extra field) the model selects the best scoring gene prediction
+for each stop codon.
+I.e. the final set of predictions will only contain one prediction per
+stop codon.
+
+The functor of the extra field that contains the score of the prediction, needs 
+to be specified using an option.
+
+@author: Christian Theil Have

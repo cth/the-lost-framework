@@ -1,3 +1,4 @@
+:- module(stats,[]).
 /** <module> Statistics computation module
 
 NOM ET VERSION :

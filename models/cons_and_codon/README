@@ -1,0 +1,5 @@
+=|cons_and_codon|= is short for conservation signal and codon preference.
+
+The model/module contains several gene finders based on a number of signals. 
+
+It is a gene finder that is conditioned on a conservation signal (produced by the model =|blastgf|=).

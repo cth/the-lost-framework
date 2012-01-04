@@ -1,3 +1,22 @@
+:- module(viterbi_learn,[]).
+/** <module> Fast supervised training
+
+This library uses PRISM viterbi algorithm in order to perform supervised learning. 
+It is a substitute for PRISMs builtin learn predicate, but it is significantly faster 
+for supervised learning. 
+
+It works by running the viterbi predicate for a list of observation goals and records
+and counts the msw's that is used in the for the viterbi derivation. Counts are then
+normalized to produce parameters.
+
+To figure out what msw declarations exist in the PRISM program, it need to the PRISM 
+source file to be consulted in the usual way for Prolog programs (in addition to 
+loading the file with prism(File)).
+
+@author: Christian Theil Have
+
+*/
+
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
 

@@ -3,6 +3,42 @@
 
 
 
-\section{utils_parser_report.pl}
+\section{utils_parser_report.pl -- Report parsing utilities}
 
 \label{sec:utilsparserreport}
+
+\begin{tags}
+    \tag{author}
+: Ole Torp Lassen and Matthieu Petit
+\end{tags}
+
+Various utilities for parsing text files.\vspace{0.7cm}
+
+\begin{description}
+    \predicate[private]{parser_line}{2}{+List_Codes, -List_Tokens}
+Translate a list of ASCII code into a list of tokens. Parsing is based on the
+
+grammar: Tokens ::= Token {\tt\string|} Token Ignore_Characters Tokens
+
+Default: Ignore Caracters = [9,32] (space and tab)
+
+    \predicate[private]{is_number}{1}{+List_Codes}
+predicate is true iff \arg{List_Codes} can be parsed by the following grammar
+
+Numbers :\Sequal{} Number {\tt\string|} Number . Rest Numbers {\tt\string|} Number Numbers
+
+Rest Numbers :\Sequal{} Number {\tt\string|} Number Rest Numbers
+
+Number :\Sequal{} 0{\tt\string|}1{\tt\string|}2{\tt\string|}3{\tt\string|}4{\tt\string|}5{\tt\string|}6{\tt\string|}7{\tt\string|}8{\tt\string|}9 (Ascci 48..57)
+
+bug: Fail if number is bigger than 268435455
+
+    \predicate[private]{readline}{2}{+Stream, -CodeList}
+Reads in a line or a tab or a token with no spaces of data from specified input-stream
+and represents it as a list of character codes..
+
+    \predicate[private]{read_token}{3}{+Stream, -N_Spaces, -CodeList}
+Reads next nonspace-initiated token, terminated by a some whitespace
+counts number of spaces encounterd before first nonspace
+\end{description}
+

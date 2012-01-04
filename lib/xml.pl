@@ -1,5 +1,7 @@
+:- module(xml, [xml2pl/2,pl2xml/2,xml_parse/2,xml_parse/3,xml_subterm/2,xml_pp/1]).
 
-/* xml.pl : Contains xml_parse/[2,3] a bi-directional XML parser written in
+/** <module> xml parsing
+ * xml.pl : Contains xml_parse/[2,3] a bi-directional XML parser written in
  * Prolog.
  *
  * Copyright (C) 2001, 2002 Binding Time Limited
@@ -37,19 +39,10 @@
  *
  *
  */
-/*
-:- module( xml,
-	[
-       xml2pl/2,
-	pl2xml/2,
-	xml_parse/2,
-	xml_parse/3,
-	xml_subterm/2,
-	xml_pp/1
-	] ).
-*/
 
-/* added by Neng-Fa Zhou */
+%% xml2pl(+Input,-Output) is det
+% Create and Prolog representation, Output, of the XML file with name Input 
+% added by Neng-Fa Zhou 
 xml2pl(Input,Output):-
     check_xml_file(Input,Input1),
     readFile(Input1,Codes),
@@ -74,7 +67,8 @@ $xml2pl([Input,Output]):-!,
 $xml2pl(_):-
     write(user,'Usage: pl2xml InFile OutFile'),nl(user).
 
-%%%%
+%% pl2xml(+Document,-Codes)
+% Convert Prolog representation to XML document
 pl2xml(Document,Codes):-
      xml_parse(Codes, Document).
 
@@ -108,7 +102,8 @@ check_xml_file(File,File1):-
 check_xml_file(File,_File1):-
     handle_exception(file_not_found,chr2ar(File)).
 
-/* xml_parse( {+Controls}, +?Chars, ?+Document ) parses Chars to/from a data
+/** xml_parse(+Controls, ?Chars, ?Document)
+ * parses Chars to/from a data
  * structure of the form xml(, ).  is a list of
  * = attributes from the (possibly implicit) XML signature of the
  * document.  is a (possibly empty) list comprising occurrences of :
@@ -189,7 +184,7 @@ document_to_xml( Controls, Document, Chars ) :-
 			)
 	).
 
-/* xml_subterm( +XMLTerm, ?Subterm ) unifies Subterm with a sub-term of Term.
+/** xml_subterm( +XMLTerm, ?Subterm ) unifies Subterm with a sub-term of Term.
  * Note that XMLTerm is a sub-term of itself. 
  */
 xml_subterm( Term, Term ).
@@ -254,7 +249,8 @@ xml_subterm( namespace(_URI,_Prefix,Content), Term ) :-
 
 %:- ensure_loaded( xml_utilities ).
 
-/* xml_to_document( +Controls, +XML, ?Document ) translates the list of
+/** xml_to_document( +Controls, +XML, ?Document ) 
+ * translates the list of
  * character codes XML into the Prolog term Document. Controls is a list
  * of terms controlling the treatment of layout characters and character
  * entities.
@@ -962,7 +958,8 @@ character_entity( "apos", 0'' ).
  */
 
 
-/* xml_fault( +Term, +Indentation, ?SubTerm, ?Path, ?Message ) identifies SubTerm
+/** xml_fault( +Term, +Indentation, ?SubTerm, ?Path, ?Message ) 
+ * identifies SubTerm
  * as a sub-term of Term which cannot be serialized after Indentation.
  * Message is an atom naming the type of error; Path is a string encoding a
  * list of SubTerm's ancestor elements in the form {(id)}* where  is the
@@ -1071,7 +1068,9 @@ fault_id( _Attributes ) --> "".
  *
  */
 
-/* document_generation( +Format, +Document ) is a DCG generating Document
+/**
+ * document_generation( +Format, +Document ) 
+ * is a DCG generating Document
  * as a list of character codes. Format is true|false defining whether layouts,
  * to provide indentation, should be added between the element content of
  * the resultant "string". Note that formatting is disabled for elements that
@@ -1176,7 +1175,8 @@ generated_external_id( public(URN,URL) ) -->
 	chars( URL ),
 	"\"\"".
 
-/* quoted_string( +Chars ) is a DCG representing Chars, a list of character
+/** quoted_string( +Chars ) 
+ * is a DCG representing Chars, a list of character
  * codes, as a legal XML attribute string. Any leading or trailing layout
  * characters are removed. &, " and < characters are replaced by &, "
  * and < respectively.
@@ -1219,7 +1219,8 @@ indent( true, Indent ) -->
 	"
 ",	chars( Indent ).
 
-/* pcdata_generation( +Chars ) is a DCG representing Chars, a list of character
+/** pcdata_generation( +Chars ) 
+ *is a DCG representing Chars, a list of character
  * codes as legal XML "Parsed character data" (PCDATA) string. Any codes
  * which cannot be represented by a 7-bit character are replaced by their
  * decimal numeric character entity e.g. code 160 (non-breaking space) is
@@ -1234,7 +1235,8 @@ pcdata_generation( [Char|Chars], Plus, Minus ) :-
 	),
 	pcdata_generation( Chars, Mid, Minus ).
 
-/* pcdata_7bit(+Char) represents the ascii character set in its
+/** pcdata_7bit(+Char) 
+ * represents the ascii character set in its
  * simplest format, using the character entities & " < and >
  * which are common to both XML and HTML. The numeric entity ' is used in
  * place of ', because browsers don't recognize it in HTML.

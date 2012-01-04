@@ -1,0 +1,3 @@
+
+orf_finder is a model which locates Open Reading Frames (ORFs) in both strands and all reading frames. 
+It treats the genome as 

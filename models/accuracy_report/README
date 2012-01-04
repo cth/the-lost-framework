@@ -1,0 +1,37 @@
+---+++ Introduction 
+
+This model generates a Prolog based report of accuracy measures 
+for a set of gene predictions compared to a golden standard annotation.
+ 
+A lot of different measures are generated. An example of a report is 
+shown below.
+
+==
+accuracy_report(genes_predicted, 2130).
+accuracy_report(genes_actual, 4144).
+accuracy_report(genes_correct, 1882).
+accuracy_report(genes_wrong, 248).
+accuracy_report(gene_stops_correct, 2003).
+accuracy_report(gene_stops_wrong, 127).
+accuracy_report(gene_sensitivity, 0.454150579150579).
+accuracy_report(gene_specificity, 0.883568075117371).
+accuracy_report(gene_specificity, 0.883568075117371).
+accuracy_report(gene_stop_sensitivity, 0.483349420849421).
+accuracy_report(gene_stop_specificity, 0.94037558685446).
+accuracy_report(genes_wrong_ratio, 0.116431924882629).
+accuracy_report(genes_missing_ratio, 0.545849420849421).
+accuracy_report(nucleotide_true_positives, 1934811).
+accuracy_report(nucleotide_false_positives, 75521).
+accuracy_report(nucleotide_true_negatives, 619038).
+accuracy_report(nucleotide_false_negatives, 2010092).
+accuracy_report(nucleotide_sensitivity, 0.757605872547672).
+accuracy_report(nucleotide_specificity, 0.962433568186747).
+accuracy_report(nucleotide_specificity_traditional, 0.891267696480789).
+accuracy_report(nucleotide_correlation_coefficient, 0.27484302373759).
+accuracy_report(nucleotide_simple_matching_coefficient, 0.55046231653584).
+accuracy_report(nucleotide_average_conditional_probability, 0.644903316252825).
+accuracy_report(nucleotide_approximate_correlation, 0.28980663250565).
+==
+
+@author: Christian Theil Have
+

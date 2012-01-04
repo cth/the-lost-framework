@@ -1,0 +1,144 @@
+digraph G {
+	rankdir=BT
+
+	subgraph cluster0 {
+		label = "1. initially"
+		node [ shape="box"]; 
+		"state0_input.txt" [ label="input.txt" shape="box" style="filled" ];
+		"state0_m::a" [ label="m::a" shape="circle" ];
+		"state0_m::b" [ label="m::b" shape="circle" ];
+		"state0_m::c" [ label="m::c" shape="circle" ];
+		"state0_m::d" [ label="m::d" shape="circle" ];
+		
+		"state0_input.txt" -> "state0_m::d" 
+		"state0_m::b" -> "state0_m::a"
+		"state0_m::c" -> "state0_m::a"
+		"state0_m::d" -> "state0_m::b"
+		"state0_m::d" -> "state0_m::c"
+	}
+	
+	
+	subgraph cluster1 {
+		label = "2. m::d running"
+		"state1_input.txt" [ label="input.txt" shape="box" style="invis" ];
+		"state1_m::a" [ label="m::a" shape="circle" ];
+		"state1_m::b" [ label="m::b" shape="circle" ];
+		"state1_m::c" [ label="m::c" shape="circle" ];
+		"state1_m::d" [ label="m::d" shape="circle" style="filled" ];
+		
+		"state1_input.txt" -> "state1_m::d" [ style="invis" ]
+		"state1_m::b" -> "state1_m::a"
+		"state1_m::c" -> "state1_m::a"
+		"state1_m::d" -> "state1_m::b"
+		"state1_m::d" -> "state1_m::c"
+	}
+	
+	
+	subgraph cluster2 {
+		label = "3. m::d finished"
+		"state2_input.txt" [ label="input.txt" shape="box" style="invis" ];
+		"state2_m::a" [ label="m::a" shape="circle" ];
+		"state2_m::b" [ label="m::b" shape="circle" ];
+		"state2_m::c" [ label="m::c" shape="circle" ];
+		"state2_m::d" [ label="m::d" shape="circle" style="invis" ];
+		
+		"state2_input.txt" -> "state2_m::d" [ style="invis" ]
+		"state2_m::b" -> "state2_m::a"
+		"state2_m::c" -> "state2_m::a"
+		"state2_m::d" -> "state2_m::b" [ style="invis"]
+		"state2_m::d" -> "state2_m::c" [ style="invis"]
+	}
+
+	subgraph cluster3 {
+		label = "4. m::b running"
+		"state3_input.txt" [ label="input.txt" shape="box" style="invis" ];
+		"state3_m::a" [ label="m::a" shape="circle" ];
+		"state3_m::b" [ label="m::b" shape="circle" style="filled" ];
+		"state3_m::c" [ label="m::c" shape="circle" ];
+		"state3_m::d" [ label="m::d" shape="circle" style="invis" ];
+		
+		"state3_input.txt" -> "state3_m::d" [ style="invis" ]
+		"state3_m::b" -> "state3_m::a"
+		"state3_m::c" -> "state3_m::a"
+		"state3_m::d" -> "state3_m::b" [ style="invis"]
+		"state3_m::d" -> "state3_m::c" [ style="invis"]
+	}
+	
+	subgraph cluster4 {
+		label = "5. m::b and m::c running"
+		"state4_input.txt" [ label="input.txt" shape="box" style="invis" ];
+		"state4_m::a" [ label="m::a" shape="circle" ];
+		"state4_m::b" [ label="m::b" shape="circle" style="filled" ];
+		"state4_m::c" [ label="m::c" shape="circle" style="filled" ];
+		"state4_m::d" [ label="m::d" shape="circle" style="invis" ];
+		
+		"state4_input.txt" -> "state4_m::d" [ style="invis" ]
+		"state4_m::b" -> "state4_m::a"
+		"state4_m::c" -> "state4_m::a"
+		"state4_m::d" -> "state4_m::b" [ style="invis"]
+		"state4_m::d" -> "state4_m::c" [ style="invis"]
+	}
+
+
+	subgraph cluster5 {
+		label = "6. m::c finished"
+		"state5_input.txt" [ label="input.txt" shape="box" style="invis" ];
+		"state5_m::a" [ label="m::a" shape="circle" ];
+		"state5_m::b" [ label="m::b" shape="circle" style="filled" ];
+		"state5_m::c" [ label="m::c" shape="circle" style="invis" ];
+		"state5_m::d" [ label="m::d" shape="circle" style="invis" ];
+		
+		"state5_input.txt" -> "state5_m::d" [ style="invis" ]
+		"state5_m::b" -> "state5_m::a"
+		"state5_m::c" -> "state5_m::a" [ style="invis" ]
+		"state5_m::d" -> "state5_m::b" [ style="invis"]
+		"state5_m::d" -> "state5_m::c" [ style="invis"]
+	}
+	
+	subgraph cluster6 {
+		label = "7. m::b finished"
+		"state6_input.txt" [ label="input.txt" shape="box" style="invis" ];
+		"state6_m::a" [ label="m::a" shape="circle" ];
+		"state6_m::b" [ label="m::b" shape="circle" style="invis" ];
+		"state6_m::c" [ label="m::c" shape="circle" style="invis" ];
+		"state6_m::d" [ label="m::d" shape="circle" style="invis" ];
+		
+		"state6_input.txt" -> "state6_m::d" [ style="invis" ]
+		"state6_m::b" -> "state6_m::a" [ style="invis" ]
+		"state6_m::c" -> "state6_m::a" [ style="invis" ]
+		"state6_m::d" -> "state6_m::b" [ style="invis"]
+		"state6_m::d" -> "state6_m::c" [ style="invis"]
+	}
+	
+	subgraph cluster7 {
+		label = "8. m::a running"
+		"state7_input.txt" [ label="input.txt" shape="box" style="invis" ];
+		"state7_m::a" [ label="m::a" shape="circle" style="filled" ];
+		"state7_m::b" [ label="m::b" shape="circle" style="invis" ];
+		"state7_m::c" [ label="m::c" shape="circle" style="invis" ];
+		"state7_m::d" [ label="m::d" shape="circle" style="invis" ];
+		
+		"state7_input.txt" -> "state7_m::d" [ style="invis" ]
+		"state7_m::b" -> "state7_m::a" [ style="invis" ]
+		"state7_m::c" -> "state7_m::a" [ style="invis" ]
+		"state7_m::d" -> "state7_m::b" [ style="invis"]
+		"state7_m::d" -> "state7_m::c" [ style="invis"]
+	}
+	
+	subgraph cluster8 {
+		label = "9. m::a finished"
+		"state8_input.txt" [ label="input.txt" shape="box" style="invis" ];
+		"state8_m::a" [ label="m::a" shape="circle" style="invis" ];
+		"state8_m::b" [ label="m::b" shape="circle" style="invis" ];
+		"state8_m::c" [ label="m::c" shape="circle" style="invis" ];
+		"state8_m::d" [ label="m::d" shape="circle" style="invis" ];
+		
+		"state8_input.txt" -> "state8_m::d" [ style="invis" ]
+		"state8_m::b" -> "state8_m::a" [ style="invis" ]
+		"state8_m::c" -> "state8_m::a" [ style="invis" ]
+		"state8_m::d" -> "state8_m::b" [ style="invis"]
+		"state8_m::d" -> "state8_m::c" [ style="invis"]
+	}
+	
+
+}

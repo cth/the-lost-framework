@@ -1,0 +1,30 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\subsection{easygene}
+
+\label{sec:easygene}
+
+\begin{tags}
+\mtag{author}- : Ole Torp Lassen \\- : Matthieu Petit
+\end{tags}
+
+This is a model for parsing the reports of the Easygene gene finder.\vspace{0.7cm}
+
+\begin{description}
+    \predicate{parse}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(easygene_report)
+OutputFile:
+    [test(prolog(ranges(gene)))]
+Options:
+\end{code}
+
+Parse a report in the easygene format.
+\end{description}
+

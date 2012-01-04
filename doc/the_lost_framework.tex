@@ -1,4 +1,4 @@
-\documentclass{book}
+	\documentclass{book}
 % Creation of index
 \usepackage{makeidx}
 % Generation of hyperlink into a pdf file
@@ -18,6 +18,8 @@
 %
 
 \chapter{An introduction to the lost framework}
+
+\input{models/accuracyreport.tex}
 
 \section{The lost framework}
 
@@ -945,6 +947,12 @@ to be divisible by three. \texttt{AminoAcids} is a list of symbols from the alph
 
 \chapter{Models}
 
+\section{Documentation for individual models}
+
+This section contains the auto-generated documentation for individual models.
+
+\input{models.tex}
+
 Pre-defined models are introduced.  These models are used to build more complex models.
 
 \section{Parsers of Biological Data}
@@ -1645,7 +1653,26 @@ subtypes with \texttt{SequenceType}. A ground value for
 \end{itemize}
 
 
-\chapter{Predicates listing}
+\chapter{Library modules}
+
+This chapter describes the libraries that are available to components in the framework. 
+
+A library module is loaded using the command
+\begin{verbatim}
+:- lost_include_api(lists). 
+\end{verbatim}
+
+Which will include the lists module. Note that there is no namespace protection. 
+The above call merely consults the \verb|$LOST_BASE_DIR|/lib/lists.pl.
+
+In the following sections the available libraries are described in detail. 
+We use the SWI-Prolog pldoc system \cite{oai:arXiv.org:0711.0618} to generate documentation 
+for the libraries. To be able to produce file-level comments, all the libraries are treated as Prolog modules.
+To achieve this we added a dummy \verb|:- module(Name, Exports)| statement to the library.
+Since libraries are not real modules, e.g. not present in PRISM/B-Prolog, there are no encapsulation 
+and every predicate in the file is exported. Hence, in the documentation below, if a predicate is marked
+as \emph{private} it is still "publicly" exported and can be used without further ado. 
+
 
 \input{libraries} 
 

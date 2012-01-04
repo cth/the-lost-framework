@@ -1,0 +1,43 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{help.pl -- Model information and help}
+
+\label{sec:help}
+
+\begin{tags}
+    \tag{author}
+: Matthieu Petit
+
+This library extracts information about models such as,
+
+\begin{itemize}
+    \item what are the valid task of the model
+    \item what options does a particular task predicate take/require
+    \item what is the format of the file produced by the task
+    \item what input files and their formats does each task assume
+\end{itemize}
+
+    \tag{bug}
+: (cth) I think this help library has become slightly outdated by recent developments in the framework. It should be updated!
+\end{tags}
+
+\vspace{0.7cm}
+
+\begin{description}
+    \predicate[private]{help_model}{1}{+Model}
+Help predicate for defined model of the framework. If \arg{Model} iss not defined, help_model
+print out a list of defined models
+
+    \predicate[private]{help_information}{4}{+Term_Input, +Term_Output, +Term_Option, -Predicates}
+Compute a list of informations for each defined predicate of the models
+
+    \predicate[private]{print_predicates_help}{1}{+Predicates}
+Predicate that writes information of the defined predicates on the standart output
+
+    \predicate[private]{print_available_model}{0}{}
+This predicate prints on the default output a list of available models
+\end{description}
+

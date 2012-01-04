@@ -13,12 +13,30 @@
 % Key = concurrent_processes: the number of processes used for parallel computation
 
 % Make changes to these three lines:
-lost_config(prism_command,'prism').
-lost_config(lost_base_directory,'/change/to/your/local/lost/directory').
-lost_config(platform,'to specify unix or windows').
+lost_config(prism_command,'prism -s 1000000000').
+%lost_config(prism_command,'prism-noio').
+lost_config(lost_base_directory,'/Users/cth/code/lost/').
+lost_config(platform,'unix').
 lost_config(concurrent_processes,5).
 
 % Do not change below this line
+
+
+% Make task declarations parseable
+task(X) :- write('registering task: '), writeln(X).
+
+use([]).
+
+use([Name|Rest]) :-
+	use(Name),
+	use(Rest).
+
+use(Name) :-
+	atom(Name),
+	lost_include_api(Name).
+	
+use(Name, force) :-
+	lost_reload_api(Name).
 
 %% lost_include_api(+Name)
 %
@@ -40,8 +58,8 @@ lost_include_api(Name) :-
 	atom_concat(Basedir,'lib/',SharedDir),
 	atom_concat(SharedDir,Name,DirAndName),
 	atom_concat(DirAndName,'.pl',FullName),
-	consult(FullName),
-	assert(lost_api_loaded(Name)).
+	assert(lost_api_loaded(Name)),
+	consult(FullName).
 
 %% lost_reload_api
 %% lost_reload_api(+Name)
@@ -83,6 +101,10 @@ lost_include_script(Name) :-
 	atom_concat(DirAndName,'.pl',FullName),
 	consult(FullName).
 
+% Hack to "support" module declarations in lib/ files
+% This is needed to make swipl's pldoc work nicely
+
+module(_Name, _Exports) :- true. 
+
 
 :- lost_include_api(interface).
-

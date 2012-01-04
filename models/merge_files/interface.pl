@@ -1,10 +1,19 @@
 % Simple model that aggregates multiple files into one.
 % Should be fast and with a very low memory footprint.
 
+:- ['../../lost.pl'].
+
+:- use(prologdb).
+
+:- task(merge([text(prolog(_)):n],[],[text(prolog(_))])).
+
 lost_input_formats(annotate,[star(text(prolog(_)))]).
 lost_output_format(annotate,_,[text(prolog(_))]).
 
-annotate(InputFiles,_Options,OutputFile) :-
+
+%% merge(+InputFiles,+Options,+OutputFile)
+% Merges all InputFiles in the OutputFile.
+merge(InputFiles,_Options,OutputFile) :-
 	open(OutputFile,write,Stream),
 	terms_from_files_to_stream(InputFiles,Stream),
 	close(Stream).

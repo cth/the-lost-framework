@@ -3,6 +3,51 @@
 
 
 
-\section{xml.pl}
+\section{xml.pl -- xml parsing}
 
 \label{sec:xml}
+
+\file{xml.pl} : Contains xml_parse/[2,3] a bi-directional XML parser written in
+Prolog.
+
+Copyright (C) 2001, 2002 Binding Time Limited
+
+Current Release: 1.5
+
+TERMS AND CONDITIONS:
+
+This program is offered free of charge, as unsupported source code. You may
+use it, copy it, distribute it, modify it or sell it without restriction.
+
+We hope that it will be useful to you, but it is provided "as is" without
+any warranty express or implied, including but not limited to the warranty
+of non-infringement and the implied warranties of merchantability and fitness
+for a particular purpose.
+
+Binding Time Limited will not be liable for any damages suffered by you as
+a result of using the Program. In no event will Binding Time Limited be
+liable for any special, indirect or consequential damages or lost profits
+even if Binding Time Limited has been advised of the possibility of their
+occurrence. Binding Time Limited will not be liable for any third party
+claims against you.
+
+History:
+\$Log: \file{xml.pl},v \$
+Revision 1.2 2002-05-25 23:17:54+01 john
+Set Current Release to 1.5.
+
+Revision 1.1 2002-01-31 21:04:45+00 john
+Updated Copyright statements.
+
+Revision 1.0 2001-10-17 20:46:24+01 john
+Initial revision\vspace{0.7cm}
+
+\begin{description}
+    \predicate[det]{xml2pl}{2}{+Input, -Output}
+Create and Prolog representation, \arg{Output}, of the XML file with name \arg{Input}
+added by Neng-Fa Zhou 
+
+    \predicate{pl2xml}{2}{+Document, -Codes}
+Convert Prolog representation to XML document
+\end{description}
+

@@ -3,23 +3,31 @@
 
 
 
-\section{genecode.pl}
+\section{genecode.pl -- Table of genetic codes.}
 
 \label{sec:genecode}
 
+This library contains various genetic code tables, i.e. what codons are start codons and stop codons.
+See, \url{http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi} for further information.\vspace{0.7cm}
+
 \begin{description}
-    \predicate{genecode}{3}{+TableNum, ?Codon, ?AA}
-This predicate defines the relationship between amino acids and codon with respect
-to \arg{TableNum}
+    \predicate{genecode}{3}{+TableNum, ?Codon, ?AminoAcid}
+This predicate defines the relationship between amino acids and codons with respect to a genetic code identifier, \arg{TableNum}.
+\arg{Codon} is a list of of three nucleotides symbols from the alphabet [a,g,c,t].
+The argument \arg{AminoAcid} is a symbol from the alphabet:
+
+\begin{code}
+[a,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,y,*]
+\end{code}
+
+where all symbols except \verb$*$ represents an amino acid (the name of which starts which that letter).
+The special symbol \verb$*$ signifies a stop codon in the specified genetic code.
 
     \predicate{genecode_start_codon}{2}{+TableNum, -StartCodon}
 This predicate specifies \arg{StartCodon} given a \arg{TableNum}
 
     \predicate{genecode_start_codons}{2}{+TableNum, -StartCodons}
-This predicate computes a list of start codon given a \arg{TableNum}
-
-    \predicate{genecode_stop_codon}{2}{+TableNum, -StopCodon}
-This predicate specifies Stop codon given a \arg{TableNum}
+\arg{StartCodons} is a list of all start codons given a genetic code \arg{TableNum}.
 
     \predicate{genecode_stop_codons}{2}{+TableNum, -StopCodons}
 This predicate computes the list of stop codon given a \arg{TableNum}

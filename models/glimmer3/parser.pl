@@ -1,7 +1,7 @@
 :- ['../../lost.pl'].
-:- lost_include_api(misc_utils).
-:- lost_include_api(io).
-% A DCG parser for prodigal result files
+:- use(misc_utils).
+:- use(io).
+% A DCG parser for glimmer3 result files
 
 parse_glimmer_file(GlimmerFile,PredictionsFile) :-
 	readFile(GlimmerFile,Contents),

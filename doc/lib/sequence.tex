@@ -3,6 +3,29 @@
 
 
 
-\section{sequence.pl}
+\section{sequence.pl -- sequence}
 
 \label{sec:sequence}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+
+This library contains predicates for various basic operations on DNA sequences
+\end{tags}
+
+\vspace{0.7cm}
+
+\begin{description}
+    \predicate{dna_seq_complement}{2}{+NucleotideSequence, -ReverseComplementedNucleotideSequence}
+Complement the DNA sequence given in the list \arg{NucleotideSequence} yield its complement as the list \arg{ReverseComplementedNucleotideSequence}
+
+    \predicate{dna_complement}{2}{?Base, ?Complement}
+Relation that maps bases to their complements
+
+    \predicate{dna_translate}{3}{+Genecode, ?DNASequence, ?AminoAcids}
+Translates a DNA sequence to a sequence of amino acids
+or vice versa: Produce all possible DNA sequences for
+a given amino acids sequence
+\end{description}
+

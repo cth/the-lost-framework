@@ -18,10 +18,12 @@ lost_output_format(annotate,_,text(prolog(ranges(_)))).
 %%%%%%%%%%%%%%%
 
 
+%% annotate_joint_model(+InputFiles,+Options,+OutputFile)
+% 
 annotate_joint_model([ParamsFile,InputFile],_Options,OutputFile) :-
 	write('joint model genefinder: '),nl,
    	prismAnnot('joint_model'), % Load the actual PRISM model
-        restore_sw(ParamsFile),
+    restore_sw(ParamsFile),
 	open(OutputFile,write,StreamOut),
 	open(InputFile,read,StreamIn),
 	compute_and_save_annotations_joint_model(StreamIn,StreamOut,1),
@@ -103,7 +105,7 @@ compute_and_save_annotations_joint_model(StreamIn,Stream_Out,Nb_Iterations) :-
 			write('compute_and_save_annotations_joint_model done.'),nl
 			;
 			Chunk =.. [ _F,SeqId, Left, Right, Strand, Frame, Extra],
-                        member(sequence(Nucleotides),Extra),
+                      member(sequence(Nucleotides),Extra),
 		        member(identity_seq(IdSeq),Extra),
                         member(length_range_annot(LengthRangeAnnot),Extra),
                 %nucleotide_triplets(Nucleotides,Triplets),

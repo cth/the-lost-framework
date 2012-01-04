@@ -1,0 +1,23 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{failcheck.pl -- failcheck}
+
+\label{sec:failcheck}
+
+This library contains predicates to easy exception handling.
+
+author: Christian Theil Have\vspace{0.7cm}
+
+\begin{description}
+    \predicate{check_or_fail}{2}{Goal, Error}
+call \arg{Goal} and throw and exception with error if \arg{Goal} fails.
+Also, never backtrack beyond this point.
+
+    \predicate{check_or_warn}{2}{Goal, Error}
+call \arg{Goal} and warn with error if \arg{Goal} fails.
+Also, never backtrack beyond this point.
+\end{description}
+

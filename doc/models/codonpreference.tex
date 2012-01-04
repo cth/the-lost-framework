@@ -1,0 +1,87 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\subsection{codon_preference}
+
+\label{sec:codonpreference}
+
+\begin{tags}
+\mtag{author}- : Ole Torp Lassen \\- : Christian Theil Have \\- : Matthieu Petit
+\end{tags}
+
+This is a simple gene finder based on codon preference.
+It is a two-state Hidden Markov Model that emit the codons of a sequence from either a coding state or a non-coding state.
+Once a transition to a coding state has occurred, the model stays in the coding state until the end state, as can be observed
+from the following transitions.
+
+\begin{code}
+values(trans('c'),['c','end']).
+values(trans('n'),['c','n','end']).
+\end{code}
+
+The following assumes the following about input sequences:
+(1) The sequence length is a multiple of three (since codons are emitted)
+(2) The "codingness" of the sequence follows the regular expression pattern: "n\bsl{}*c\bsl{}*"
+
+The gene finder was written by Ole, based on an earlier gene finder by Matthieu.
+Part of "the infrastructure" later rewritten by Christian.\vspace{0.7cm}
+
+\begin{description}
+    \predicate{annotate}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(prism_parameters))
+    2. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(ranges(gene)))
+Options:
+\end{code}
+
+\begin{code}
+InputFiles = [ ParamsFile, InputFile ]
+\end{code}
+
+Model is first parameterized using ParamsFile.
+Eaah putative gene/orf/chunk (range facts) in InputFile is annotated using the model.
+The gene range facts are expected to have a \verb$sequence$ extra field, which holds a list with nucleotide sequence spanned by the range.
+If a input orf is annotated entirely as non-coding, then it will \textit{not} be written to the output file.
+Otherwise, the orf will be written to the output file with and additional extra field \verb$codon_pref(AnnotList)$.
+AnnotList is a list of zeroes and ones where 0 means annotated as non-coding and 1 annotated as coding.
+
+    \predicate{parallel_annotate}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(prism_parameters))
+    2. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(ranges(gene)))
+Options:
+\end{code}
+
+Same as \predref{annotate}{3} but runs with 10 threads in parallel.
+
+    \predicate{parallel_learn}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(ranges(gene)))
+OutputFile:
+    text(prolog(prism_parameters))
+Options:
+\end{code}
+
+\begin{code}
+InputFiles = [ TrainingDataFile ]
+\end{code}
+
+Train the gene finder using the genes/orfs/chunks in TrainingDataFile.
+TrainingDataFile is expected to contain two \verb$extra$ fields: \verb$sequence$ contains the nucleotide sequence as a list and a \verb$ref_annot$ which contains a list of zeros (non-coding) and ones (coding) according to a golden standard.
+\end{description}
+

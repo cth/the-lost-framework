@@ -1,0 +1,39 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\subsection{chunk_translator}
+
+\label{sec:chunktranslator}
+
+\begin{tags}
+    \tag{author}
+: Ole Torp Lassen
+\end{tags}
+
+Translates a file of frame specific nucleotide chunks into a file of equivalent fastaformatted amino-acid sequences.\vspace{0.7cm}
+
+\begin{description}
+    \predicate{translate}{3}{+InputFiles, +Options, +OutputFile}
+Type signature:
+
+\begin{code}
+InputFiles:
+    1. text(prolog(ranges(gene)))
+OutputFile:
+    text(fasta(ffa))
+Options:
+    - mode (default value: 0)
+    - genecode (default value: 11)
+\end{code}
+
+\begin{code}
+ InputFiles = [ ChunkFile ]
+\end{code}
+
+Translates each chunk in ChunkFile to get the amino acid sequence.
+The option \verb$mode$ determines whether to run translate entire chunk \verb$mode=0$ or the longest orf in chunk \verb$mode=1$.
+The translated chunks are written \arg{OutputFile} which in a multi-fasta format.
+\end{description}
+

@@ -1,0 +1,1 @@
+:- system('/Users/cth/code/lost//utilities//scheduler.sh "prism -s 1000000000" "5" "/Users/cth/code/lost//tmp//pending_tasks_file.txt" "/Users/cth/code/lost//tmp//completed_tasks_file.txt" &'), sleep(10000).

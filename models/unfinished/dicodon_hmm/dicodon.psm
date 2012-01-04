@@ -1,0 +1,132 @@
+:-set_prism_flag(learn_mode,both).
+:-set_prism_flag(log_scale,on).
+
+values(begin,[n,start]).
+values(trans(c),[c,stop]).
+values(trans(start),[c]).
+values(trans(stop),[end]).
+values(trans(n),[start,n,end]).
+
+values(emit(start,_codon),Codons) :-
+	findall(C,codon(C,_,start),Codons).
+
+values(emit(c,_codon),Codons) :-
+	findall(C,(codon(C,_,start) ; codon(C,_,normal)),Codons).
+
+values(emit(n,_codon),Codons) :-
+	findall(C,(codon(C,_,_),Codons). % Technically should not contain stop codons
+
+values(emit(stop,_codon),Emits) :-
+	findall(C,(codon(C,_,stop)),Codons).
+
+%%%
+% Model specification:
+
+
+dicodon(Seq,Annotation) :-
+        msw(begin,State),
+        dicodon_rec(State,none,Seq,Annotation).
+
+% End State
+dicodon_rec(end,_,[],[]).
+
+dicodon_rec(start,Codon,[I|Is],[1,1,1|As]) :-
+        msw(emit(start,Codon),I),
+        msw(trans(start),NextState),
+        dicodon_rec(NextState,I,Is,As).
+
+dicodon_rec(stop,Codon,[I|Is],[1,1,1|As]) :-
+        msw(emit(stop,Codon),I),
+        msw(trans(stop),NextState),
+        dicodon_rec(NextState,I,Is,As).
+
+dicodon_rec(c,Codon,[I|Is],[1,1,1|As]) :-
+        msw(emit(c,Codon),I),
+        msw(trans(c),NextState),
+        dicodon_rec(NextState,I,Is,As).
+
+dicodon_rec(n,Codon[I|Is],[0,0,0|As]) :-
+        msw(emit(n,Codon),I),
+        msw(trans(n),NextState),
+        dicodon_rec(NextState,I,Is,As).
+
+dicodon_noannot(Seq) :-
+        msw(begin,State),
+        dicodon_noannot_rec(State,Seq).
+
+% End State
+dicodon_noannot_rec(end,_,[]).
+
+dicodon_noannot_rec(State,Codon,[I|Is]) :-
+        State \= end,
+        msw(emit(State,Codon,),I),
+        msw(trans(State),NextState),
+        dicodon_noannot_rec(NextState,Codon,Is).
+
+
+% List of Codons
+
+codon(1,[a,a,a],start).
+codon(2,[a,a,t],normal).
+codon(3,[a,a,c],normal).
+codon(4,[a,a,g],normal).
+codon(5,[a,t,a],start).
+codon(6,[a,t,t],start).
+codon(7,[a,t,c],start).
+codon(8,[a,t,g],start).
+codon(9,[a,c,a],normal).
+codon(10,[a,c,t],normal).
+codon(11,[a,c,c],normal).
+codon(12,[a,c,g],normal).
+codon(13,[a,g,a],normal).
+codon(14,[a,g,t],normal).
+codon(15,[a,g,c],normal).
+codon(16,[a,g,g],normal).
+codon(17,[t,a,a],stop). 
+codon(18,[t,a,t],normal).
+codon(19,[t,a,c],normal).
+codon(20,[t,a,g],stop). 
+codon(21,[t,t,a],normal).
+codon(22,[t,t,t],normal).
+codon(23,[t,t,c],normal).
+codon(24,[t,t,g],start).
+codon(25,[t,c,a],normal).
+codon(26,[t,c,t],normal).
+codon(27,[t,c,c],normal).
+codon(28,[t,c,g],normal).
+codon(29,[t,g,a],stop).
+codon(30,[t,g,t],normal).
+codon(31,[t,g,c],normal).
+codon(32,[t,g,g],normal).
+codon(33,[c,a,a],normal).
+codon(34,[c,a,t],normal).
+codon(35,[c,a,c],normal).
+codon(36,[c,a,g],normal).
+codon(37,[c,t,a],normal).
+codon(38,[c,t,t],normal).
+codon(39,[c,t,c],normal).
+codon(40,[c,t,g],start).
+codon(41,[c,c,a],normal).
+codon(42,[c,c,t],normal).
+codon(43,[c,c,c],normal).
+codon(44,[c,c,g],normal).
+codon(45,[c,g,a],normal).
+codon(46,[c,g,t],normal).
+codon(47,[c,g,c],normal).
+codon(48,[c,g,g],normal).
+codon(49,[g,a,a],normal).
+codon(50,[g,a,t],normal).
+codon(51,[g,a,c],normal).
+codon(52,[g,a,g],normal).
+codon(53,[g,t,a],normal).
+codon(54,[g,t,t],normal).
+codon(55,[g,t,c],normal).
+codon(56,[g,t,g],start). 
+codon(57,[g,c,a],normal).
+codon(58,[g,c,t],normal).
+codon(59,[g,c,c],normal).
+codon(60,[g,c,g],normal).
+codon(61,[g,g,a],normal).
+codon(62,[g,g,t],normal).
+codon(63,[g,g,c],normal).
+codon(64,[g,g,g],normal).

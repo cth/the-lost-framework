@@ -1,0 +1,27 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{script.pl -- The LoSt scripting language}
+
+\label{sec:script}
+
+This is the library for running scripts in the LoSt script language.
+
+The basic way of running a script is to consult the script from PRISM
+and the call \predref{run}{1} to invoke the goal of interest in the script.\vspace{0.7cm}
+
+\begin{description}
+    \predicate[private]{view}{1}{+Goal}
+Launch external viewer to view the file corresponding to script goal: \arg{Goal}. Currently, just launches vim.
+If the goal has not yet been run and the result is not yet available on file, then the goal will be run
+before launching the file viewer.
+
+    \predicate{run}{1}{+Goal}
+Will run the script goal \arg{Goal} with the sequential semantics (one task/process at a time). 
+
+    \predicate{run_parallel}{1}{+Goal}
+Runs the \arg{Goal} using the parallel semantics. 
+\end{description}
+

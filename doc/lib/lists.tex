@@ -1,0 +1,82 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{lists.pl -- working with lists.}
+
+\label{sec:lists}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+\end{tags}
+
+List manipulation predicates.\vspace{0.7cm}
+
+\begin{description}
+    \predicate[det]{atom_concat_list}{2}{+List, -Atom}
+Concatenates all atoms in \arg{List} in the order they appear
+to form a concatenation, \arg{Atom}
+
+    \predicate{inlists_nth0}{3}{+ListOfLists, +N, -NthElemFromEachList}
+Extract the n'th element (0 based indexing) from a list of lists
+
+    \predicate[det]{flexible_append}{3}{+L1, +L2, -L3}
+Append variant which permit atom elements as first/second argument
+
+    \predicate[det]{flatten_once}{2}{+ListIn, -ListOut}
+Merge list of lists into one long list, e.g.
+
+\begin{code}
+flatten_once([[a,b],[c,d],[e,f]],E) => E = [a, b, c, d, e, f].
+\end{code}
+
+Note that unlike the more generic flatten predicate, this only flattens out
+one nesting level
+
+    \predicate{map}{3}{+Goal, +InList, +OutList}
+applies the deterministic \arg{Goal} (which must be arity two) to each element of \arg{InList} producing \arg{OutList}
+E.g. if A is member of \arg{InList}, then for \arg{Goal} \Suniv{} [ Functor, A, B], call \arg{Goal} and B is a member of \arg{OutList}
+
+    \predicate[det]{map_with_arglist}{3}{+GoalPattern, +InList, -OutList}
+More flexible version of \dcgref{map}{3}.
+\arg{GoalPattern} is a special Prolog goal with an argument list, where one of the arguments can be \verb$input$ and
+one of the arguments is named \verb$output$. The goal will be called for each element in \arg{InList} as replacing
+each argument named \verb$input$ and \verb$output$ being a variable corresponding an element from \arg{OutList}.
+As example consider,
+
+\begin{code}
+map_with_arglist(atom_concat(input,input,output),[a,b],[aa,bb]).
+\end{code}
+
+    \predicate{replace}{4}{+Symbol, +Replacement, +Inlist, -Outlist}
+\arg{Outlist} is a replicate of \arg{Inlist} which has all instances
+of \arg{Symbol} replaced with \arg{Replacement} 
+
+    \predicate{match_tail}{3}{+InputList, -HeadOfInputList, +TailOfInputList}
+true if \arg{InputList} ends with \arg{TailOfInputList}
+
+    \predicate{not_member}{2}{+Elt, +List}
+true is \arg{Elt} is not a member of \arg{List}
+Note: well-behaved for \arg{Elt} and \arg{List} ground
+
+    \predicate{intersperse}{3}{?Separator, UnseparatedList, SeparatedList}
+Intersperse a list with a particular separator
+e.g.
+
+\begin{code}
+intersperse(',', ['a','b','c'], ['a',',','b,',','c'])
+\end{code}
+
+    \predicate{take}{3}{+N, +ListIn, -ListOut}
+true if \arg{ListOut} is the first \arg{N} elements of \arg{ListIn}
+
+    \predicate[det]{split_list}{4}{+N, +List, -FirstPart, -LastPart}
+\arg{FirstPart} is the first \arg{N} elements of \arg{List}
+\arg{LastPart} is the remaining
+
+    \predicate{zip}{3}{+List1, +List2, ZippedList}
+Combines two lists into one
+\end{description}
+

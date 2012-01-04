@@ -1,0 +1,38 @@
+% This LaTeX document was generated using the LaTeX backend of PlDoc,
+% The SWI-Prolog documentation system
+
+
+
+\section{unittest.pl -- unittest}
+
+\label{sec:unittest}
+
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+
+This is a library for setting up unit tests for the Lost framework.
+    \tag{bug}
+: unfinished.
+\end{tags}
+
+\vspace{0.7cm}
+
+\begin{description}
+    \predicate[private]{run_tests}{0}{}
+Runs all test cases specified in files in the testcase directory
+
+    \predicate[private]{report_test_results_text}{1}{-Results}
+Reports the results of running a test-suite as simple text
+with one line per testcase result
+
+    \predicate[private]{testcase_files}{1}{-TestCaseFiles}
+Produce a list of files containing testcases
+
+    \predicate[private]{testxase_files_rec}{2}{+Directories, -TestCaseFiles}
+recursively scan \arg{Directories} for files containing testcases
+
+    \predicate[private]{run_testcases_in_file}{2}{+Filename, -TestCaseResults}
+Runs all testcases in a particular testcase file.
+\end{description}
+

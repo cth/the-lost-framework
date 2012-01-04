@@ -1,0 +1,344 @@
+help(plot)
+# This is an R script to visualize results of the frame-bias model#
+#
+# Some definitions:#
+# True positives: Correct stops#
+# True negatives: Something not in ref and not in predictions: AllGenePredictions - (CorrectStops + WrongStops)#
+# False positives: Wrong Stops - eg. all predictions not in ref.#
+# False negatives: Something in the ref but not in set true positives#
+#
+actual_number_of_genes = 2400#
+#
+# Correct stops by applying various thresholds#
+threshold_accuracy <- read.table("threshold.dat", header=F)#
+colnames(threshold_accuracy) <- c("Threshold","CorrectStops", "WrongStops", "Sensitivity", "Specificity")#
+#
+# Correct stops by applying various thresholds#
+# Genemark (original) applied to e-coli k12 #
+# correct stops evaluated as all genbank annotated genes#
+genemark_threshold_accuracy <- read.table("genemark_threshold.tab", header=F)#
+colnames(genemark_threshold_accuracy) <- c("Threshold","CorrectStops", "WrongStops", "Sensitivity", "Specificity")#
+#
+# Correct stops for different number of score groups#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+score_symbols_acc <- read.table("score_symbols.dat", header=T)#
+score_symbols_acc$MyCC <- score_symbols_acc$Specificity * score_symbols_acc$Sensitivity#
+score_symbols_acc$AvgSNSP <- (score_symbols_acc$Specificity + score_symbols_acc$Sensitivity) / 2#
+#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 40#
+gfpreds40 <- read.table("results_whole_genome_40_vb.tab", header=T)#
+#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 40#
+acc_60_wg_vb <- read.table("results_whole_genome_60_vb.tab", header=T)#
+#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 30#
+acc_30_ot_vb <- read.table("results_ori_ter_30_vb.tab", header=T)#
+#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 60#
+acc_60_ot_vb <- read.table("results_ori_ter_60_vb.tab", header=T)#
+#
+# Genemark#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 100#
+genemark_wg_100_vb <- read.table("genmark_wg_100.tab", header=T)#
+genemark_wg_100_vb#
+#
+# This is the reported accuracy of glimmer trained and verified on known (non-hypothetical) e-coli genes#
+# Note, that they use a considerably larger set of genes#
+glim <- read.table("glimmer.tab", header=T)#
+glim$FalsePositiveRate <- glim$false.positives / (glim$false.positives + glim$true.positives) #
+glim$TruePositiveRate <- glim$true.positives / glim$genes#
+#
+################################################################################################
+# On to the graphics....#
+################################################################################################
+#
+plot(score_symbols_acc$ScoreGroups,score_symbols_acc$AvgSNSP, #
+		main="accuracy of different score groups", ylab="SN+SP/2", xlab="Number of score groups", col="3", t="l")#
+# The best entry from the plot seems to be with 40 symbols:#
+best_score_symbols_acc <- score_symbols_acc[score_symbols_acc$ScoreGroups==040,]#
+#
+################################################################################################
+# On to the graphics....#
+################################################################################################
+# Do a random guess line. Make sure we are above this one.#
+random_guess_line<- seq(0,1,0.01)#
+plot(random_guess_line,random_guess_line,type="l", xlab="", ylab="")#
+par(new=TRUE)#
+plot(1-threshold_accuracy$Specificity,threshold_accuracy$Sensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", col="2", type="o")#
+par(new=TRUE)#
+plot(1-acc_60_ot_vb$StopSpecificity,acc_60_ot_vb$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="3")#
+#
+#par(new=TRUE)#
+#plot(1-gfpreds40$StopSpecificity,gfpreds40$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="6")#
+#par(new=TRUE)#
+#plot(1-gfpreds60$StopSpecificity,gfpreds60$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="7")#
+#par(new=TRUE)#
+#plot(1-acc$Specificity,acc$Sensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", col="3")#
+#par(new=TRUE)#
+#plot(1-best_acc$Specificity,best_acc$Sensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", col="5")#
+#
+#####################################################################################
+# Comparison to glimmer results#
+#####################################################################################
+random_guess_line<- seq(0,1,0.01)#
+plot(random_guess_line,random_guess_line,main="versus glimmers best reported accuracy", type="l", xlab="", ylab="")#
+par(new=TRUE)#
+plot(1-acc_60_ot_vb$StopSpecificity,acc_60_ot_vb$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="b", col="3")#
+par(new=TRUE)#
+plot(glim$FalsePositiveRate,glim$TruePositiveRate, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="b", col="2")#
+#
+###########################################################################################################
+# Comparison of accuracy of model applied to whole genome versus separate ori->ter and ter->ori models#
+###########################################################################################################
+random_guess_line<- seq(0,1,0.01)#
+plot(random_guess_line,random_guess_line,type="l", main="whole-genome (score symbols 60) versus oriter (score symbols 60)", xlab="", ylab="")#
+par(new=TRUE)#
+plot(1-acc_60_wg_vb$StopSpecificity,acc_60_wg_vb$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="4")#
+par(new=TRUE)#
+plot(1-acc_60_ot_vb$StopSpecificity,acc_60_ot_vb$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="7")#
+#
+###########################################################################################################
+# whole genome (score symbols 60) versus threshold#
+###########################################################################################################
+#
+# whole-genome (score symbols 60) versus oriter (score symbols 60)#
+random_guess_line<- seq(0,1,0.01)#
+plot(random_guess_line,random_guess_line,type="l", main="whole genome (score symbols 60) against threshold", xlab="", ylab="")#
+par(new=TRUE)#
+plot(1-threshold_accuracy$Specificity,threshold_accuracy$Sensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="3")#
+par(new=TRUE)#
+plot(1-acc_60_wg_vb$StopSpecificity,acc_60_wg_vb$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="2")#
+#
+###########################################################################################################
+# separate ori->ter and ter->ori models (score symbols 60) versus threshold#
+###########################################################################################################
+#
+# whole-genome (score symbols 60) versus oriter (score symbols 60)#
+random_guess_line<- seq(0,1,0.01)#
+plot(random_guess_line,random_guess_line,type="l", main="separate ori->ter/ter->ori models (score symbols 60) against threshold", xlab="", ylab="")#
+par(new=TRUE)#
+plot(threshold_accuracy$Sensitivity,threshold_accuracy$Specificity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="3")#
+par(new=TRUE)#
+plot(1-acc_60_ot_vb$StopSpecificity,acc_60_ot_vb$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="l", col="2")#
+#
+###########################################################################################################
+# Genemark #
+###########################################################################################################
+#
+# whole-genome (score symbols 60) versus oriter (score symbols 60)#
+random_guess_line<- seq(0,1,0.01)#
+plot(random_guess_line,random_guess_line,type="l",lty=2, main="", xlab="", ylab="")#
+par(new=TRUE)#
+plot(1-genemark_threshold_accuracy$Specificity,genemark_threshold_accuracy$Sensitivity,  xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="p", col="2", pch=22)#
+par(new=TRUE)#
+plot(1-genemark_wg_100_vb$StopSpecificity,genemark_wg_100_vb$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="p", col="3",  pch=21)
+# This is an R script to visualize results of the frame-bias model#
+#
+# Some definitions:#
+# True positives: Correct stops#
+# True negatives: Something not in ref and not in predictions: AllGenePredictions - (CorrectStops + WrongStops)#
+# False positives: Wrong Stops - eg. all predictions not in ref.#
+# False negatives: Something in the ref but not in set true positives#
+#
+actual_number_of_genes = 2400#
+#
+# Correct stops by applying various thresholds#
+threshold_accuracy <- read.table("threshold.dat", header=F)#
+colnames(threshold_accuracy) <- c("Threshold","CorrectStops", "WrongStops", "Sensitivity", "Specificity")#
+#
+# Correct stops by applying various thresholds#
+# Genemark (original) applied to e-coli k12 #
+# correct stops evaluated as all genbank annotated genes#
+genemark_threshold_accuracy <- read.table("genemark_threshold.tab", header=F)#
+colnames(genemark_threshold_accuracy) <- c("Threshold","CorrectStops", "WrongStops", "Sensitivity", "Specificity")#
+#
+# Correct stops for different number of score groups#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+score_symbols_acc <- read.table("score_symbols.dat", header=T)#
+score_symbols_acc$MyCC <- score_symbols_acc$Specificity * score_symbols_acc$Sensitivity#
+score_symbols_acc$AvgSNSP <- (score_symbols_acc$Specificity + score_symbols_acc$Sensitivity) / 2#
+#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 40#
+gfpreds40 <- read.table("results_whole_genome_40_vb.tab", header=T)#
+#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 40#
+acc_60_wg_vb <- read.table("results_whole_genome_60_vb.tab", header=T)#
+#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 30#
+acc_30_ot_vb <- read.table("results_ori_ter_30_vb.tab", header=T)#
+#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 60#
+acc_60_ot_vb <- read.table("results_ori_ter_60_vb.tab", header=T)#
+#
+# Genemark#
+# Number of correct stops for various delete probabilities#
+# These results were obtained using a whole-genome model #
+# (e.g. not separate ter-ori and ori-ter) and the model#
+# was trained using variational bayes.#
+# The number of score symbols is fixed to 100#
+genemark_wg_100_vb <- read.table("genmark_wg_100.tab", header=T)#
+genemark_wg_100_vb#
+#
+# This is the reported accuracy of glimmer trained and verified on known (non-hypothetical) e-coli genes#
+# Note, that they use a considerably larger set of genes#
+glim <- read.table("glimmer.tab", header=T)#
+glim$FalsePositiveRate <- glim$false.positives / (glim$false.positives + glim$true.positives) #
+glim$TruePositiveRate <- glim$true.positives / glim$genes#
+#
+###########################################################################################################
+# Genemark #
+###########################################################################################################
+#
+# whole-genome (score symbols 60) versus oriter (score symbols 60)#
+random_guess_line<- seq(0,1,0.01)#
+plot(random_guess_line,random_guess_line,type="l",lty=2, main="", xlab="", ylab="")#
+par(new=TRUE)#
+plot(1-genemark_threshold_accuracy$Specificity,genemark_threshold_accuracy$Sensitivity,  xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="p", col="2", pch=22)#
+par(new=TRUE)#
+plot(1-genemark_wg_100_vb$StopSpecificity,genemark_wg_100_vb$StopSensitivity, xlim=c(0,1), ylim=c(0,1), xlab="1-Specificity (FPR)", ylab="Sensitivity (TPR)", t="p", col="3",  pch=21)
+plot(sin,0.6*pi)
+sqrt(2)
+library(gRbasre)
+library(gRbase)
+chooseCRANmirror()
+install.packages(c("gRbase"))
+library(gRbase)
+install.packages("gRbase", dependencies=TRUE)
+library(gRbase)
+data(lizard)
+lizard
+liz.sat = dmod(~.^., data=lizard)
+liz.sat = cmod(~.^., data=lizard)
+help(dmod)
+help(cmod)
+??chmod
+??cmod
+install.packages("graph", dependencies=TRUE)
+install.packages("Rgraphviz",depencies=TRUE)
+install.packages("gRim",depencies=TRUE)
+source("http://bioconductor.org/biocLite.R")
+chooseBioCmirror()
+biocLite("Rgraphviz")
+library(Rgraphviz)
+install.packages("Rgraphviz",depencies=TRUE)
+library(Rgraphviz)
+biocLite("Rgraphviz")
+library(Rgraphviz)
+install.packages("Rcmdr",dependencies=TRUE)
+cars
+cars.lm = lm(formula = dist ~ speed, data=cars)
+cars.lm
+summary(carse)
+summary(cars) 
+summary(cars.lm)
+dotplot(cars.lm)
+library(lattice)
+dotplot(cars.lm)
+help(glm) 
+help(glm)
+demo()
+demo(is.things)
+demo
+demo()
+plot
+vignette(gRbase)
+library(gRbase)
+vignette(gRbase)
+vignette(cmod)
+vignette(affy)
+clear
+h
+installed.packages
+installed.packages()
+class(installed.packages())
+update.packages
+update.packages()
+all_orfs <- scan('ecoli_all_orf_lengths.dat')
+cd('~/code/lost/models/')
+cd ~/code/lost/models/'
+pwd
+getwd
+getwd()
+setwd('/Users/cth/code/lost/models/orf_length/experiments/')
+getwd()
+all_orfs <- scan('ecoli_all_orf_lengths.dat')
+plot(all_orfs,t="l",ylab="occurrences", xlab="gene codon length",  main="All E.coli. orfs")
+all_orfs <- scan('ecoli_all_orf_lengths.dat')
+mode(all_orfs)
+all_orfs
+max(all_orfs)
+min(all_orfs)
+seq(min(all_orfs),max(all_orfs),1)
+lengths <- seq(min(all_orfs),max(all_orfs),1)
+lengths
+all_orfs <- scan('ecoli_all_orf_lengths.dat')
+summarize(all_orfs)
+rle(all_orfs)
+count(all_orfs[all_orfs=1])
+sum(all_orfs[all_orfs=1])
+sum(all_orfs[all_orfs=2])
+sum(all_orfs[all_orfs=3])
+sum(all_orfs[all_orfs=4])
+sum(all_orfs[all_orfs=30])
+sum(all_orfs[all_orfs=200])
+a <- [1,1,1,2,2]
+a <- c(1,1,1,2,2)
+a
+sum(a)
+sum(a[a=2])
+sum(a[a<2])
+sum(a[a<2])
+length(a[a=1])
+length(a[a=1])
+length(a[a=1])
+rank(all_orfs)
+help(rank)
+rank(a)
+range(all_orfs)
+sort(all_orfs)
+all_orfs
+sort(all_orfs)
+order(all_orfs)
+as.data.frame(table(all_orfs))
+plot(as.data.frame(table(all_orfs)))
+all_orfs <- scan('ecoli_all_orf_lengths.dat')

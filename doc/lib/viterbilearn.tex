@@ -3,58 +3,75 @@
 
 
 
-\section{viterbi_learn.pl}
+\section{viterbi_learn.pl -- Fast supervised training}
 
 \label{sec:viterbilearn}
 
+\begin{tags}
+    \tag{author}
+: Christian Theil Have
+\end{tags}
+
+This library uses PRISM viterbi algorithm in order to perform supervised learning.
+It is a substitute for PRISMs builtin learn predicate, but it is significantly faster
+for supervised learning.
+
+It works by running the viterbi predicate for a list of observation goals and records
+and counts the msw's that is used in the for the viterbi derivation. Counts are then
+normalized to produce parameters.
+
+To figure out what msw declarations exist in the PRISM program, it need to the PRISM
+source file to be consulted in the usual way for Prolog programs (in addition to
+loading the file with prism(File)).\vspace{0.7cm}
+
 \begin{description}
-    \predicate{viterbi_learn_file}{1}{+File}
+    \predicate[private]{viterbi_learn_file}{1}{+File}
 Learns the parameters of a PRISM program from the observed goals
 supplied in \arg{File}
 
-    \predicate{viterbi_learn_file_count_only}{1}{+File}
+    \predicate[private]{viterbi_learn_file_count_only}{1}{+File}
 Does empirical frequency counting of the MSWs involved
 in the viterbi path of the observed goals in \arg{File} 
 
-    \predicate{viterbi_learn_stream}{1}{+Stream}
+    \predicate[private]{viterbi_learn_stream}{1}{+Stream}
 Does empirical frequency counting of the MSWs involved
 in the viterbi path of the observed goals in \arg{Stream} 
 
-    \predicate{viterbi_learn}{1}{+ListOfGoals}
+    \predicate[private]{viterbi_learn}{1}{+ListOfGoals}
 Does empirical frequency counting of the MSWs involved
 in the viterbi path of the observed goals in \arg{ListOfGoals} 
 
-    \predicate{viterbi_learn_term}{1}{+G}
+    \predicate[private]{viterbi_learn_term}{1}{+G}
 Does empirical frequency counting of the MSWs involved
 in the viterbi path of the observed goal \arg{G}
 
-    \predicate{count_msw}{1}{+MSW}
+    \predicate[private]{count_msw}{1}{+MSW}
 increment the counter for \arg{MSW} 
 
-    \predicate{clear_counters}{0}{}
+    \predicate[private]{clear_counters}{0}{}
 reset all MSW counts to zero 
 
-    \predicate{merge_counts_files}{1}{+FileList}
+    \predicate[private]{merge_counts_files}{1}{+FileList}
 Takes a \arg{FileList} and reads MSW counts from each of the files
 in the list. The counts read are added to the allready existing
 counts, effectively summing the counts of all the files.
 
-    \predicate{load_counts_file}{1}{+CountsFile}
+    \predicate[private]{load_counts_file}{1}{+CountsFile}
 
-    \predicate{add_pseudo_counts}{0}{}
+    \predicate[private]{add_pseudo_counts}{0}{}
 Add a small pseudo count for each possible mws outcome
 
-    \predicate{set_switches_from_counts}{0}{}
+    \predicate[private]{set_switches_from_counts}{0}{}
 Set the probabilities of all switches using recorded counts
 
-    \predicate{set_switches_from_couns}{1}{+Switch}
+    \predicate[private]{set_switches_from_couns}{1}{+Switch}
 Set the probability for outcome from \arg{Switch} to the normalized value
 of the observed counts for the switch
 
-    \predicate{count_list_from_outcome_list}{3}{+Switch, +OutcomesList, -CountList}
+    \predicate[private]{count_list_from_outcome_list}{3}{+Switch, +OutcomesList, -CountList}
 produce a list of counts for outcome of \arg{Switch} 
 
-    \predicate{compute_frequencies_from_counts}{3}{+Total, +CountList, +FreqList}
+    \predicate[private]{compute_frequencies_from_counts}{3}{+Total, +CountList, +FreqList}
 Compute the relative frequency of each outcome 
 \end{description}
 

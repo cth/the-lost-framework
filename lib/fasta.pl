@@ -1,5 +1,13 @@
-/** <module> FASTA Module
+:- module(fasta,[fasta_load_sequence/4, fasta_save_sequence/3, split_file_fasta/5]).
+
+/** <module> working with the FASTA file-format
+
 This file includes some utilities for working with the FASTA format
+
+@author: Christian Theil Have
+@author: Matthieu Petit
+@author: Ole Torp Lassen
+
 */
 
 :- lost_include_api(misc_utils).
@@ -113,3 +121,76 @@ end_of_line(unix) --> [10].    % unix end of line
 
 space --> [ 9 ]. % tab character
 space --> [ 32 ]. % normal space character
+
+
+%% split_file_fasta(+Filename,+ChunkSize,+OutputFilePrefix,+OutputFileSuffix,-ResultFiles)
+%
+% Split a FASTA composed of several header (> ...) into multiple files. We consider that a chunk
+% has been seen each time that the symbol > appears at the beginning of a line
+split_file_fasta(_Filename,ChunkSize,_OutputFilePrefix,_OutputFileSuffix,[]) :-
+        ChunkSize =< 0,
+        !,
+        write("ChunkSize should be a non-negative number"),
+        nl.
+
+split_file_fasta(Filename,ChunkSize,OutputFilePrefix,OutputFileSuffix,ResultingFiles) :-
+        open(Filename,read,IStream),
+        readline(IStream,Firsline),
+        split_file_fasta_rec(IStream,ChunkSize,1,OutputFilePrefix,OutputFileSuffix,Firsline,ResultingFiles),
+        close(IStream).
+		
+
+
+split_file_fasta_rec(IStream, ChunkSize, FileNo, OutputFilePrefix,OutputFileSuffix,Firstline,ResultingFiles) :-
+        number_codes(FileNo,Code),
+        atom_codes(FileNo_Atom,Code),
+        lost_tmp_directory(Tmp),
+	atom_concat_list([Tmp,OutputFilePrefix,'_',FileNo_Atom,'.',OutputFileSuffix], OutputFile),
+	write('creating split file:'), write(OutputFile),nl,
+        open(OutputFile,write,OStream),
+	read_next_n_chunk(Firstline,ChunkSize,IStream,OStream,EOF,LastLine),
+        close(OStream),
+	((EOF == yes) ->
+            true,
+            ResultingFiles = [OutputFile]
+	;
+            ResultingFiles = [OutputFile|RestResultingFiles],
+            NextFileNo is FileNo+1,
+            split_file_fasta_rec(IStream,ChunkSize,NextFileNo,OutputFilePrefix,OutputFileSuffix,LastLine,RestResultingFiles)
+	).
+
+
+% Read and write N chunk in FASTA format
+
+% EOF reachs
+read_next_n_chunk([-1],ChunkSize,_IStream,_OStream,yes,[-1]) :-
+        ChunkSize >=0,
+        !.
+
+% Case: Line starts with > and N chunk already read
+read_next_n_chunk([62|Rest],0,_IStream,_OStream,no,[62|Rest]) :-
+        !.
+
+% Case: Line starts with > and less than N chunk has been already read
+read_next_n_chunk([62|Rest],ChunkSize,IStream,OStream,EOF,LastLine) :-
+        ChunkSize > 0,
+        !,
+        atom_codes(Atom,[62|Rest]),
+        write(OStream,Atom),
+        nl(OStream),
+        readline(IStream,CodeList),
+        ChunkSize1 is ChunkSize-1,
+        read_next_n_chunk(CodeList,ChunkSize1,IStream,OStream,EOF,LastLine).
+
+% Default Case
+read_next_n_chunk(CodeList,ChunkSize,IStream,OStream,EOF,LastLine) :-
+        ChunkSize >= 0,
+        !,
+        atom_codes(Atom,CodeList),
+        write(OStream,Atom),
+        nl(OStream),
+        readline(IStream,New_CodeList),
+        read_next_n_chunk(New_CodeList,ChunkSize,IStream,OStream,EOF,LastLine).
+
+
+

@@ -3,6 +3,8 @@
 :- lost_include_api(io).
 :- lost_include_api(accuracy).
 
+:- task(report( [text(prolog(ranges(gene))), text(prolog(ranges(gene)))], [start(min),end(max),reports(all)],text(prolog(accuracy_report)))). 
+
 lost_option(annotate,start,min,'An positive integer indicating the start of the range. The default value, \'min\' is used to specify the minimal start for any of the inputs').
 lost_option(annotate,end,max,'A positive integer indicating the end of the range. The default value, \'max\' is used to specify the minimal start for any of the inputs').
 lost_option(annotate,reports,all,'A list functors/types of output to include in the accuracy report. By default, the value all refers to the list of all possible functors.').
@@ -16,21 +18,31 @@ lost_input_formats(annotate, [text(prolog(ranges(gene))), text(prolog(ranges(gen
 lost_output_format(annotate, Options, OutputFormat) :-
 	get_option(Options,output_format,OutputFormat).
 
-annotate([ReferenceFile,PredictionFile],Options,OutputFile) :-
-	file_functor(ReferenceFile,ReferenceFunctor),
-	file_functor(PredictionFile,PredictionFunctor),
-	
-	get_option(Options,start,Start),
-	get_option(Options,end,End),
-	get_option(Options,reports,ReportTypes),
-	
-	check_or_fail(consult(ReferenceFile),error(cannot_consult(ReferenceFile))),
-	check_or_fail(consult(PredictionFile),error(cannot_consult(PredictionFile))),
-	
-	((Start == min) ->	
-	 db_annotation_min(ReferenceFunctor,_,_,ActualStart)
-	; integer(Start) -> ActualStart = Start 
-	; throw(error(bad_option_start(Start)))),
+
+%% report(+InputFiles, +Options, +OutputFile)
+% Creates a accuracy report OutputFile based on InputFiles.   
+% The first input file is a 'Golden Standard' file which contains reference genes.
+% The second input file is the predictions. 
+% 
+% A subset of the predictions may be specified with range in specified using the options =|start|= and =|end|=. 
+% Only predictions which fully lie within this range are considered and reference predictions outside of this range are also not considered.
+% They may both be integers or the special
+% values =|min|= and =|max|= respectively (which indicates that all predications should be considered). 
+report([ReferenceFile,PredictionFile],Options,OutputFile) :-
+file_functor(ReferenceFile,ReferenceFunctor),
+file_functor(PredictionFile,PredictionFunctor),
+
+get_option(Options,start,Start),
+get_option(Options,end,End),
+get_option(Options,reports,ReportTypes),
+
+check_or_fail(consult(ReferenceFile),error(cannot_consult(ReferenceFile))),
+check_or_fail(consult(PredictionFile),error(cannot_consult(PredictionFile))),
+
+((Start == min) ->	
+ db_annotation_min(ReferenceFunctor,_,_,ActualStart)
+; integer(Start) -> ActualStart = Start 
+; throw(error(bad_option_start(Start)))),
 
 	((End == max) ->
 	 db_annotation_max(ReferenceFunctor,_,_,ActualEnd)
