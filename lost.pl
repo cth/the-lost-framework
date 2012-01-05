@@ -15,7 +15,7 @@
 % Make changes to these three lines:
 lost_config(prism_command,'prism -s 1000000000').
 %lost_config(prism_command,'prism-noio').
-lost_config(lost_base_directory,'/Users/cth/code/lost/').
+lost_config(lost_base_directory,'/Users/cth/code/bitbucket/lost/').
 lost_config(platform,'unix').
 lost_config(concurrent_processes,5).
 
