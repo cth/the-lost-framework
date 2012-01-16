@@ -89,8 +89,8 @@ verify_model_options_declared(Model,Goal,Options) :-
 option_is_declared([], _).
 option_is_declared([Option|Rest], DeclaredOptions) :-
 	Option =.. [ OptionName, _ ],
-	DeclaredOptionMatcher =.. [ lost_option, _, OptionName, _, _],
-	member(DeclaredOptionMatcher,DeclaredOptions),
+	OptionMatcher =.. [ OptionName, _ ],
+	member(OptionMatcher,DeclaredOptions),
 	option_is_declared(Rest,DeclaredOptions).
 
 %% expand_model_options(+Model,+Goal,+Options,-ExpandedOptions)
@@ -107,7 +107,7 @@ expand_options([],_,[]).
 
 % The declared option is part of given options
 expand_options([DeclaredOption|Ds],Options,Rest) :-
-	DeclaredOption =.. [ Key, Value ],
+	DeclaredOption =.. [ Key, _Value ],
 	OptionMatcher =.. [ Key, _ ],
 	member(OptionMatcher, Options),
 	expand_options(Ds,Options,Rest).
@@ -221,6 +221,7 @@ check_valid_model_call(Model,Task,_InputFiles,Options) :-
 	% Checks there is an implementation of declared task
 	check_or_fail(task_has_implementation(Model,Task), error(no_task_implementation(Model,Task))),
 	% Check that the task is not call with unknown model options
+	writeln(Options),
 	check_or_fail(verify_model_options_declared(Model,Task,Options), error(interface(model_called_with_undeclared_options(Model,Options)))).
 	/*
 	check_or_warn(lost_interface_input_formats(Model,Task, _), warning(interface(missing_input_formats_declaration(Model,Task)))),
