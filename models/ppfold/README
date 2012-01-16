@@ -1,0 +1,18 @@
+This is an wrapper model to the external program PPFold. 
+
+Given a list of sequences text(prolog(ranges(gene))) it will try to fold each of them.
+
+The input file is expected to contain the actual sequence of the range as an extra field, but
+the functor used to specify the field is given as an option. 
+
+In the output file, genes/ranges will have two new extra fields: =|folding|= which is a list representing
+the folding for each position in the sequence (using characters '<', '>', and '.') 
+and =|energy|= which is the free energy of the folding.  
+
+To setup integration with PPFold you may need to alter the configuration file =|config.pl|= which 
+specifies where Java and PPFold are installed:
+
+==
+ppfold_jar('/opt/ppfold/PPfold-v2-0.jar').
+java('/usr/bin/java').
+==
