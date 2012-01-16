@@ -6,7 +6,7 @@ Module that defines main predicates of the framework.
 */
 
 % APIs used
-:- use([path,misc_utils,io,prologdb,annotation_index,script,misc_utils]).
+:- use([path,misc_utils,io,prologdb,annotation_index,script,misc_utils,errorcheck]).
 
 %:- lost_include_api(help).
 
