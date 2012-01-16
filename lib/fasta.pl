@@ -12,6 +12,7 @@ This file includes some utilities for working with the FASTA format
 
 :- lost_include_api(misc_utils).
 :- lost_include_api(io).
+:- use(sequencedb).
 
 %% fasta_load_sequence(+InputFile,+SequenceIdentifier,-FastaHeaderLine,-Sequence)
 %
@@ -42,7 +43,7 @@ fasta_save_sequence(OutputFile,SequenceData,Header) :-
 	split_list_in_chunks(70,SequenceCodesUppercase,Chunks), % Divide the sequence into chunks for each fasta line
 	map(atom_codes(output,input),Chunks,AtomChunks), % Convert each chunk to an atom
 	forall(member(X,AtomChunks),(write(OS,X),write(OS,'\n'))), % write all lines
-	close(OutputFile).
+	close(OS).
 
 	
 atom_code_list([], []).
