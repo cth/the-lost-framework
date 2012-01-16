@@ -1,6 +1,6 @@
 :- dynamic base/3.
 
-:- use(interface).
+:- use(path).
 
 /****************************************************************************************************
 Options and constraints
@@ -34,18 +34,20 @@ codon_output_files(['codons+1.dat', 'codons+2.dat','codons+3.dat', 'codons-1.dat
 orfs_output_files(['orfs+1.dat', 'orfs+2.dat','orfs+3.dat', 'orfs-1.dat', 'orfs-2.dat', 'orfs-3.dat']).
 
 extract_orfs(FastaFile,OutputFile) :-
+	writeln(extract_orfs(FastaFile,OutputFile)),
 	lost_tmp_file('pyl-finder-codons+1', CodonsDirect1),
 	lost_tmp_file('pyl-finder-codons+2', CodonsDirect2),
-	lost_tmp_file('pyl-finder-codons+3', CodonsDirect2),
+	lost_tmp_file('pyl-finder-codons+3', CodonsDirect3),
 	lost_tmp_file('pyl-finder-codons-1', CodonsReverse1),
 	lost_tmp_file('pyl-finder-codons-2', CodonsReverse2),
 	lost_tmp_file('pyl-finder-codons-3', CodonsReverse3),
 	lost_tmp_file('pyl-finder-orfs+1', ORFSDirect1),
 	lost_tmp_file('pyl-finder-orfs+2', ORFSDirect2),
-	lost_tmp_file('pyl-finder-orfs+3', ORFSDirect2),
+	lost_tmp_file('pyl-finder-orfs+3', ORFSDirect3),
 	lost_tmp_file('pyl-finder-orfs-1', ORFSReverse1),
 	lost_tmp_file('pyl-finder-orfs-2', ORFSReverse2),
 	lost_tmp_file('pyl-finder-orfs-3', ORFSReverse3),
+	writeln(here),nl,
 	extract_starts_and_stops(FastaFile,[CodonsDirect1,CodonsDirect2,CodonsDirect3,CodonsReverse1,CodonsReverse2,CodonsReverse3]),
 	load_genome(FastaFile,Genome),
 	find_orfs(Genome,CodonsDirect1,ORFSDirect1,'+',1),
@@ -53,7 +55,7 @@ extract_orfs(FastaFile,OutputFile) :-
 	find_orfs(Genome,CodonsDirect3,ORFSDirect3,'+',3),
 	find_orfs(Genome,CodonsReverse1,ORFSReverse1,'-',1),
 	find_orfs(Genome,CodonsReverse2,ORFSReverse2,'-',2),
-	find_orfs(Genome,CodonsReverse3,ORFReverse3,'-',3),
+	find_orfs(Genome,CodonsReverse3,ORFSReverse3,'-',3),
 	writeln('Merging files for all reading frames into orfs.pl'),
 	merged_sorted_files([ORFSDirect1,ORFSDirect2,ORFSDirect3,ORFSReverse1,ORFSReverse2,ORFSReverse3],OutputFile),
 	writeln('Done.').

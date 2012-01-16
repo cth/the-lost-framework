@@ -109,6 +109,12 @@ lost_tmp_file(Prefix,TmpFile) :-
         lost_tmp_directory(TmpDir),
         atom_concat_list([TmpDir, '/' , Prefix, '-', Suffix],TmpFile).
 
+%% lost_tmp_file(+Prefix,+Suffix,-TmpFile) is det
+% Creates a temporary file in the $LOST_TMP_DIR directory with a unique name starting with Prefix and ending with Suffix
+lost_tmp_file(Prefix,Suffix,TmpFile) :-
+	lost_tmp_file(Prefix,TmpFile1),
+	atom_concat(TmpFile1,Suffix,TmpFile).
+
 
 %% dirname(+Filename,+DirPart)
 % Separate out the directory part (DirPart) of a filename

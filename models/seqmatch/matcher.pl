@@ -6,13 +6,6 @@ Assumptions:
 Match sequences is of same size!!!
 */ 
 
-start_codon([t,t,g]).
-start_codon([c,t,g]).
-start_codon([a,t,t]).
-start_codon([a,t,c]).
-start_codon([a,t,a]).
-start_codon([a,t,g]).
-start_codon([g,t,g]).
 
 
 go :-
@@ -135,12 +128,12 @@ match_window(_,_,_,_,_). % Match everything else, report nothing.
 % Direct match
 match_window_direct(LeftPos,RightPos,Match,Match,Out) :-
 	ReadingFrame is 1 + LeftPos mod 3,
-	write(Out,seq('n/a',LeftPos,RightPos,'+',ReadingFrame,[match(Match)])),
+	write(Out,seq('na',LeftPos,RightPos,'+',ReadingFrame,[match(Match)])),
 	writeln(Out,'.').
 	
 match_window_reverse(LeftPos,RightPos,OrigMatch,RevComplMatch,RevComplMatch,Out) :-
 	ReadingFrame is 1 + LeftPos mod 3,
-	write(Out,seq('n/a',LeftPos,RightPos,'-',ReadingFrame,[match(OrigMatch)])),
+	write(Out,seq('na',LeftPos,RightPos,'-',ReadingFrame,[match(OrigMatch)])),
 	writeln(Out,'.').
 
 :- table reverse_complement/2.
