@@ -66,6 +66,12 @@ gene_extra_field(GeneRecord,Key,Value) :-
         Matcher =.. [ Key, Value ], 
         member(Matcher,Extra).
 
+%% gene_add_extra_field(+GeneRecord,+Key,+Value,-UpdatedGeneRecord) is det
+% Adds an additional extra field to a GeneRecord 
+gene_add_extra_field(GeneRecord,Key,Value,UpdatedGeneRecord) :-
+		GeneRecord =.. [ PredFunctor, SequenceId,Left,Right,Strand,Frame,Extra],
+		NewExtraField =.. [ Key, Value ],
+		GeneRecord =.. [ PredFunctor, SequenceId,Left,Right,Strand,Frame,[NewExtraField|Extra]].
 
 %% genedb_distinct_predictions(+GeneDBFunctor,GeneEnds,PredictionsForEnd)
 % Find all distinct predictions in a _consulted_ genedb:
