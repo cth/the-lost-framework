@@ -1,17 +1,3 @@
-
-%% 
-% Setting up an infernal model:
-% This uses the aligned trnas to create a covariance model for searching
-% genomes for similar tRNAs.
-
-% Might need to alter this absolute path: 
-trna_alignment <- file::get('file:///home/ctheilhave/lost/scripts/experiments/pyl/infernal/trna-pyl.sto').
-
-infernal_model <- infernal::build(trna_alignment).
-
-calibrated_model <- infernal::calibrate(infernal_model).
-
-
 % Organisms of interest:
 
 organism('Methanosarcina thermophila').
@@ -89,15 +75,28 @@ genome('Desulfosporosinus orientis') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/ge
 genome('Burkholderia pseudomallei chr1') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Burkholderia_pseudomallei_1106a_uid16182/CP000572.fna').
 genome('Burkholderia pseudomallei chr2') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Burkholderia_pseudomallei_1106a_uid16182/CP000573.fna').
 
+
+
+%% 
+% Setting up an infernal model:
+% This uses the aligned trnas to create a covariance model for searching
+% genomes for similar tRNAs.
+
+% Might need to alter this absolute path: 
+trna_alignment <- file::get('file:///home/ctheilhave/lost/scripts/experiments/pyl/infernal/trna-pyl.sto').
+
+infernal_model <- infernal::build(trna_alignment).
+
+calibrated_model <- infernal::calibrate(infernal_model).
+
 %%
 % Searching the genomes for tRNAs-pyl
 
 trna_pyl_hits(Org) <- organism(Org) | infernal::search([calibrated_model,genome(Org)]).
 
-
 % test
 runall :- 
 	findall(Organism,organism(Organism),Organisms),
-	forall(member(Organism,Organisms), run(trna_pyl_hits(Organism))).
+	forall(member(Organism,Organisms), (run(trna_pyl_hits(Organism)) ; writeln('skipping ahead'))).
 
 
