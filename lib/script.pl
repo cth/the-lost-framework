@@ -109,7 +109,7 @@ run(Target,RunOpts,File) :-
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
 % 	findall succeeds even if one of the goals fail, which is undesirable here!
 %	findall(DependencyFile,(member(Dependency,Inputs), writeln(run(Dependency,NewRunOpts,DependencyFile)),run(Dependency,NewRunOpts,DependencyFile)), InputFiles),
-	run_multiple(Inputs,InputFiles),
+	run_multiple(NewRunOpts,Inputs,InputFiles),
 	RealTaskSpec =.. [ Task, InputFiles, Options, File ],
 	writeln(RealTaskSpec),
 	run_model(Model,RealTaskSpec,RunModelOptions).
@@ -123,10 +123,10 @@ run(Target,_RunOpts,_File) :-
 	!,
 	fail.
 
-run_multiple([],[]).
-run_multiple([Target|TargetsRest],[File|FilesRest]) :-
-	writeln(run(Dependency,NewRunOpts,DependencyFile)),
-	run(Dependency,NewRunOpts,DependencyFile),
+run_multiple(RunOpts,[],[]).
+run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
+	writeln(run(Dependency,RunOpts,DependencyFile)),
+	run(Dependency,RunOpts,DependencyFile),
 	run_multiple(TargetsRest,FilesRest).
 
 
