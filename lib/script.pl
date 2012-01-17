@@ -107,8 +107,6 @@ run(Target,RunOpts,File) :-
 	call(Guard),
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
-% 	findall succeeds even if one of the goals fail, which is undesirable here!
-%	findall(DependencyFile,(member(Dependency,Inputs), writeln(run(Dependency,NewRunOpts,DependencyFile)),run(Dependency,NewRunOpts,DependencyFile)), InputFiles),
 	run_multiple(NewRunOpts,Inputs,InputFiles),
 	RealTaskSpec =.. [ Task, InputFiles, Options, File ],
 	writeln(RealTaskSpec),
@@ -117,9 +115,6 @@ run(Target,RunOpts,File) :-
 run(Target,_RunOpts,_File) :-
 	write('failed to run target: '), 
 	write(Target),nl,
-%	writeln('Valid targets are: '),
-%	findall(T1,clause('<-',T1,_),Targets),
-%	forall(member(T,Targets),(write('\t* '),write(T),nl)),
 	!,
 	fail.
 
