@@ -8,6 +8,7 @@
 search([ModelFile,FastaFile],_Options,ResultsFile) :-
 	infernal_cmsearch(CMSEARCH),
 	atom_concat_list([CMSEARCH,' ', ModelFile, ' ', FastaFile, ' > ', ResultsFile],CMSearchCommand),
+	write('running: '), writeln(CMSearchCommand),
 	system(CMSearchCommand).
 	
 calibrate([ModelFile],_Options,CalibratedModelFile) :-
