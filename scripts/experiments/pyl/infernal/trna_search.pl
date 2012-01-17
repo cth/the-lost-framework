@@ -99,6 +99,8 @@ trna_pyl_hits(Org) <- organism(Org) | infernal::search([calibrated_model,genome(
 
 
 % test
-
+runall :- 
+	findall(Organism,organism(Organism),Organisms),
+	forall(member(Organism,Organisms), run(trna_pyl_hits(Organism))).
 
 
