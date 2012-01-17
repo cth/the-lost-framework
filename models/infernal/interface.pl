@@ -1,8 +1,9 @@
 :- use(lists).
-
 :- [config].
 
-infernal_cmsearch(cmsearch).
+:- task(search([infernal(model),text(fasta)], [], infernal(results))).
+:- task(calibrate([infernal(model)], [], infernal(model))).
+:- task(build([infernal(alignment)],[],infernal(model))).
 
 search([ModelFile,FastaFile],_Options,ResultsFile) :-
 	infernal_cmsearch(CMSEARCH),
@@ -15,7 +16,7 @@ calibrate([ModelFile],_Options,CalibratedModelFile) :-
 	atom_concat_list([CMCAL, ' ', CalibratedModelFile],CalibrateCommand),
 	system(CalibrateCommand).
 	
-build([AlignmentFile],Options,ModelFile) :-
+build([AlignmentFile],_Options,ModelFile) :-
 	infernal_cmbuild(CMBUILD),
 	atom_concat_list([CMBUILD, ' ', ModelFile, ' ', AlignmentFile],BuildCommand),
 	system(BuildCommand).
