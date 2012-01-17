@@ -49,7 +49,7 @@ organism(_).
 %%
 % Searching the genomes for tRNAs-pyl
 
-trna_pyl_hits(Org) <- organism(Org) | infernal::search([genome(Org)).
+trna_pyl_hits(Org) <- organism(Org) | infernal::search([calibrated_model,genome(Org)]).
 
 
 % test
