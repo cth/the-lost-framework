@@ -125,9 +125,9 @@ run(Target,_RunOpts,_File) :-
 
 run_multiple(RunOpts,[],[]).
 run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
-	writeln(run(Dependency,RunOpts,DependencyFile)),
-	run(Dependency,RunOpts,DependencyFile),
-	run_multiple(TargetsRest,FilesRest).
+	writeln(run(Target,RunOpts,File)),
+	run(Target,RunOpts,File),
+	run_multiple(RunOpts,TargetsRest,FilesRest).
 
 
 parse_guard_and_body(Spec, true, Model, TaskSpec) :-
