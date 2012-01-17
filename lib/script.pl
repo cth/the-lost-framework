@@ -125,8 +125,8 @@ run(Target,_RunOpts,_File) :-
 
 run_multiple(RunOpts,[],[]).
 run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
-	writeln(run(Dependency,RunOpts,DependencyFile)),
-	run(Dependency,RunOpts,DependencyFile),
+	writeln(run(Target,RunOpts,File)),
+	run(Target,RunOpts,File),
 	run_multiple(TargetsRest,FilesRest).
 
 
