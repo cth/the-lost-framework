@@ -1,7 +1,4 @@
 
-% Organism names:
-organism(methanohalophilus_mahii).
-
 %% 
 % Setting up an infernal model:
 % This uses the aligned trnas to create a covariance model for searching
