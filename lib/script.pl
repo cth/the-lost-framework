@@ -129,7 +129,6 @@ run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
 	run(Target,RunOpts,File),
 	run_multiple(RunOpts,TargetsRest,FilesRest).
 
-
 parse_guard_and_body(Spec, true, Model, TaskSpec) :-
 %	write(Spec),nl,
 	Spec =.. [ '::', Model, TaskSpec].
