@@ -107,6 +107,7 @@ run(Target,RunOpts,File) :-
 	call(Guard),
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
+	writeln('before findall'),nl,
 	findall(DependencyFile,(member(Dependency,Inputs), writeln(run(Dependency,NewRunOpts,DependencyFile)),run(Dependency,NewRunOpts,DependencyFile)), InputFiles),
 	writeln('test - do I get here in odd case?'),
 	RealTaskSpec =.. [ Task, InputFiles, Options, File ],
