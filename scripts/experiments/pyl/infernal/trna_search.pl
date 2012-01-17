@@ -15,6 +15,25 @@ infernal_model <- infernal::build(trna_alignment).
 calibrated_model <- infernal::calibrate(infernal_model).
 
 
+% Organisms of interest:
+
+organism('Methanosarcina thermophila').
+organism('Methanohalobium evestigatum').
+organism('Methanosalsum zhilinae').
+organism('Desulfotomaculum acetoxidans').
+organism('Bilophilia wadsworthia').
+organism('Acetohalobium arabaticum').
+organism('Thermincola potens').
+organism('Desulfosporosinus orientis').
+organism('Desulfotomaculum gibsoniae').
+organism('Desulfosporosinus meridiei').
+organism('Bartonella rochalimae').
+organism('Helicobacter suis').
+% Same organism, but have two chromosomes:
+organism('Burkholderia pseudomallei chr1'). % chromosome 1
+organism('Burkholderia pseudomallei chr2'). % chromosome 2
+
+
 %% 
 % Getting the genomes:
 %
@@ -38,13 +57,40 @@ genome('Methanosalsum zhilinae') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genban
 % Desulfotomaculum acetoxidans
 genome('Desulfotomaculum acetoxidans') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Desulfotomaculum_acetoxidans_DSM_771_uid27947/CP001720.fna').
 
+
 % Bilophilia wadsworthia
 % Only available as contigs/scaffolds? in
 % genbank/genomes/Bacteria_DRAFT/
 %
 
-organism(_).
+% Acetohalobium arabaticum
+genome('Acetohalobium arabaticum') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Acetohalobium_arabaticum_DSM_5501_uid32769/CP002105.fna').
 
+% Thermincola potens
+genome('Thermincola potens') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Thermincola_JR_uid41467/CP002028.fna').
+
+% Desulfosporosinus orientis
+genome('Desulfosporosinus orientis') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Desulfosporosinus_orientis_DSM_765_uid66191/CP003108.fna').
+
+% Desulfotomaculum gibsoniae
+% Only available as contigs
+% genome('Desulfotomaculum gibsoniae') <- file::get('')
+
+
+% Desulfosporosinus meridiei
+% Only available as contigs
+
+% Bartonella rochalimae
+% Not even published as DRAFT genome
+
+% Helicobacter suis
+% Only available contigs DRAFT genome (2 varieties)
+
+% Burkholderia pseudomallei
+% Many genomes available. The genomes each have two chromosomes.
+
+genome('Burkholderia pseudomallei chr1') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Burkholderia_pseudomallei_1106a_uid16182/CP000572.fna').
+genome('Burkholderia pseudomallei chr2') <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Burkholderia_pseudomallei_1106a_uid16182/CP000573.fna').
 
 %%
 % Searching the genomes for tRNAs-pyl
