@@ -107,9 +107,9 @@ run(Target,RunOpts,File) :-
 	call(Guard),
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
-	writeln('before findall'),nl,
-	findall(DependencyFile,(member(Dependency,Inputs), writeln(run(Dependency,NewRunOpts,DependencyFile)),run(Dependency,NewRunOpts,DependencyFile)), InputFiles),
-	writeln('test - do I get here in odd case?'),
+% 	findall succeeds even if one of the goals fail, which is undesirable here!
+%	findall(DependencyFile,(member(Dependency,Inputs), writeln(run(Dependency,NewRunOpts,DependencyFile)),run(Dependency,NewRunOpts,DependencyFile)), InputFiles),
+	run_multiple(Inputs,InputFiles),
 	RealTaskSpec =.. [ Task, InputFiles, Options, File ],
 	writeln(RealTaskSpec),
 	run_model(Model,RealTaskSpec,RunModelOptions).
@@ -121,7 +121,13 @@ run(Target,_RunOpts,_File) :-
 %	findall(T1,clause('<-',T1,_),Targets),
 %	forall(member(T,Targets),(write('\t* '),write(T),nl)),
 	!,
-	fail.	
+	fail.
+
+run_multiple([],[]).
+run_multiple([Target|TargetsRest],[File|FilesRest]) :-
+	writeln(run(Dependency,NewRunOpts,DependencyFile)),
+	run(Dependency,NewRunOpts,DependencyFile),
+	run_multiple(TargetsRest,FilesRest).
 
 
 parse_guard_and_body(Spec, true, Model, TaskSpec) :-
