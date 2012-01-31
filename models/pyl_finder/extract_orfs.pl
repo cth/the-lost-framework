@@ -403,7 +403,7 @@ write_orf(OutStream,Left,Right,Strand,Frame,Length,Stop,Starts,InFrames) :-
 index_create(File) :-
 	open(File,read,InStream),
 	writeln('Reading file into memory and creating indexes.'),
-	create_circular_index(1,1,InStream),riteln('Done'),
+	create_circular_index(1,1,InStream),writeln('Done'),
 	close(InStream, [force(true)]).
 
 create_circular_index(Index,FirstIndex,InStream) :-
