@@ -351,15 +351,12 @@ find_orfs(Genome,CodonFile,OrfFile,Strand,Frame) :-
 	writeln('Done.'),
 	write('Writing orfs to file: '),
 	writeln(OrfFile), 
-	writeln('here'),
 	open(OrfFile,write,OutStream),
 	annotate_orfs(Strand,Frame,SortedOrfs,OutStream,Genome),
-	write('after open'),
-	write('after writing orfs'),
 	close(OutStream),
 	writeln('Done.').
 	
-annotate_orfs(_Strand,_Frame,[],_OutStream,_Genome) :- write('basecase.').
+annotate_orfs(_Strand,_Frame,[],_OutStream,_Genome).
 
 % Skip if the orf does have an inframe stop
 annotate_orfs(Strand,Frame,[orf(_Stop,_Starts,[])|Rest],OutStream,Genome) :-
