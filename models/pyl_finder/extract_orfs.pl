@@ -49,7 +49,6 @@ extract_orfs(FastaFile,OutputFile) :-
 	lost_tmp_file('pyl-finder-orfs-3', ORFSReverse3),
 	writeln(here),nl,
 	extract_starts_and_stops(FastaFile,[CodonsDirect1,CodonsDirect2,CodonsDirect3,CodonsReverse1,CodonsReverse2,CodonsReverse3]),
-	load_genome(FastaFile,Genome),
 	find_orfs(Genome,CodonsDirect1,ORFSDirect1,'+',1),
 	find_orfs(Genome,CodonsDirect2,ORFSDirect2,'+',2),
 	find_orfs(Genome,CodonsDirect3,ORFSDirect3,'+',3),
@@ -256,7 +255,6 @@ base_complement(g,c).
 % Extract a range from the genome as a list
 ************************************************************/
 
-
 load_genome(FastaFile,HashTable) :-
 	retractall(base(_,_,_)),
 	open(FastaFile,read,In),
@@ -333,7 +331,6 @@ decrement_position(Pos,Subtract,NewPos) :-
 	base_max(Max),
 	NewPos is  Pos + Max - Subtract.
 
-	
 decrement_position(Pos,Subtract,NewPos) :-
 	NewPos is Pos - Subtract.
 
@@ -383,32 +380,30 @@ annotate_orfs(Strand,Frame,[orf(Stop,Starts,InFrames)|Rest],OutStream,Genome) :-
 	orf_length(Left,Right,OrfLength),
 	min_orf_length(MinLength),
 	((OrfLength >= MinLength) ->
+		/*
 		get_range(Left,Right,Genome,Sequence1),
 		((Strand == '+') ->
 			Sequence = Sequence1		
 			;
-			%writeln(Sequence1),
 			reverse(Sequence1,RevSeq),
-			%writeln(RevSeq),
 			complement(RevSeq,Sequence)
-			%writeln(Sequence)
 		),
-		write_orf(OutStream,Left,Right,Strand,Frame,OrfLength,Stop,Starts,InFrames,Sequence)
+		*/
+		write_orf(OutStream,Left,Right,Strand,Frame,OrfLength,Stop,Starts,InFrames)
 		;
 		true),
 	!,
 	annotate_orfs(Strand,Frame,Rest,OutStream,Genome).
 
-write_orf(OutStream,Left,Right,Strand,Frame,Length,Stop,Starts,InFrames,Sequence) :-
-	writeq(OutStream,orf(na,Left,Right,Strand,Frame,[length(Length),stop(Stop),starts(Starts),in_frame_stops(InFrames),sequence(Sequence)])),
+write_orf(OutStream,Left,Right,Strand,Frame,Length,Stop,Starts,InFrames) :-
+	writeq(OutStream,orf(na,Left,Right,Strand,Frame,[length(Length),stop(Stop),starts(Starts),in_frame_stops(InFrames)])),
 	write(OutStream,'.\n').
 	
 
 index_create(File) :-
 	open(File,read,InStream),
 	writeln('Reading file into memory and creating indexes.'),
-	create_circular_index(1,1,InStream),
-	writeln('Done'),
+	create_circular_index(1,1,InStream),riteln('Done'),
 	close(InStream, [force(true)]).
 
 create_circular_index(Index,FirstIndex,InStream) :-
