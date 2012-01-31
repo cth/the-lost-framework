@@ -377,7 +377,6 @@ annotate_orfs(Strand,Frame,[orf(Stop,Starts,InFrames)|Rest],OutStream,Genome) :-
 	orf_length(Left,Right,OrfLength),
 	min_orf_length(MinLength),
 	((OrfLength >= MinLength) ->
-		/*
 		get_range(Left,Right,Genome,Sequence1),
 		((Strand == '+') ->
 			Sequence = Sequence1		
@@ -385,15 +384,14 @@ annotate_orfs(Strand,Frame,[orf(Stop,Starts,InFrames)|Rest],OutStream,Genome) :-
 			reverse(Sequence1,RevSeq),
 			complement(RevSeq,Sequence)
 		),
-		*/
-		write_orf(OutStream,Left,Right,Strand,Frame,OrfLength,Stop,Starts,InFrames)
+		write_orf(OutStream,Left,Right,Strand,Frame,OrfLength,Stop,Starts,InFrames,Sequence)
 		;
 		true),
 	!,
 	annotate_orfs(Strand,Frame,Rest,OutStream,Genome).
 
-write_orf(OutStream,Left,Right,Strand,Frame,Length,Stop,Starts,InFrames) :-
-	writeq(OutStream,orf(na,Left,Right,Strand,Frame,[length(Length),stop(Stop),starts(Starts),in_frame_stops(InFrames)])),
+write_orf(OutStream,Left,Right,Strand,Frame,Length,Stop,Starts,InFrames,Sequence) :-
+	writeq(OutStream,orf(na,Left,Right,Strand,Frame,[length(Length),stop(Stop),starts(Starts),in_frame_stops(InFrames),sequence(Sequence)])),
 	write(OutStream,'.\n').
 	
 
