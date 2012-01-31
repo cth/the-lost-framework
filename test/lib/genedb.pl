@@ -46,5 +46,4 @@ testcase(gene_extra_field) :-
 testcase(gene_add_extra_field) :-
 	a_gene(G),
 	gene_add_extra_field(G,test,somevalue,G2),
-	gene_extra_field(G2,test,somevalue).
-	
+	gene_extra_field(G2,test,somevalue).	
