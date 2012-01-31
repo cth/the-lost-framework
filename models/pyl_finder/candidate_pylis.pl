@@ -23,7 +23,8 @@ process_stream(InStream,OutStream) :-
 % Skip ORFs with more than one in frame amber codon
 process_orf_term(Orf,_) :-
 	gene_extra_field(Orf,in_frame_stops,Stops),
-	Stops > 1,
+    length(Stops,NumStops),
+   	NumStops > 1,
 	!.
 	
 process_orf_term(Orf,_OutStream) :-
@@ -31,7 +32,8 @@ process_orf_term(Orf,_OutStream) :-
 	gene_stop_codon(Orf,Stop),
 	distance(InFrameStop,Stop,Distance),
 	pylis_size(PylisSize),
-	Distance < PylisSize.
+	Distance < PylisSize,
+	!.
 	
 process_orf_term(Orf,OutStream) :-
 	gene_extra_field(Orf,in_frame_stops,[InFrameStop]),
@@ -43,7 +45,7 @@ process_orf_term(Orf,OutStream) :-
 	prefix(PylisSize,Suffix,PylisSeq,_Rest),
 	gene_add_extra_field(Orf,pylis,PylisSeq,UpdatedOrf),
 	writeq(OutStream,UpdatedOrf),
-	writeln('.').
+	write(OutStream,'.\n').
 	
 prefix(0,S,[],S).
 
