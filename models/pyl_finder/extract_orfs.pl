@@ -358,7 +358,7 @@ find_orfs(Genome,CodonFile,OrfFile,Strand,Frame) :-
 	
 annotate_orfs(_Strand,_Frame,[],_OutStream,_Genome).
 
-% Skip if the orf does have an inframe stop
+% Skip if the orf does not have an inframe stop
 annotate_orfs(Strand,Frame,[orf(_Stop,_Starts,[])|Rest],OutStream,Genome) :-
 	!,
 	annotate_orfs(Strand,Frame,Rest,OutStream,Genome).
@@ -498,7 +498,11 @@ forward_orfs_rec(StartIdx,CurrentIdx,StartsInBetween,StopsInBetween,RestOrfs) :-
 forward_orfs_rec(StartIdx,CurrentIdx,StartsInBetween,StopsInBetween,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,amber,Position),
 	!,
-	forward_orfs_rec(StartIdx,NextIdx,StartsInBetween,[Position|StopsInBetween],RestOrfs).
+	((StartsInBetween = []) ->
+		StopsInBetweenNext = []
+		;
+		StopsInBetweenNext = [Position|StopsInBetween]),
+	forward_orfs_rec(StartIdx,NextIdx,StartsInBetween,StopsInBetweenNext,RestOrfs).
 
 
 /***********************************************************
