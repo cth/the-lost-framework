@@ -20,6 +20,6 @@ candidate_orfs([GenomeFastaFile],Options,OutputFile) :-
 % Given a file with candidate orfs (with in frame amber codons), for each amber codon,
 % extract the a portion of the sequence downstream of the codon that may contain a PYLIS element. 
 % The exact size of the downstream sequence element is configurable.
-condidate_pylis([OrfsFile],Options,OutputFile) :-
+candidate_pylis([OrfsFile],Options,OutputFile) :-
 	cl(candidate_pylis),
 	extract_candidate_pylis(OrfsFile,OutputFile).
