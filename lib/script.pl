@@ -77,7 +77,7 @@ run(lost_sequence_file(Identifier),_RunOpts,File) :-
 
 run(file(File),_RunOpts,File) :-
 	atom(File),
-	write('MAtch file!!'),nl,
+	write('Match file!!'),nl,
 	% Check that file exists
 	(file_exists(File) ->
 		true
@@ -101,20 +101,31 @@ run(Target,_RunOpts,Target) :-
 	append(MatchSyms,_,TargetSyms).
 	
 run(Target,RunOpts,File) :-
-	clause('<-'(Target,Rule),true),
+	match_target_rule(Target,Rule),
 	parse_guard_and_body(Rule,Guard,Model,TaskSpec),
+	parse_task_specification(TaskSpec,Task,Inputs,Options),
 	write('GUARD:'),writeln(Guard),
 	call(Guard),
-	parse_task_specification(TaskSpec,Task,Inputs,Options),
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
 	run_multiple(NewRunOpts,Inputs,InputFiles),
 	RealTaskSpec =.. [ Task, InputFiles, Options, File ],
 	writeln(RealTaskSpec),
 	run_model(Model,RealTaskSpec,RunModelOptions).
+	
+after(Target) :-
+	run()
+
+
+	
+testit :-
+	clause('<-'(Targets,_Rule),true),
+	findall(Target,conjunction_member(Target,Targets),TargetsList),
+	writeln(TargetsList).
+	
 
 run(Target,_RunOpts,_File) :-
 	write('failed to run target: '), 
-	write(Target),nl,
+	write_canonical(Target),nl,
 	!,
 	fail.
 
@@ -123,6 +134,18 @@ run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
 	writeln(run(Target,RunOpts,File)),
 	run(Target,RunOpts,File),
 	run_multiple(RunOpts,TargetsRest,FilesRest).
+	
+match_target_rule(Target,Rule) :-
+	clause('<-'(Targets,Rule),true),
+	conjunction_member(Target,Targets).
+% where:
+	conjunction_member(Member,(Member,_)).
+	conjunction_member(Member,(ConjA,ConjB)) :-
+		!,
+		conjunction_member(Member,ConjB).
+	conjunction_member(Member,Member).
+
+
 
 parse_guard_and_body(Spec, true, Model, TaskSpec) :-
 %	write(Spec),nl,
