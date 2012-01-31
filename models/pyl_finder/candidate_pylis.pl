@@ -2,6 +2,8 @@
 
 pylis_size(100).
 
+%% extract_candidate_pyles(+OrfsFile,+OutputFile)
+% Reads each term from OrfsFile in a Stream
 extract_candidate_pylis(OrfsFile,OutputFile) :-
 	open(OrfsFile,read,InStream),
 	open(OutputFile,write,OutStream),
