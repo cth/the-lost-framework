@@ -7,4 +7,6 @@ candidate_pylis <- pyl_finder::candidate_pylis(candidate_pyl_orfs).
 
 folded <- ppfold::fold(candidate_pylis, [sequence_functor(pylis)]).
 
+folded_sorted <- ppfold::sort_folded_by_energy(folded).
+
 
