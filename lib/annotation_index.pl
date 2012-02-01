@@ -21,26 +21,30 @@ deterministic in this sense.
 */
 
 :- use(arithmetic).
+:- use(lists).
 
-%% lost_file_index_get_filename(+IndexFile,+Model,+Goal,+InputFiles,+Options,-Filename) is det
+%% lost_file_index_get_filenames(+IndexFile,+Model,+Goal,+InputFiles,+Options,-Filenames) is det
 % Retrieve the filename matching (Model,Options,InputFiles) from the file index
 % If no such filename exists in the index, then a new unique filename is created
 % and unified to Filename.
-lost_file_index_get_filename(IndexFile,Model,Goal,InputFiles,Options,Filename) :-
+lost_file_index_get_filenames(IndexFile,Model,Goal,InputFiles,Options,Filenames) :-
 	(file_exists(IndexFile) -> terms_from_file(IndexFile,Terms) ; Terms = []),
-	(lost_file_index_get_filename_from_terms(Terms,Model,Goal,InputFiles,Options,Filename) ->
+	(lost_file_index_get_filenames_from_terms(Terms,Model,Goal,InputFiles,Options,Filenames) ->
 	 true
 	;
-	 % create and reserve new filename:
+	 lost_file_index_timestamp(Ts),
+	 term2atom(Ts,AtomTs),
+	 forall(member(F,Filenames), lost_create_and_reserve_file(IndexFile,F)),
+	 append(Terms, [fileid(IndexAtom,AtomTs,Filenames,Model,Goal,InputFiles,Options)],NewTerms),
+	 terms_to_file(IndexFile,NewTerms)
+	).
+
+lost_create_and_reserve_file(IndexFile,F) :-
 	 lost_file_index_next_available_index(Terms, Index),
 	 dirname(IndexFile,IndexDir),
 	 term2atom(Index,IndexAtom),
-	 atom_concat_list([IndexDir, Model, '_',Goal,'_',IndexAtom,'.gen'], Filename),
-	 lost_file_index_timestamp(Ts),
-	 term2atom(Ts,AtomTs),
-	 append(Terms, [fileid(IndexAtom,AtomTs,Filename,Model,Goal,InputFiles,Options)],NewTerms),
-	 terms_to_file(IndexFile,NewTerms)
-	).
+	 atom_concat_list([IndexDir, Model, '_',Goal,'_',IndexAtom,'.gen'], Filename).
+
 
 %% lost_file_index_next_available_index(+Terms, -NextAvailableIndex)
 % Given Terms, unify NextAvailableIndex with a unique index not occuring as index in terms.
@@ -57,15 +61,15 @@ lost_file_index_largest_index([Term|Rest], LargestIndex) :-
 	lost_file_index_largest_index(Rest,MaxRestIndex),
 	max(Index,MaxRestIndex,LargestIndex).
 
-%% lost_file_index_get_filename_from_terms/5:
+%% lost_file_index_get_filenames_from_terms/5:
 % Go through a list terms and check find a Filename matching (Model,ParamsId,InputFiles)
 % Fail if no such term exist
-lost_file_index_get_filename_from_terms([Term|_],Model,Goal,InputFiles,Options,Filename) :-
-	Term =.. [ fileid, _, _, Filename, Model, Goal, InputFiles, Options ],
+lost_file_index_get_filenames_from_terms([Term|_],Model,Goal,InputFiles,Options,Filenames) :-
+	Term =.. [ fileid, _, _, Filenames, Model, Goal, InputFiles, Options ],
 	!.
 
-lost_file_index_get_filename_from_terms([_|Rest],Model,Goal,InputFiles,Options,Filename) :-
-	lost_file_index_get_filename_from_terms(Rest,Model,Goal,InputFiles,Options,Filename).
+lost_file_index_get_filenames_from_terms([_|Rest],Model,Goal,InputFiles,Options,Filenames) :-
+	lost_file_index_get_filenames_from_terms(Rest,Model,Goal,InputFiles,Options,Filenames).
 
 %% lost_file_index_timestamp(time(-Year,-Mon,-Day,-Hour,-Min,-Sec))
 % Get a timestamp corresponding to the current time
@@ -81,8 +85,9 @@ lost_file_index_timestamp(time(Year,Mon,Day,Hour,Min,Sec)) :-
 % which symbolize the time at which the file Filename was generated.
 lost_file_index_get_file_timestamp(IndexFile,Filename,Timestamp) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, TimeStampAtom, Filename, _Model, _Goal, _InputFiles, _Options ],
+	TermMatcher =.. [ fileid,  _Index, TimeStampAtom, Filenames, _Model, _Goal, _InputFiles, _Options ],
 	member(TermMatcher,Terms),
+	member(Filename,Filenames),
 	parse_atom(TimeStampAtom,Timestamp).
 				   
 %% lost_file_index_update_file_timestamp(+IndexFile,+Filename)
@@ -92,33 +97,39 @@ lost_file_index_update_file_timestamp(IndexFile,Filename) :-
 	lost_file_index_timestamp(Ts),
 	term2atom(Ts,TsAtom),
 	terms_from_file(IndexFile,Terms),
-	OldTermMatcher =.. [ fileid,  Index, _, Filename, Model, Goal, InputFiles, Options ],
+	OldTermMatcher =.. [ fileid,  Index, _, Filenames, Model, Goal, InputFiles, Options ],
+	member(OldTermMatcher,Terms),
+	member(Filename,Filenames),
 	subtract(Terms,[OldTermMatcher],TermsMinusOld),
-	NewTerm =.. [ fileid,  Index, TsAtom, Filename, Model, Goal, InputFiles, Options ],
+	NewTerm =.. [ fileid,  Index, TsAtom, Filenames, Model, Goal, InputFiles, Options ],
 	append(TermsMinusOld,[NewTerm],UpdatedTerms),
 	terms_to_file(IndexFile,UpdatedTerms).
 
-%% lost_file_index_filename_member(+IndexFile,?Filename) 
+%% lost_file_index_filename_member(+IndexFile,?Filename)
 % True if Filename occurs in the annotation index identified by IndexFile.
 lost_file_index_filename_member(IndexFile, Filename) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Goal, _Model, _InputFiles, _Options ],
-	member(TermMatcher,Terms).
+	TermMatcher =.. [ fileid,  _Index, _Ts, Filenames, _Goal, _Model, _InputFiles, _Options ],
+	member(TermMatcher,Terms),
+	member(Filename, Filenames).
 
 %% lost_file_index_inputfiles(+IndexFile,?Filename,?InputFiles)
 % True if Filename occurs together with InputFiles in the annotation index identified by IndexFile.
 lost_file_index_inputfiles(IndexFile,Filename,InputFiles) :-
 	terms_from_file(IndexFile,Terms),
-	TermMatcher =.. [ fileid,  _Index, _Ts, Filename, _Goal,_Model, InputFiles, _Options ],
-	member(TermMatcher,Terms).
+	TermMatcher =.. [ fileid,  _Index, _Ts, Filenames, _Goal,_Model, InputFiles, _Options ],
+	member(TermMatcher,Terms),
+	member(Filename,Filenames).
 
 %% lost_file_index_move_file(+IndexFile,+OldFilename,+NewFilename) is det
 % Allows renaming a file OldFilename occuring the annotation index (IndexFile) to a new name, NewFilename
 % all references to the OldFilename in the IndexFile will be replaced by NewFilename.
 lost_file_index_move_file(IndexFile,OldFilename,NewFilename) :-
 	terms_from_file(IndexFile,Terms),
-	OldTermMatcher =.. [ fileid,  Index, TS, OldFilename, Model, Goal, InputFiles, Options ],
+	OldTermMatcher =.. [ fileid,  Index, TS, OldFilenames, Model, Goal, InputFiles, Options ],
 	subtract(Terms,[OldTermMatcher],TermsMinusOld),
-	NewTerm =.. [ fileid,  Index, TS, NewFilename, Model, Goal, InputFiles, Options ],
+	member(OldFilename,OldFilenames),
+	replace(OldFilename,NewFilename,OldFilenames,NewFilenames),
+	NewTerm =.. [ fileid,  Index, TS, NewFilenames, Model, Goal, InputFiles, Options ],
 	append(TermsMinusOld,[NewTerm],UpdatedTerms),
 	terms_to_file(IndexFile,UpdatedTerms).
