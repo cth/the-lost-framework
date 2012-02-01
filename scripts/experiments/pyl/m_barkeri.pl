@@ -5,6 +5,6 @@ candidate_pyl_orfs <- pyl_finder::candidate_orfs(genome_fasta).
 
 candidate_pylis <- pyl_finder::candidate_pylis(candidate_pyl_orfs).
 
-folded <- ppfold::ppfold(candidate_pylis, [sequence_functor(pylis)]).
+folded <- ppfold::fold(candidate_pylis, [sequence_functor(pylis)]).
 
 
