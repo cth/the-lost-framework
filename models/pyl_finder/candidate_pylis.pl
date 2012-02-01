@@ -7,7 +7,7 @@ pylis_size(100).
 extract_candidate_pylis(OrfsFile,OutputFile) :-
 	open(OrfsFile,read,InStream),
 	open(OutputFile,write,OutStream),
-	process_stream(InStream,OutStream),
+	process_stream(1,InStream,OutStream),
 	close(InStream),
 	close(OutStream).	
 	
