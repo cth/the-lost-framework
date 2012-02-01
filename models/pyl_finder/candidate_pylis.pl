@@ -7,7 +7,7 @@ pylis_size(100).
 extract_candidate_pylis(OrfsFile,OutputFile) :-
 	open(OrfsFile,read,InStream),
 	open(OutputFile,write,OutStream),
-	process_stream(1,InStream,OutStream),
+	process_stream(0,InStream,OutStream),
 	close(InStream),
 	close(OutStream).	
 	
@@ -18,8 +18,9 @@ process_stream(N,InStream,OutStream) :-
 		true
 		;
 		((0 is N mod 1000) -> write(N) ; ((0 is N mod 100) -> write('.') ; true)),
+		N1 is N + 1,
 		process_orf_term(OrfTerm,OutStream),
-		process_stream(N,InStream,OutStream)).
+		process_stream(N1,InStream,OutStream)).
 	
 % Skip ORFs with more than one in frame amber codon
 process_orf_term(Orf,_) :-
