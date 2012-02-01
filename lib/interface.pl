@@ -271,10 +271,10 @@ declared_input_formats(Model,Task,Formats) :-
 
 %% declared_output_formats(+Model,+Task,-Format)
 % Format is the format of the output file of task Task in Model
-declared_output_format(Model,Task,OutputFormat) :-
+declared_output_formats(Model,Task,OutputFormats) :-
 	task_declaration(Model,Task,TaskDeclaration),
 	task_name(TaskDeclaration,Task),
-	task_output_filetype(TaskDeclaration,OutputFormat).
+	task_output_filetypes(TaskDeclaration,OutputFormats).
 
 /* THIS STUFF MAY BE OBSOLETE:
 
@@ -417,10 +417,10 @@ task_input_filetypes(TaskDeclaration,InputFileTypes) :-
 task_options(TaskDeclaration,Options) :-
 	TaskDeclaration =.. [ _Name , _InputFileTypes, Options, _ ].
 	
-%% task_output_filetype(+TaskDeclaration,-OutputFileType)
+%% task_output_filetypes(+TaskDeclaration,-OutputFileType)
 % OutputFileType is the file type declared by TaskDeclaration
 task_output_filetype(TaskDeclaration,OutputFileType) :-
-	TaskDeclaration =.. [ _Name , _InputFileTypes, _Options, OutputFileType ].
+	TaskDeclaration =.. [ _Name , _InputFileTypes, _Options, OutputFileTypes ].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Some utilitites

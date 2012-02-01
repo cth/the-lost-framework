@@ -112,11 +112,6 @@ run(Target,RunOpts,File) :-
 	writeln(RealTaskSpec),
 	run_model(Model,RealTaskSpec,RunModelOptions).
 	
-after(Target) :-
-	run()
-
-
-	
 testit :-
 	clause('<-'(Targets,_Rule),true),
 	findall(Target,conjunction_member(Target,Targets),TargetsList),
