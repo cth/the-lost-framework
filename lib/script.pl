@@ -140,29 +140,35 @@ parse_guard_and_body(Spec, Guard, Model, TaskSpec) :-
 %   task1([file1,file2]).
 parse_task_specification(TaskSpecification,Task,Inputs,[]) :-
 	TaskSpecification =.. [ Task, Inputs ],
-	is_list(Inputs).
+	is_list_fix(Inputs).
 % or
 %   task1([file1,file2],[opt1(foo),opt2(bar)]).		
 parse_task_specification(TaskSpecification,Task,Inputs,Options) :-
 	TaskSpecification =.. [ Task, Inputs, Options ],
-	is_list(Inputs),
-	is_list(Options).
+	is_list_fix(Inputs),
+	is_list_fix(Options).
 	
 % or 
 % 	task1(file,[opt1(foo)])
 parse_task_specification(TaskSpecification,Task,[Inputs],Options) :-
 	TaskSpecification =.. [ Task, Inputs, Options ],
-	not(is_list(Inputs)),
-	is_list(Options),
+	not(is_list_fix(Inputs)),
+	is_list_fix(Options),
 	!.
 
 % or
 %    task1(file1,file2).
 parse_task_specification(TaskSpecification,Task,Inputs,[]) :-
 	TaskSpecification =.. [ Task | Inputs ],
-	is_list(Inputs),
+	is_list_fix(Inputs),
 	write(TaskSpecification),nl,
-	forall(member(L,Inputs),not(is_list(L))).
+	forall(member(L,Inputs),not(is_list_fix(L))).
+
+% Latest version of is_list/1 works correct for empty lists in latest b-prolog,
+% but doesnt in latest version of prism.
+is_list_fix([]) :- !.
+is_list_fix(L) :- is_list(L).
+	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parallel execution
