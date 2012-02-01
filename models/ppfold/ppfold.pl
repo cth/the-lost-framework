@@ -16,7 +16,7 @@ ppfold_run(FastaFile,Folding,FreeEnergy) :-
 	chdir(There),
 	system(PPFoldCommand),
 	chdir(Here),
-	writeln(here),nl,
+	writeln(ppfold_run),nl,
 	ppfold_seq_file(FastaFile,SeqFile),
 	ppfold_parse_seq_file(SeqFile,Folding),
 	ppfold_ct_file(FastaFile,CTFile),
@@ -24,9 +24,11 @@ ppfold_run(FastaFile,Folding,FreeEnergy) :-
 
 write_fasta_file(Gene,SequenceFunctor,FastaFile) :-
 	lost_tmp_file('ppfold','.fasta',FastaFile),
-	writeln(here),
+	writeln(write_fasta_file),
+	writeln(Gene),
 	writeln(FastaFile),
 	gene_extra_field(Gene,SequenceFunctor,Sequence),
+	write('To be folded: '), writeln(Sequence),
 	fasta_save_sequence(FastaFile,Sequence,'ppfold').
 
 ppfold_seq_file(InputFile,SeqFile) :-
