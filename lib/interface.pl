@@ -23,30 +23,13 @@ Module that defines main predicates of the framework.
 % InputFiles: A list of filenames given as input to the model.
 % Options: A list of options to the model.
 
-% Doesnt use the annotation index to generate/lookup the output filename,
-% but assumes the filename to be given
-safe_run_model(Model,Goal) :-
-	writeq(run_lost_model(Model,Goal)),nl,
-	Goal =.. [ Functor, Inputs, Options, Filename ],
-	lost_model_interface_file(Model, ModelFile),
-	check_valid_model_call(Model,Functor,Inputs,Options),
-	expand_model_options(Model, Functor, Options, ExpandedOptions),
-	sort(ExpandedOptions,ExpandedSortedOptions),
-        check_or_fail(ground(Filename),
-                      interface_error("File must be ground")),
-        CallGoal =.. [Functor,Inputs,ExpandedSortedOptions,Filename],
-        term2atom(CallGoal,GoalAtom),
-        write(launch_prism_process(ModelFile,GoalAtom)),nl,
-        launch_prism_process(ModelFile,GoalAtom)
-        %, check_or_warn(file_exists(Filename),interface_error(missing_annotation_file(Filename))) % FIXME: temporarily disbaled check /061010 OTL
-	 .
 % Run a Lost Model
 run_model(Model,Goal) :-
 	run_model(Model,Goal,[caching(true)]).
 
 run_model(Model,Goal,RunModelOptions) :-
 	writeq(run_lost_model(Model,Goal,RunModelOptions)),nl,
-	Goal =.. [ Functor, Inputs, Options, Filename ],
+	Goal =.. [ Functor, Inputs, Options, Filenames ],
 	lost_model_interface_file(Model, ModelFile),
 	check_valid_model_call(Model,Functor,Inputs,Options),
 	expand_model_options(Model, Functor, Options, ExpandedOptions),
