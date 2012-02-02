@@ -253,7 +253,7 @@ generate_call_specs(Target,_RunOpts,(nil,nil,Target)) :-
 	member(MatchSyms,Matchers),
 	append(MatchSyms,_,TargetSyms).
 
-generate_call_specs(Target,RunOpts,[(Model,RunGoal,OutputFile),ChildSpecs]) :-
+generate_call_specs(Target,RunOpts,[(Model,RunGoal,OutputFiles),ChildSpecs]) :-
 	clause('<-'(Target,Rule),true),
 	parse_guard_and_body(Rule,Guard,Model,TaskSpec),
 	call(Guard), % Make sure that the guard holds
@@ -262,11 +262,11 @@ generate_call_specs(Target,RunOpts,[(Model,RunGoal,OutputFile),ChildSpecs]) :-
 	findall([(ChildModel,ChildGoal,ChildOutputFile),SubSpecs],
 		(
 			member(Dependency,Inputs),
-			generate_call_specs(Dependency,NewRunOpts,[(ChildModel,ChildGoal,ChildOutputFile),SubSpecs])
+			generate_call_specs(Dependency,NewRunOpts,[(ChildModel,ChildGoal,ChildOutputFiles),SubSpecs])
 		),
 		ChildSpecs),
 	map(callspec_output_file,ChildSpecs,InputFiles),
-	RunGoal =.. [ Task, InputFiles, Options, OutputFile ],
-	goal_result_file(Model,RunGoal,OutputFile).
+	RunGoal =.. [ Task, InputFiles, Options, OutputFiles ],
+	goal_result_files(Model,RunGoal,OutputFiles). % FIXME
 
 callspec_output_file([(_Model,_Goal,OutputFile),_],OutputFile).

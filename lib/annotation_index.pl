@@ -26,7 +26,7 @@ deterministic in this sense.
 %% lost_file_index_get_filenames(+IndexFile,+Model,+Goal,+InputFiles,+Options,-Filenames) is det
 % Retrieve the filename matching (Model,Options,InputFiles) from the file index
 % If no such filename exists in the index, then a new unique filename is created
-% and unified to Filename.
+% and unified to Filename. Note that Filenames should be a list of free variables.
 lost_file_index_get_filenames(IndexFile,Model,Goal,InputFiles,Options,Filenames) :-
 	(file_exists(IndexFile) -> terms_from_file(IndexFile,Terms) ; Terms = []),
 	(lost_file_index_get_filenames_from_terms(Terms,Model,Goal,InputFiles,Options,Filenames) ->
@@ -93,13 +93,13 @@ lost_file_index_get_file_timestamp(IndexFile,Filename,Timestamp) :-
 %% lost_file_index_update_file_timestamp(+IndexFile,+Filename)
 % Update the timestamp associated with Filename to a current timestamp.
 % This should be used if the file is (re) generated.
-lost_file_index_update_file_timestamp(IndexFile,Filename) :-
+lost_file_index_update_file_timestamp(IndexFile,Filenames) :-
 	lost_file_index_timestamp(Ts),
 	term2atom(Ts,TsAtom),
 	terms_from_file(IndexFile,Terms),
 	OldTermMatcher =.. [ fileid,  Index, _, Filenames, Model, Goal, InputFiles, Options ],
-	member(OldTermMatcher,Terms),
-	member(Filename,Filenames),
+%	member(OldTermMatcher,Terms),
+%	member(Filename,Filenames),
 	subtract(Terms,[OldTermMatcher],TermsMinusOld),
 	NewTerm =.. [ fileid,  Index, TsAtom, Filenames, Model, Goal, InputFiles, Options ],
 	append(TermsMinusOld,[NewTerm],UpdatedTerms),

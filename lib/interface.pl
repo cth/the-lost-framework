@@ -54,26 +54,28 @@ run_model(Model,Goal,RunModelOptions) :-
 	writeln(Options),
 	% Check if a result allready exists:
 	lost_data_index_file(AnnotIndex),
-	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedOptions,Filename),
+	lost_file_index_get_filenames(AnnotIndex,Model,Functor,Inputs,ExpandedOptions,Filenames),
 	!,
-	((member(caching(true),RunModelOptions),file_exists(Filename)) ->
-	 write('Using existing annotation file: '), write(Filename),nl
+	((member(caching(true),RunModelOptions),forall(member(Filename,Filenames),file_exists(Filename))) ->
+	 write('Using existing result files: '), write(Filenames),nl
 	;
-	 CallGoal =.. [Functor,Inputs,ExpandedOptions,Filename],
-	 %term2atom(lost_best_annotation(Inputs,ExpandedSortedOptions,Filename),Goal),
+	 CallGoal =.. [Functor,Inputs,ExpandedOptions,Filenames],
 	 term2atom(CallGoal,GoalAtom),
      write(launch_prism_process(ModelFile,GoalAtom)),nl,
      launch_prism_process(ModelFile,GoalAtom),
-     check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename))),
-     lost_file_index_update_file_timestamp(AnnotIndex,Filename)
+	 forall(member(Filename,Filenames), 
+     	check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename)))),
+     lost_file_index_update_file_timestamp(AnnotIndex,Filenames)
 	).
-	
-goal_result_file(Model,Goal,ResultFile) :-
+
+%% goal_result_files(+Model,+Goal,-ResultFiles)
+% Map from a Model and Goal to the set of output files.
+goal_result_files(Model,Goal,ResultFiles) :-
 	lost_data_index_file(AnnotIndex),
-	Goal =.. [ Functor, Inputs, Options, ResultFile ],
+	Goal =.. [ Functor, Inputs, Options, ResultFiles ],
 	expand_model_options(Model, Functor, Options, ExpandedOptions),
 	sort(ExpandedOptions,ExpandedSortedOptions),
-	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,ResultFile).
+	lost_file_index_get_filename(AnnotIndex,Model,Functor,Inputs,ExpandedSortedOptions,ResultFiles).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check declared options
@@ -178,12 +180,10 @@ launch_prism_process(PrismPrologFile, Goal) :-
 		ExtraAttempts = 0
 	),
 	Attempts is 1 + ExtraAttempts,
-	
 	write('--> PRISM process exits with code '), write(ExitCode2), write(', total attempts '), write(Attempts),nl,
-
-	% Unfortunately bprolog/prism does get the concept of exit codes. DOH!!!
+	% Unfortunately bprolog/prism doesn't support standard exit codes:
 	check_or_fail((ExitCode2==0), error(launch_prism_process(PrismPrologFile,Goal))),
-        chdir(CurrentDir).
+    chdir(CurrentDir).
 
 
 %% retry_sys_command(+System Command,+MaxAttempts, -Attempts, -ExitCode)
@@ -228,17 +228,6 @@ check_valid_model_call(Model,Task,_InputFiles,Options) :-
 	check_or_warn(lost_interface_defines_output_format(Model,Task), warning(interface(missing_output_format_declaration(Model,Task)))).
 	*/
 
-%% task_declarations(+Model,-Tasks)
-% Tasks is a list of all task declarations declared in Model.
-/*
-task_declarations(Module,Tasks) :-
-	lost_model_interface_file(Module,InterfaceFile),
-	terms_from_file(InterfaceFile,InterfaceTerms),
-	findall(Task,(TaskMatcher =.. [ ':-', task(TaskDeclaration)],
-				TaskDeclaration =.. [ Task, _InputFiles, _DeclaredOptions, _OutputFile]),
-			Tasks).
-*/
-
 %% task_has_implementation(+Model,+Task)
 % True if the there is a predicate implementing task in Model.
 % Note that this merely verifies that a predicate of the correct name and arity exists, but not whether it works.
@@ -265,65 +254,16 @@ declared_model_options(Model, Task, DeclaredOptions) :-
 %% declared_input_formats(+Model,+Task,-Formats)
 % Formats is the list of input formats for the task Task in Model.
 declared_input_formats(Model,Task,Formats) :-
-	task_declaration(Model,Task,TaskDeclaration),	
+	task_declaration(Model,Task,TaskDeclaration),
 	task_name(TaskDeclaration,Task),
 	task_input_filetypes(TaskDeclaration,Formats).
 
-%% declared_output_formats(+Model,+Task,-Format)
-% Format is the format of the output file of task Task in Model
+%% declared_output_formats(+Model,+Task,-Formats)
+% Formats is the formats of the output file of task Task in Model
 declared_output_formats(Model,Task,OutputFormats) :-
 	task_declaration(Model,Task,TaskDeclaration),
 	task_name(TaskDeclaration,Task),
 	task_output_filetypes(TaskDeclaration,OutputFormats).
-
-/* THIS STUFF MAY BE OBSOLETE:
-
-lost_interface_output_format_to_file(Model,InterfacePredicate, Options, OutputFormatFile) :-
-	lost_model_interface_file(Model, ModelFile),
-	lost_interface_defines_output_format(Model,InterfacePredicate),
-	expand_model_options(Model,InterfacePredicate,Options,ExpandedOptions),
-	sort(ExpandedOptions,ExpandedSortedOptions),
-	% Delete OutputFormatFile if it allready exists
-	% (file_exists(OutputFormatFile) -> delete_file(OutputFile) ; true),
-	term2atom(call((lost_output_format(InterfacePredicate,ExpandedSortedOptions,OutputFormat),
-			tell(OutputFormatFile),
-			write(output_format(Model,InterfacePredicate,Options,OutputFormat)),
-			atom_codes(Dot,[46]),
-			write(Dot),
-			nl,
-			told)),
-		  Goal),
-	launch_prism_process(ModelFile,Goal).
-
-% Determines the output format for a given Model and Interface given a list of options.
-lost_interface_output_format(Model,InterfacePredicate,Options,OutputFormat) :-
-	lost_tmp_directory(Tmp),
-	atom_concat(Tmp, 'lost_interface_output_format.pl', Filename),
-	lost_interface_output_format_to_file(Model,InterfacePredicate,Options,Filename),
-	terms_from_file(Filename, [output_format(Model,InterfacePredicate,Options,OutputFormat)]).
-
-
-lost_model_option_values_to_file(Model,InterfacePredicate,OptionName, OutputFile) :-
-	lost_model_interface_file(Model, ModelFile),
-	% Check if option is declared!!!
-	% Delete OutputFile if it allready exists
-	% (file_exists(OutputFile) -> delete_file(OutputFile) ; true),
-	term2atom(call((lost_option_values(InterfacePredicate, OptionName, Values),
-		       tell(OutputFile),
-		       writeq(lost_option_values(Model,InterfacePredicate, OptionName, Values)),
-		       atom_codes(Dot,[46]),
-		       write(Dot),
-		       nl,
-		       told)),
-		  Goal),
-	launch_prism_process(ModelFile,Goal).
-
-lost_model_option_values(Model, InterfacePredicate, OptionName, Values) :-
-	lost_tmp_directory(Tmp),
-	atom_concat(Tmp, 'lost_model_option_values.pl', Filename),
-	lost_model_option_values_to_file(Model,InterfacePredicate,OptionName,Filename),
-	terms_from_file(Filename, [lost_option_values(Model,InterfacePredicate,OptionName,Values)]).
-*/
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Time stamp checking
@@ -410,7 +350,12 @@ task_name(TaskDeclaration,Name) :-
 %% task_input_filetypes(+TaskDeclaration,-InputFileTypes)
 % InputFileTypes is a list of the input file types for the task identified by TaskDeclaration
 task_input_filetypes(TaskDeclaration,InputFileTypes) :-
-	TaskDeclaration =.. [ _Name , InputFileTypes, _, _ ].
+	TaskDeclaration =.. [ _Name , InputFileTypes, _, _ ],
+	(InputFileTypes = [_|_] ; InputFileTypes = []),
+	!.
+
+task_input_filetypes(TaskDeclaration,[InputFileType]) :-
+	TaskDeclaration =.. [ _Name , InputFileType, _, _ ].
 
 %% task_options(+TaskDeclaration,-Options)
 % Options is the list of options declarared by TaskDeclaration
@@ -419,8 +364,15 @@ task_options(TaskDeclaration,Options) :-
 	
 %% task_output_filetypes(+TaskDeclaration,-OutputFileType)
 % OutputFileType is the file type declared by TaskDeclaration
-task_output_filetype(TaskDeclaration,OutputFileType) :-
-	TaskDeclaration =.. [ _Name , _InputFileTypes, _Options, OutputFileTypes ].
+task_output_filetypes(TaskDeclaration,OutputFileTypes) :-
+	TaskDeclaration =.. [ _Name , _InputFileTypes, _Options, OutputFileTypes ],
+	OutputFileTypes = [_|_],
+	!.
+	
+task_output_filetypes(TaskDeclaration,[OutputFileType]) :-
+	TaskDeclaration =.. [ _Name , _InputFileTypes, _Options, OutputFileType ].
+	
+	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Some utilitites
@@ -463,7 +415,7 @@ list_lost_model_options_to_file(Model,Goal,OutputFile) :-
 	declared_model_options(Model, Goal, Options),
 	write_model_options(OStream, Options),
 	close(OStream).
-
+% where
 write_model_options(_,[]).
 write_model_options(OStream, [Option1|Rest]) :-
 	writeq(OStream, Option1),
