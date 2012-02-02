@@ -49,6 +49,26 @@ gene_left(GeneRecord,Left) :-
 gene_right(GeneRecord,Right) :-
         GeneRecord =.. [ _PredFunctor, _SequenceId,_Left,Right,_Strand,_Frame,_Extra].
 
+%% gene_start_codon(+GeneRecord,-Start) is det
+% Extract the position of the first base of the start codon of the gene given by GeneRecord
+gene_start_codon(GeneRecord,Start) :-
+	(gene_strand(GeneRecord,'+') ->
+		gene_left(GeneRecord,Start)
+		;
+		gene_right(GeneRecord,Start)
+	).
+
+%% gene_stop_codon(+GeneRecord,-Start) is det
+% Extract the position of the first base of the stop codon of the gene given by GeneRecord
+gene_stop_codon(GeneRecord,Stop) :-
+	(gene_strand(GeneRecord,'+') ->
+		gene_right(GeneRecord,Right),
+		Stop is Right - 2
+		;
+		gene_left(GeneRecord,Left),
+		Stop is Left + 2
+	).
+
 %% gene_strand(+GeneRecord,-Strand) is det
 % Extract the Strand (+,-) from a GeneRecord
 gene_strand(GeneRecord,Strand) :-

@@ -2,10 +2,12 @@
 
 :- use(lists).
 :- use(prologdb).
-
+	
 :- task(get([url(Filetype)],[],Filetype)). % Guarantees nothing on which kind of files it retrieves.
 
-:- task(from_sequence([],sequence([]), text(prolog(sequence(_))))).
+:- task(from_terms([], [terms([])], text(prolog(_)))).
+
+:- task(from_sequence([],[sequence([])], text(prolog(sequence(_))))).
 
 %% get(+InputFiles, +Options, +OutputFile)
 % ==
@@ -35,6 +37,12 @@ get([FileURL],Options,OutputFile) :-
 get([File],_Options,OutputFile) :-
 	file_exists(File),
 	copy_file(File,OutputFile).
+	
+%% from_terms(+InputFiles,+Options,+OutputFile)
+% =|InputFiles|= are ignored. The task creates a new file containing all the terms given by the option =|terms|=.
+from_terms(_,Options,OutputFile) :-
+	get_option(Options,terms,Terms),
+	terms_to_file(OutputFile,Terms).	
 	
 %% from_sequence(+InputFiles,+Options,+OutputFile)
 % =|InputFiles|= is ignored. This task creates a file from the sequence given with the option =|sequence|=.

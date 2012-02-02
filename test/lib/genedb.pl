@@ -3,6 +3,10 @@
 
 a_gene(Gene) :-
 	Gene =.. [ gene, 'n/a', 231, 2341, '+', 2, [sequence([a,g,t,c,t,g,a,g,a])]].
+
+a_rev_gene(Gene) :-
+	Gene =.. [ gene, 'n/a', 231, 2341, '-', 2, [sequence([a,g,t,c,t,g,a,g,a])]].
+
 	
 not_a_gene1(Gene) :-
 	Gene =.. [ gene, 'n/a', 231, 2341, '+', 5, [sequence([a,g,t,c,t,g,a,g,a])]].
@@ -46,5 +50,16 @@ testcase(gene_extra_field) :-
 testcase(gene_add_extra_field) :-
 	a_gene(G),
 	gene_add_extra_field(G,test,somevalue,G2),
-	gene_extra_field(G2,test,somevalue).
-	
+	gene_extra_field(G2,test,somevalue).	
+
+
+testcase(gene_start_stop_codon_forward) :-
+	a_gene(G),	
+	gene_start_codon(G,231),
+	gene_stop_codon(G,2339).
+
+testcase(gene_start_stop_codon_reverse) :-
+	a_rev_gene(G),
+	gene_start_codon(G,2341),
+	gene_stop_codon(G,233).
+

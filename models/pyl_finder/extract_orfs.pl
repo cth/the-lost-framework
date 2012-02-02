@@ -47,17 +47,16 @@ extract_orfs(FastaFile,OutputFile) :-
 	lost_tmp_file('pyl-finder-orfs-1', ORFSReverse1),
 	lost_tmp_file('pyl-finder-orfs-2', ORFSReverse2),
 	lost_tmp_file('pyl-finder-orfs-3', ORFSReverse3),
-	writeln(here),nl,
-	extract_starts_and_stops(FastaFile,[CodonsDirect1,CodonsDirect2,CodonsDirect3,CodonsReverse1,CodonsReverse2,CodonsReverse3]),
-	load_genome(FastaFile,Genome),
-	find_orfs(Genome,CodonsDirect1,ORFSDirect1,'+',1),
-	find_orfs(Genome,CodonsDirect2,ORFSDirect2,'+',2),
-	find_orfs(Genome,CodonsDirect3,ORFSDirect3,'+',3),
-	find_orfs(Genome,CodonsReverse1,ORFSReverse1,'-',1),
-	find_orfs(Genome,CodonsReverse2,ORFSReverse2,'-',2),
-	find_orfs(Genome,CodonsReverse3,ORFSReverse3,'-',3),
+	extract_starts_and_stops(FastaFile,[CodonsDirect1,CodonsDirect2,CodonsDirect3,CodonsReverse1,CodonsReverse2,CodonsReverse3]),!,
+	load_genome(FastaFile,Genome),!,
+	find_orfs(Genome,CodonsDirect1,ORFSDirect1,'+',1),!,
+	find_orfs(Genome,CodonsDirect2,ORFSDirect2,'+',2),!,
+	find_orfs(Genome,CodonsDirect3,ORFSDirect3,'+',3),!,
+	find_orfs(Genome,CodonsReverse1,ORFSReverse1,'-',1),!,
+	find_orfs(Genome,CodonsReverse2,ORFSReverse2,'-',2),!,
+	find_orfs(Genome,CodonsReverse3,ORFSReverse3,'-',3),!,
 	writeln('Merging files for all reading frames into orfs.pl'),
-	merged_sorted_files([ORFSDirect1,ORFSDirect2,ORFSDirect3,ORFSReverse1,ORFSReverse2,ORFSReverse3],OutputFile),
+	merged_sorted_files([ORFSDirect1,ORFSDirect2,ORFSDirect3,ORFSReverse1,ORFSReverse2,ORFSReverse3],OutputFile),!,
 	writeln('Done.').
 
 /****************************************************************************************************
@@ -256,7 +255,6 @@ base_complement(g,c).
 % Extract a range from the genome as a list
 ************************************************************/
 
-
 load_genome(FastaFile,HashTable) :-
 	retractall(base(_,_,_)),
 	open(FastaFile,read,In),
@@ -333,7 +331,6 @@ decrement_position(Pos,Subtract,NewPos) :-
 	base_max(Max),
 	NewPos is  Pos + Max - Subtract.
 
-	
 decrement_position(Pos,Subtract,NewPos) :-
 	NewPos is Pos - Subtract.
 
@@ -354,17 +351,14 @@ find_orfs(Genome,CodonFile,OrfFile,Strand,Frame) :-
 	writeln('Done.'),
 	write('Writing orfs to file: '),
 	writeln(OrfFile), 
-	writeln('here'),
 	open(OrfFile,write,OutStream),
 	annotate_orfs(Strand,Frame,SortedOrfs,OutStream,Genome),
-	write('after open'),
-	write('after writing orfs'),
 	close(OutStream),
 	writeln('Done.').
 	
-annotate_orfs(_Strand,_Frame,[],_OutStream,_Genome) :- write('basecase.').
+annotate_orfs(_Strand,_Frame,[],_OutStream,_Genome).
 
-% Skip if the orf does have an inframe stop
+% Skip if the orf does not have an inframe stop
 annotate_orfs(Strand,Frame,[orf(_Stop,_Starts,[])|Rest],OutStream,Genome) :-
 	!,
 	annotate_orfs(Strand,Frame,Rest,OutStream,Genome).
@@ -387,11 +381,8 @@ annotate_orfs(Strand,Frame,[orf(Stop,Starts,InFrames)|Rest],OutStream,Genome) :-
 		((Strand == '+') ->
 			Sequence = Sequence1		
 			;
-			%writeln(Sequence1),
 			reverse(Sequence1,RevSeq),
-			%writeln(RevSeq),
 			complement(RevSeq,Sequence)
-			%writeln(Sequence)
 		),
 		write_orf(OutStream,Left,Right,Strand,Frame,OrfLength,Stop,Starts,InFrames,Sequence)
 		;
@@ -405,11 +396,11 @@ write_orf(OutStream,Left,Right,Strand,Frame,Length,Stop,Starts,InFrames,Sequence
 	
 
 index_create(File) :-
-	open(File,read,InStream),
-	writeln('Reading file into memory and creating indexes.'),
-	create_circular_index(1,1,InStream),
-	writeln('Done'),
-	close(InStream, [force(true)]).
+	open(File,read,InStream),!,
+	writeln('Reading file into memory and creating indexes.'),!,
+	create_circular_index(1,1,InStream),!,
+	writeln('Done').
+%	catch(close(InStream, [force(true)]),_,true).
 
 create_circular_index(Index,FirstIndex,InStream) :-
 	read(InStream,Term),
@@ -457,7 +448,8 @@ ci_search_forward(Type,StartIdx,MatchIdx) :-
 ci_search_forward_rec(Type,StartIdx,StartIdx) :- 
 	ci(StartIdx,_,Type,_).
 ci_search_forward_rec(Type,StartIdx,StopIndex) :-
-	ci(StartIdx,NextIdx,start,_),
+	ci(StartIdx,NextIdx,OtherType,_),
+	OtherType \= Type,
 	ci_search_forward_rec(Type,NextIdx,StopIndex).
 
 ci_search_backward(Type,StartIdx,MatchIdx) :-
@@ -506,7 +498,11 @@ forward_orfs_rec(StartIdx,CurrentIdx,StartsInBetween,StopsInBetween,RestOrfs) :-
 forward_orfs_rec(StartIdx,CurrentIdx,StartsInBetween,StopsInBetween,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,amber,Position),
 	!,
-	forward_orfs_rec(StartIdx,NextIdx,StartsInBetween,[Position|StopsInBetween],RestOrfs).
+	((StartsInBetween = []) ->
+		StopsInBetweenNext = []
+		;
+		StopsInBetweenNext = [Position|StopsInBetween]),
+	forward_orfs_rec(StartIdx,NextIdx,StartsInBetween,StopsInBetweenNext,RestOrfs).
 
 
 /***********************************************************
