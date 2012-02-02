@@ -3,6 +3,9 @@
 
 :- task(multifile([text],[],[text,text])).
 
+:- task(one_input(text,[],[text])).
+
+
 test1([I1,I2],Opts,Out) :-
 	writeln('dummy implementation of test1').
 	
@@ -11,3 +14,6 @@ test1([I1,I2],Opts,Out) :-
 multifile([InputFile],Options,[OutputFile1,OutputFile2]) :-
 	copy_file(InputFile,OutputFile1),
 	copy_file(InputFile,OutputFile2).
+	
+one_input(InputFile,_,[OutputFile]) :-
+	copy_file(InputFile,OutputFile).

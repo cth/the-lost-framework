@@ -37,18 +37,36 @@ run_model(Model,Goal,RunModelOptions) :-
 	writeln(Options),
 	% Check if a result allready exists:
 	lost_data_index_file(AnnotIndex),
+	writeln(Filenames),
+	declared_output_formats(Model,Functor,OutputFormats),
+	(is_list(OutputFormats) ->
+		length(OutputFormats,NumberOutputs),
+		length(Filenames,NumberOutputs),
+		OutputFilesAsList = true
+		;
+		writeln('not output as list!!!'),
+		NumberOutputs = 1,
+		OutputFilesAsList = false		
+	),
 	lost_file_index_get_filenames(AnnotIndex,Model,Functor,Inputs,ExpandedOptions,Filenames),
+	write('after lost_file_index_get_filenames'),nl,
+	writeln(Filenames),
 	!,
 	((member(caching(true),RunModelOptions),forall(member(Filename,Filenames),file_exists(Filename))) ->
-	 write('Using existing result files: '), write(Filenames),nl
-	;
-	 CallGoal =.. [Functor,Inputs,ExpandedOptions,Filenames],
-	 term2atom(CallGoal,GoalAtom),
-     write(launch_prism_process(ModelFile,GoalAtom)),nl,
-     launch_prism_process(ModelFile,GoalAtom),
-	 forall(member(Filename,Filenames), 
-     	check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename)))),
-     lost_file_index_update_file_timestamp(AnnotIndex,Filenames)
+		write('Using existing result files: '), write(Filenames),nl
+		;
+		(OutputFilesAsList ->
+			CallGoal =.. [Functor,Inputs,ExpandedOptions,Filenames]
+			;
+			[SingleFilename] = Filenames,
+			CallGoal =.. [Functor,Inputs,ExpandedOptions,SingleFilename]
+		),
+		term2atom(CallGoal,GoalAtom),
+		write(launch_prism_process(ModelFile,GoalAtom)),nl,
+		launch_prism_process(ModelFile,GoalAtom),
+		forall(member(Filename,Filenames), 
+		check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename)))),
+		lost_file_index_update_file_timestamp(AnnotIndex,Filenames)
 	).
 
 %% goal_result_files(+Model,+Goal,-ResultFiles)
@@ -348,13 +366,14 @@ task_options(TaskDeclaration,Options) :-
 %% task_output_filetypes(+TaskDeclaration,-OutputFileType)
 % OutputFileType is the file type declared by TaskDeclaration
 task_output_filetypes(TaskDeclaration,OutputFileTypes) :-
-	TaskDeclaration =.. [ _Name , _InputFileTypes, _Options, OutputFileTypes ],
+	TaskDeclaration =.. [ _Name , _InputFileTypes, _Options, OutputFileTypes ].
+/*
 	OutputFileTypes = [_|_],
 	!.
 	
 task_output_filetypes(TaskDeclaration,[OutputFileType]) :-
 	TaskDeclaration =.. [ _Name , _InputFileTypes, _Options, OutputFileType ].
-	
+*/	
 	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

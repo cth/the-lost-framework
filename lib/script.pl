@@ -47,7 +47,7 @@ view(Target) :-
 get_result_file(Goal,File) :-
 	run(Goal,[],File).
 	
-run_options([rerun(recursive)],[caching(false)],rerun(recursive)).
+run_options([rerun(recursive)],[caching(false)],[rerun(recursive)]).
 run_options([rerun(once)],[caching(false)],[]).
 run_options([],[caching(true)],[]).
 
@@ -100,14 +100,17 @@ run(Target,_RunOpts,Target) :-
 	append(MatchSyms,_,TargetSyms).
 	
 run(Target,RunOpts,File) :-
+	match_target_rule(Target,Rule,TargetIndex),
 	parse_guard_and_body(Rule,Guard,Model,TaskSpec),
+	writeln('TASKSPEC: '),
+	writeln(TaskSpec),	
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
-	writeln(here1),	
 	write('GUARD:'),writeln(Guard),
 	call(Guard),
+	writeln(TaskSpec),	
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
 	run_multiple(NewRunOpts,Inputs,InputFiles),
-	writeln(here1),	
+	writeln(here1),
 	RealTaskSpec =.. [ Task, InputFiles, Options, Files ],
 	writeln(here2),
 	writeln(RealTaskSpec),
@@ -136,25 +139,34 @@ match_target_rule(Target,Rule,TargetIndex) :-
 % where:
 	conjunction_member(Member,(Member,_),Idx,Idx).
 	conjunction_member(Member,(ConjA,ConjB),IdxIn,IdxOut) :-
+		Member \= ConjA,
 		!,
 		IdxNext is IdxIn + 1,
 		conjunction_member(Member,ConjB,IdxNext,IdxOut).
 	conjunction_member(Member,Member,Idx,Idx).
-	
+
+%% parse_guard_and_body(+Spec,-Guard,-Model,-TaskSpec)
+% parses the right-hand side (of =|<-|=) of a rule,
+% ==
+% Guard | Model::TaskSpec
+% or
+% Model::TaskSpec
+% == 
+% In the latter case, =|Guard=true|=.
 parse_guard_and_body(Spec, true, Model, TaskSpec) :-
-%	write(Spec),nl,
 	Spec =.. [ '::', Model, TaskSpec].
 	
 parse_guard_and_body(Spec, Guard, Model, TaskSpec) :-
 	Spec =.. [ '|', Guard, Body ],
 	Body =.. [ '::', Model, TaskSpec].
 	
-%%
-% parse_task_specification(+TaskSpec,-Task,-Inputs,-Options)
+%% parse_task_specification(+TaskSpec,-Task,-Inputs,-Options)
 % process different forms of specifying patterns for running a 
 % particular task within a model
-% e.g. 
+% e.g.
+% ==
 %   task1([file1,file2]).
+% ==
 parse_task_specification(TaskSpecification,Task,Inputs,[]) :-
 	TaskSpecification =.. [ Task, Inputs ],
 	is_list_fix(Inputs).
