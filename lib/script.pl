@@ -51,7 +51,6 @@ run_options([rerun(recursive)],[caching(false)],rerun(recursive)).
 run_options([rerun(once)],[caching(false)],[]).
 run_options([],[caching(true)],[]).
 
-
 %% run(+Goal)
 % Will run the script goal Goal with the sequential semantics (one task/process at a time).  
 run(Target) :-
@@ -101,25 +100,22 @@ run(Target,_RunOpts,Target) :-
 	append(MatchSyms,_,TargetSyms).
 	
 run(Target,RunOpts,File) :-
-	match_target_rule(Target,Rule),
 	parse_guard_and_body(Rule,Guard,Model,TaskSpec),
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
+	writeln(here1),	
 	write('GUARD:'),writeln(Guard),
 	call(Guard),
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
 	run_multiple(NewRunOpts,Inputs,InputFiles),
-	RealTaskSpec =.. [ Task, InputFiles, Options, File ],
+	writeln(here1),	
+	RealTaskSpec =.. [ Task, InputFiles, Options, Files ],
+	writeln(here2),
 	writeln(RealTaskSpec),
-	run_model(Model,RealTaskSpec,RunModelOptions).
-	
-testit :-
-	clause('<-'(Targets,_Rule),true),
-	findall(Target,conjunction_member(Target,Targets),TargetsList),
-	writeln(TargetsList).
-	
+	run_model(Model,RealTaskSpec,RunModelOptions),
+	nth1(TargetIndex,Files,File).
 
 run(Target,_RunOpts,_File) :-
-	write('failed to run target: '), 
+	write('failed to run target: '),
 	write_canonical(Target),nl,
 	!,
 	fail.
@@ -129,19 +125,22 @@ run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
 	writeln(run(Target,RunOpts,File)),
 	run(Target,RunOpts,File),
 	run_multiple(RunOpts,TargetsRest,FilesRest).
-	
-match_target_rule(Target,Rule) :-
+
+%% match_target_rule(+Target,-Rule,-Index)
+% Matches a rule on database where Target is one of the goals of the rule and 
+% Index is the index of the goal in the rule. E.g. the first goal of a rule 
+% will have Index=1 and so on.
+match_target_rule(Target,Rule,TargetIndex) :-
 	clause('<-'(Targets,Rule),true),
-	conjunction_member(Target,Targets).
+	conjunction_member(Target,Targets,1,TargetIndex).
 % where:
-	conjunction_member(Member,(Member,_)).
-	conjunction_member(Member,(ConjA,ConjB)) :-
+	conjunction_member(Member,(Member,_),Idx,Idx).
+	conjunction_member(Member,(ConjA,ConjB),IdxIn,IdxOut) :-
 		!,
-		conjunction_member(Member,ConjB).
-	conjunction_member(Member,Member).
-
-
-
+		IdxNext is IdxIn + 1,
+		conjunction_member(Member,ConjB,IdxNext,IdxOut).
+	conjunction_member(Member,Member,Idx,Idx).
+	
 parse_guard_and_body(Spec, true, Model, TaskSpec) :-
 %	write(Spec),nl,
 	Spec =.. [ '::', Model, TaskSpec].
