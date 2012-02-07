@@ -11,7 +11,6 @@ and the call run/1 to invoke the goal of interest in the script.
 % The idea is to formulate a declarative (non-procedural way of specifying models)
 :- op(1200,xfx,'<-'). % same precendece as :-
 :- op(1050,xfx,'::').
-:- op(1100,xfx,'|').
 
 :- lost_include_api(misc_utils).
 :- lost_include_api(scheduler).
