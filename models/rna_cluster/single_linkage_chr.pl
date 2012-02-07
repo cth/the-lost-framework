@@ -1,6 +1,6 @@
 :- use_module(library(chr)).
-
 :- set_prolog_flag(chr_toplevel_show_store,false).
+:- chr_option(optimize,full).
 
 %% Single-linkage clustering algorithm, implemented in Constraint Handling Rules
 %
@@ -11,7 +11,7 @@
 % 
 % @author Christian Theil Have
 
-:- chr_constraint member/2, active_member/2, distance/3, branch/3, leaf/1, node/2, largest_cluster_id/1.
+:- chr_constraint member(+,+), active_member(+,+), distance(+,+,+), branch(+,+,+), leaf(+), node(+,+), largest_cluster_id(+).
 :- chr_constraint build_tree/0.
 
 init_single_linkage :-
@@ -23,6 +23,7 @@ active_member(SameCluster,A), active_member(SameCluster,B) \ distance(A,B,_Cost)
 % Promote members to active when they are created
 member(Cluster,Member) ==> active_member(Cluster,Member).
 
+% Both A and B exist in clusters. Merge those clusters.
 % We have a distance between two "live" clusters: Merge the clusters.
 active_member(ClusterOne,A), active_member(ClusterTwo,B) \ distance(A,B,Cost), largest_cluster_id(LargestClusterId) <=>
 	NextClusterId is 1 + LargestClusterId
@@ -32,29 +33,18 @@ active_member(ClusterOne,A), active_member(ClusterTwo,B) \ distance(A,B,Cost), l
 	largest_cluster_id(NextClusterId).
 
 % A is in a cluster. Create new cluster for B.
-active_member(_,A) \ distance(A,B,Cost), largest_cluster_id(LargestClusterId) <=>
-	NextClusterId is 1 + LargestClusterId
-	|
-	member(NextClusterId,B),
-	largest_cluster_id(NextClusterId),
+active_member(_,A) \ distance(A,B,Cost)  <=>
+	member(B,B),
 	distance(A,B,Cost).
 
 % B is in a cluster. Create new cluster for A.
-active_member(_,B) \ distance(A,B,Cost), largest_cluster_id(LargestClusterId) <=>
-	NextClusterId is 1 + LargestClusterId
-	|
-	member(NextClusterId,A),
-	largest_cluster_id(NextClusterId),
+active_member(_,B) \ distance(A,B,Cost) <=>
+	member(A,A),
 	distance(A,B,Cost).
 
-% Neither A or B is in a cluster. Create a new cluster for each.	
-distance(A,B,Cost), largest_cluster_id(LargestClusterId) <=>
-	NextClusterId1 is 1 + LargestClusterId,
-	NextClusterId2 is 2 + LargestClusterId
-	|
-	member(NextClusterId1,A),
-	member(NextClusterId2,B),
-	largest_cluster_id(NextClusterId2),
+distance(A,B,Cost) <=>
+	member(A,A),
+	member(B,B),
 	distance(A,B,Cost).
 
 % When merging clusters into new clusters, promote active members of old 
@@ -68,18 +58,17 @@ branch(A,_,_) ==> leaf(A).
 % If a node has a child node, it is not a leaf.
 branch(_,A,_) \ leaf(A) <=> true.
 
-build_tree, leaf(A) <=> build_tree, node(A,[]).
+build_tree \ leaf(A) <=> node(A,[]).
 
-build_tree, node(A,TreeA), node(B,TreeB), branch(A,C,CostAC), branch(B,C,CostBC) <=>
-	node(C,[[CostAC,A,TreeA],[CostBC,B,TreeB]]),
-	build_tree.
-
-%build_tree((Root,(Left,Right))), node(Root,(Left,Right)) <=> build_tree((Root,(Left,Right))).
-
+build_tree \ node(A,TreeA), node(B,TreeB), branch(A,C,CostAC), branch(B,C,CostBC)  <=>
+	write('.'),flush
+	|
+	node(C,[[CostAC,A,TreeA],[CostBC,B,TreeB]]).
 
 
-	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 % A DCG to convert trees to newick format
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
 % A Leaf node
 newick([Dist,NodeId,[]]) --> nodeid(NodeId), ":", str(Dist).
@@ -103,7 +92,7 @@ nodeid((Organism,LeftPos,RightPos)) -->
 	OrganismCodes,
 	"_",
 	str(LeftPos),
-	"_",
+	"-",
 	str(RightPos).
 	
 
@@ -144,6 +133,8 @@ build_trees_from_distances(DistancesFile,NewickTreesFile) :-
 	writeln('done.'),
 	writeln('Building trees...'),
 	build_tree,
+	writeln('done.'),
+	writeln('extracting trees:'),
 	findall([0,Root,Tree],find_chr_constraint(node(Root,Tree)),Trees),
 	length(Trees,NumTrees),
 	write('Built '), write(NumTrees), writeln(' trees.'), nl,
@@ -151,7 +142,7 @@ build_trees_from_distances(DistancesFile,NewickTreesFile) :-
 	write_trees_newick(Trees,OutS),
 	close(OutS).
 	
-write_trees_newick([],Stream).
+write_trees_newick([],_).
 write_trees_newick([T|Ts],Stream) :-
 	newick(T,NewickT,[]),
 	atom_codes(NewickA,NewickT),

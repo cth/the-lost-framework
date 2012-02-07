@@ -4,6 +4,8 @@
 :- use(lists).
 :- use(genedb).
 
+:- cl(align).
+
 % Configuration
 minimal_stem_length(4).
 
@@ -24,6 +26,25 @@ by_counts(GeneTerm,(Count,GeneTerm)) :-
 	gene_extra_field(GeneTerm,paired_bases,Count).
 
 
+read_and_filter_terms(Stream,FilteredTerms,TermsRead) :-
+	read(Stream,Term),
+	((Term == end_of_file) ->
+		nl
+		;
+		((0 is TermsRead mod 100) -> write('.') ; true),
+		((0 is TermsRead mod 1000) -> write(TermsRead) ; true),
+		(apply_sequence_constraints(Term) ->
+			FilteredTerms = [Term|FilterRest]
+			;
+			FilteredTerms = FilterRest
+		),
+		TermsRead1 is TermsRead + 1,
+		!,
+		read_and_filter_terms(Stream,FilterRest,TermsRead1)).
+		
+			
+
+
 filter_by_constraints([],[]).
 	
 filter_by_constraints([G|Xs], [G|Ys]) :-
@@ -39,32 +60,38 @@ apply_sequence_constraints(GeneTerm) :-
 	minimal_stem_length(MinStemLength),
 	gene_extra_field(GeneTerm,folding,StructureSequence),
 	sequence_with_stem(MinStemLength,StructureSequence,[]).
-	
-	
-create_alignments(InputFile,Alignments) :-
-	terms_from_file(InputFile,Terms),
+
+create_alignments(InputFile,SortedAlignments) :-
+/*	terms_from_file(InputFile,Terms),
 	length(Terms,NumTerms),
 	write('read '), write(NumTerms), writeln(' terms from file.'),
 	filter_by_constraints(Terms,FilteredTerms),
+*/
+	open(InputFile,read,IS),
+	read_and_filter_terms(IS,FilteredTerms,1),
+	close(IS),
+	
 	length(FilteredTerms,NumFilteredTerms),
 	write('After constraint filters, '), write(NumFilteredTerms), writeln(' left. '),
 	sort_by_paired_bases(FilteredTerms,SortedTerms),
 	writeln('sorted terms and added paired bases counts.'),
-	Threshold = 2,
-	align_genes(Threshold,SortedTerms,Alignments),
+	Threshold = 4,
+	writeln('aligning sequences...'),
+	align_genes(Threshold,SortedTerms,NestAlignments),
+	writeln('done.'),
+	writeln('flatten..'),
+	flatten(NestAlignments,Alignments),
+	writeln('done.'),
 	length(Alignments,NumAlignments),
-	
-	
-%	writeln(Alignments),
-	write('created '), write(NumAlignments), write(' alignments.').
+	write('created '), write(NumAlignments), write(' alignments.'),
+	sort(Alignments,SortedAlignments).
 
 align_genes(_T,[],[]).
 align_genes(_T,[_],[]).
 
-align_genes(Threshold,[Gene|Rest],Alignments) :-
+align_genes(Threshold,[Gene|Rest],[AlignmentsFirst|AlignmentsRest]) :-
 	align_with_relevant(Gene,Rest,Threshold,AlignmentsFirst),
-	align_genes(Threshold,Rest,AlignmentsRest),
-	append(AlignmentsFirst,AlignmentsRest,Alignments).
+	align_genes(Threshold,Rest,AlignmentsRest).
 	
 align_with_relevant(_Gene,[],_Threshold,[]).
 	
@@ -81,18 +108,45 @@ align_with_relevant(_Gene,[_OtherGene|_],_Threshold,[]).
 
 % place holder
 %align(_A,_B,0).
-align(A,B,(IdA,IdB,Cost)) :-
+align(A,B,(Cost,IdA,IdB)) :-
 	gene_extra_field(A,folding,FoldingA),
 	gene_extra_field(B,folding,FoldingB),
 	sequence_id(A,IdA),
 	sequence_id(B,IdB),
-	stupid_align(FoldingA,FoldingB,Cost).
-
-
+	edit(FoldingA,FoldingB,Cost).
+%	stupid_align(FoldingA,FoldingB,Cost).
+%	Cost = 1.
+	
 sequence_id(GeneTerm,(SeqId,Left,Right)) :-
 	gene_left(GeneTerm,Left),
 	gene_right(GeneTerm,Right),
 	gene_sequence_id(GeneTerm,SeqId).
+	
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Edit distance alignment
+% Should be run with b-prolog 7.7 or better
+% (otherwise will be inefficient).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- table edit/3.
+
+edit([],[],0).
+edit([],[_Y|Ys],Dist) :- edit([],Ys,Dist1), Dist is 1 + Dist1.
+edit([_X|Xs],[],Dist) :- edit(Xs,[],Dist1), Dist is 1 + Dist1.
+
+edit([X|Xs],[Y|Ys],Dist) :-
+	edit([X|Xs],Ys,InsDist),
+	edit(Xs,[Y|Ys],DelDist),
+	edit(Xs,Ys,TailDist),
+	(X==Y -> 
+		% Match
+		Dist = TailDist
+		; 
+		InsDist1 is InsDist + 0.25,
+		DelDist1 is DelDist + 0.25,
+		TailDist1 is TailDist + 1,
+		% minimal of insertion, deletion or substitution 
+		sort([InsDist1,DelDist1,TailDist1],[Dist|_])).
 	
 % Very stupid alignment algorithm that just counts the number of mismatches
 stupid_align([],[],0).
@@ -111,11 +165,12 @@ create_distance_file(Alignments) :-
 	close(OS).
 
 write_alignments_to_stream([],_).
-write_alignments_to_stream([(A,B,Dist)|Rest],OS) :-
+write_alignments_to_stream([(Dist,A,B)|Rest],OS) :-
 	write(OS,distance(A,B,Dist)),
 	write(OS,'.\n'),
 	write_alignments_to_stream(Rest,OS).
 
 test :-
-	create_alignments('ppfold_fold_33.gen',Alignments),
+%	create_alignments('ppfold_fold_33.gen',Alignments),%
+	create_alignments('ppfold1000.pl',Alignments),
 	create_distance_file(Alignments).
