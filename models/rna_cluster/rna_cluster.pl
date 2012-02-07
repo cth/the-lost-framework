@@ -4,8 +4,6 @@
 :- use(lists).
 :- use(genedb).
 
-:- cl(align).
-
 % Configuration
 minimal_stem_length(4).
 
@@ -61,7 +59,7 @@ apply_sequence_constraints(GeneTerm) :-
 	gene_extra_field(GeneTerm,folding,StructureSequence),
 	sequence_with_stem(MinStemLength,StructureSequence,[]).
 
-create_alignments(InputFile,SortedAlignments) :-
+create_alignments(InputFile,OutputFile) :-
 /*	terms_from_file(InputFile,Terms),
 	length(Terms,NumTerms),
 	write('read '), write(NumTerms), writeln(' terms from file.'),
@@ -77,21 +75,44 @@ create_alignments(InputFile,SortedAlignments) :-
 	writeln('sorted terms and added paired bases counts.'),
 	Threshold = 4,
 	writeln('aligning sequences...'),
-	align_genes(Threshold,SortedTerms,NestAlignments),
-	writeln('done.'),
-	writeln('flatten..'),
+        open(OutputFile,write,AlignedStream),
+	align_genes(Threshold,SortedTerms,AlignedStream),
+        close(AlignedStream),
+	writeln('done.').
+/*
 	flatten(NestAlignments,Alignments),
 	writeln('done.'),
 	length(Alignments,NumAlignments),
 	write('created '), write(NumAlignments), write(' alignments.'),
-	sort(Alignments,SortedAlignments).
+        SortedAlignments = Alignments,
+        open('test',write,TEST),
+        write(TEST,Alignments),
+        told,
+        writeln(here),nl.
+%        writeln(Alignments),
+%	sort(Alignments,SortedAlignments).
+%	*/
 
-align_genes(_T,[],[]).
-align_genes(_T,[_],[]).
+align_genes(_T,[],_).
+align_genes(_T,[_],_).
 
-align_genes(Threshold,[Gene|Rest],[AlignmentsFirst|AlignmentsRest]) :-
-	align_with_relevant(Gene,Rest,Threshold,AlignmentsFirst),
-	align_genes(Threshold,Rest,AlignmentsRest).
+align_genes(Threshold,[Gene|Rest],OutStream) :-
+        write('.'),
+        initialize_table, 
+        % We clear the table area for each new gene 
+        % This will keep memory usage down (somewhat)
+        % However, we need to make sure that we do not have dangling
+        % refs to the table area so we write all alignments to file 
+        % before clearing again.
+	align_with_relevant(Gene,Rest,Threshold,Alignments),
+        write_alignments_to_stream(Alignments,OutStream),
+	align_genes(Threshold,Rest,OutStream).
+
+write_alignments_to_stream([],_Stream).
+write_alignments_to_stream([(Dist,A,B)|As],Stream) :-
+        write(Stream,[Dist,A,B]),
+        write(Stream,'.\n'),
+        write_alignments_to_stream(As,Stream).
 	
 align_with_relevant(_Gene,[],_Threshold,[]).
 	
@@ -164,13 +185,20 @@ create_distance_file(Alignments) :-
 	write_alignments_to_stream(Alignments,OS),
 	close(OS).
 
-write_alignments_to_stream([],_).
-write_alignments_to_stream([(Dist,A,B)|Rest],OS) :-
+write_distances_to_stream([],_).
+write_distances_to_stream([(Dist,A,B)|Rest],OS) :-
 	write(OS,distance(A,B,Dist)),
 	write(OS,'.\n'),
-	write_alignments_to_stream(Rest,OS).
+	write_distances_to_stream(Rest,OS).
 
 test :-
 %	create_alignments('ppfold_fold_33.gen',Alignments),%
-	create_alignments('ppfold1000.pl',Alignments),
-	create_distance_file(Alignments).
+	system('/opt/BProlog/bp -g "cl(rna_cluster), create_alignments(\'ppfold_fold_33.gen\',\'alignments.pl\'), halt."'),
+        terms_from_file('alignments.pl',Alignments),
+        length(Alignments,NumAligns),
+        write(NumAligns), write(' alignments..'),nl,
+        writeln('sorting alignments (may take some time)'),
+        sort(Alignments,SortedAlignments),
+        writeln(done),
+        terms_to_file('distance_matrix.pl',SortedAlignments).
+	%create_distance_file(Sortedlignments).

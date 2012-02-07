@@ -153,12 +153,14 @@ write_trees_newick([T|Ts],Stream) :-
 read_from_distance_matrix(Stream,Count) :-
 	read(Stream,Term),
 	((Term == end_of_file) ->
+                write('reached end of file'),nl,
 		true
 		;
+                Term = [Distance,A,B],
 		((0 is Count mod 100) -> write('.'), flush ; true),
 		((0 is Count mod 1000) -> write(Count), flush ; true),
 		Count1 is Count + 1,
-		Term,
+		distance(A,B,Distance),
 		read_from_distance_matrix(Stream,Count1)
 	).
 	
