@@ -6,6 +6,40 @@
 
 % Configuration
 minimal_stem_length(4).
+pairing_count_mismatch_threshold(4).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Main control predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+go :-
+        go('ppfold200.pl','tmp_out.newick').
+go_all :-
+        go('ppfold_fold_33.gen','all.newick').
+
+
+go(InputFile,OutputFile) :-
+        % We run this part in BProlog 7.7 (since PRISM is not (yet) efficient
+        % for this sort of tabling)
+        atom_concat_list(['/opt/BProlog/bp -g "cl(rna_cluster), create_alignments(\'',
+                        InputFile,
+                        '\',\'alignments.pl\'), halt."'],
+                        BPrologInvoke),
+        system(BPrologInvoke),
+        terms_from_file('alignments.pl',Alignments),
+        length(Alignments,NumAligns),
+        write(NumAligns), write(' alignments..'),nl,
+        writeln('Sorting alignments (may take some time)'),
+        sort(Alignments,SortedAlignments),
+        writeln(done),
+        terms_to_file('distance_matrix.pl',SortedAlignments),
+        compile_chr('slink.pl'),
+	slink_cluster_by_distances('distance_matrix.pl',OutputFile).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Sequence constraints 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Calculate the number of paired bases in each Gene record
 count_paired_bases(StructureSequenceFunctor,GeneTerm,UpdatedGeneTerm) :-
@@ -59,39 +93,26 @@ apply_sequence_constraints(GeneTerm) :-
 	gene_extra_field(GeneTerm,folding,StructureSequence),
 	sequence_with_stem(MinStemLength,StructureSequence,[]).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Alignment 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 create_alignments(InputFile,OutputFile) :-
-/*	terms_from_file(InputFile,Terms),
-	length(Terms,NumTerms),
-	write('read '), write(NumTerms), writeln(' terms from file.'),
-	filter_by_constraints(Terms,FilteredTerms),
-*/
+        write('Reading and filtering sequences by constraints..'),
 	open(InputFile,read,IS),
 	read_and_filter_terms(IS,FilteredTerms,1),
 	close(IS),
-	
+        writeln(done),
 	length(FilteredTerms,NumFilteredTerms),
 	write('After constraint filters, '), write(NumFilteredTerms), writeln(' left. '),
 	sort_by_paired_bases(FilteredTerms,SortedTerms),
 	writeln('sorted terms and added paired bases counts.'),
-	Threshold = 4,
-	writeln('aligning sequences...'),
+        pairing_count_mismatch_threshold(Threshold),
+	write('aligning sequences...'),
         open(OutputFile,write,AlignedStream),
 	align_genes(Threshold,SortedTerms,AlignedStream),
         close(AlignedStream),
 	writeln('done.').
-/*
-	flatten(NestAlignments,Alignments),
-	writeln('done.'),
-	length(Alignments,NumAlignments),
-	write('created '), write(NumAlignments), write(' alignments.'),
-        SortedAlignments = Alignments,
-        open('test',write,TEST),
-        write(TEST,Alignments),
-        told,
-        writeln(here),nl.
-%        writeln(Alignments),
-%	sort(Alignments,SortedAlignments).
-%	*/
 
 align_genes(_T,[],_).
 align_genes(_T,[_],_).
@@ -135,12 +156,17 @@ align(A,B,(Cost,IdA,IdB)) :-
 	sequence_id(A,IdA),
 	sequence_id(B,IdB),
 	edit(FoldingA,FoldingB,Cost).
-%	stupid_align(FoldingA,FoldingB,Cost).
-%	Cost = 1.
 	
 sequence_id(GeneTerm,(SeqId,Left,Right)) :-
-	gene_left(GeneTerm,Left),
-	gene_right(GeneTerm,Right),
+        gene_extra_field(GeneTerm,in_frame_stops,[PylisStart]),
+        (gene_strand(GeneTerm,'+') ->
+                Left = PylisStart,
+                Right is (100 + PylisStart) - 1
+                ;
+                Left is (PylisStart - 100) + 1,
+                Right = PylisStart
+
+        ),
 	gene_sequence_id(GeneTerm,SeqId).
 	
 
@@ -169,36 +195,87 @@ edit([X|Xs],[Y|Ys],Dist) :-
 		% minimal of insertion, deletion or substitution 
 		sort([InsDist1,DelDist1,TailDist1],[Dist|_])).
 	
-% Very stupid alignment algorithm that just counts the number of mismatches
-stupid_align([],[],0).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+% A DCG to convert trees to newick format
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+%
+
+write_newick_tree(Stream,T) :-
+	newick(T,NewickT,[]),
+	atom_codes(NewickA,NewickT),
+	write(Stream,NewickA),
+	write(Stream,';\n').
+
+% A Leaf node
+newick([Dist,NodeId,[]]) --> nodeid(NodeId), ":", str(Dist).
+
+% A Junction 
+newick([DistParent,_NodeId,[LeftSubTree,RightSubTree]]) --> 
+	"(",
+	newick(LeftSubTree),
+	",",
+	newick(RightSubTree),
+	")",
+	":",
+	str(DistParent).
 	
-stupid_align([Same|As],[Same|Bs],Score) :-
-	stupid_align(As,Bs,Score).
-
-stupid_align([A|As],[B|Bs],Score) :-
-	A \= B,
-	stupid_align(As,Bs,RestScore),
-	Score is RestScore + 1.
+nodeid(Num) --> str(Num).
 	
-create_distance_file(Alignments) :-
-	open('distance_matrix.pl',write,OS),
-	write_alignments_to_stream(Alignments,OS),
-	close(OS).
+nodeid((Organism,LeftPos,RightPos)) -->
+	{
+		atom_codes(Organism,OrganismCodes)
+	},
+	OrganismCodes,
+	"_",
+	str(LeftPos),
+	"-",
+	str(RightPos).
+	
 
-write_distances_to_stream([],_).
-write_distances_to_stream([(Dist,A,B)|Rest],OS) :-
-	write(OS,distance(A,B,Dist)),
-	write(OS,'.\n'),
-	write_distances_to_stream(Rest,OS).
+str(Int) -->
+	{
+		number(Int),
+		number_chars(Int,Chars),
+		to_atom_codes(Chars,Codes)
+	},
+	Codes.
 
-test :-
-%	create_alignments('ppfold_fold_33.gen',Alignments),%
-	system('/opt/BProlog/bp -g "cl(rna_cluster), create_alignments(\'ppfold_fold_33.gen\',\'alignments.pl\'), halt."'),
-        terms_from_file('alignments.pl',Alignments),
-        length(Alignments,NumAligns),
-        write(NumAligns), write(' alignments..'),nl,
-        writeln('sorting alignments (may take some time)'),
-        sort(Alignments,SortedAlignments),
-        writeln(done),
-        terms_to_file('distance_matrix.pl',SortedAlignments).
-	%create_distance_file(Sortedlignments).
+to_atom_codes([],[]).
+to_atom_codes([C|Cs], [D|Ds]) :- atom_codes(C,[D]), to_atom_codes(Cs,Ds).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Clustering algorithm control
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+slink_cluster_by_distances(DistancesFile,NewickTreesFile) :-
+        init_slink,
+	write('Reading distances: '),
+	open(DistancesFile,read,Stream),
+	read_from_distance_matrix(Stream,0),
+	close(Stream), 
+	writeln('done.'),
+	writeln('Building trees...'),
+	build_tree,
+	writeln('done.'),
+	write('writing trees to newick file: '),
+        writeln(NewickTreesFile),
+        tell(NewickTreesFile),
+        open(NewickTreesFile,write,OutStream),
+        extract_trees(OutStream),
+        close(OutStream).
+	
+read_from_distance_matrix(Stream,Count) :-
+	read(Stream,Term),
+	((Term == end_of_file) ->
+                write('reached end of file'),nl,
+		true
+		;
+                Term = [Distance,A,B],
+		((0 is Count mod 100) -> write('.') ; true),
+		((0 is Count mod 1000) -> write(Count) ; true),
+		Count1 is Count + 1,
+		distance(A,B,Distance),
+		read_from_distance_matrix(Stream,Count1)
+	).
+	
