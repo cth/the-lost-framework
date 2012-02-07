@@ -135,6 +135,20 @@ replace_list(MatchList,ReplaceList,InList,OutList) :-
 	
 replace_list(MatchList,ReplaceList,[Elem|InList],[Elem|OutList]) :-
 	replace_list(MatchList,ReplaceList,InList,OutList).
+	
+
+%% filter(+filter_pred,+InList,-OutList)
+% OutList is the subset of InList for which filter_pred is true
+filter(_,[],[]).
+	
+filter(FilterPred,[X|Xs],[X|Ys]) :-
+	Predicate = [ FilterPred, X ],
+	call(Predicate),
+	!,
+	filter(FilterPred,Xs,Ys).
+	
+filter(FilterPred,[X|Xs],Ys) :-
+	filter(FilterPred,Xs,Ys).
 
 %% match_tail(+InputList,-HeadOfInputList,+TailOfInputList)
 % true if InputList ends with TailOfInputList
