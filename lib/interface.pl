@@ -41,13 +41,13 @@ run_model(Model,Goal,RunModelOptions) :-
 	declared_output_formats(Model,Functor,OutputFormats),
 	(is_list(OutputFormats) ->
 		length(OutputFormats,NumberOutputs),
-		length(Filenames,NumberOutputs),
 		OutputFilesAsList = true
 		;
 		writeln('not output as list!!!'),
 		NumberOutputs = 1,
 		OutputFilesAsList = false		
 	),
+	length(Filenames,NumberOutputs),
 	lost_file_index_get_filenames(AnnotIndex,Model,Functor,Inputs,ExpandedOptions,Filenames),
 	write('after lost_file_index_get_filenames'),nl,
 	writeln(Filenames),
