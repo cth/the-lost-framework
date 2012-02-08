@@ -15,6 +15,7 @@ and the call run/1 to invoke the goal of interest in the script.
 :- lost_include_api(misc_utils).
 :- lost_include_api(scheduler).
 :- lost_include_api(scheduler_tree).
+:- lost_include_api(debug).
 
 % Simple Prolog debugging trick
 :- op(800, fx,'>').
@@ -56,14 +57,9 @@ run(Target) :-
 	run(Target,[]).
 	
 run(Target,Opts) :-
- 	write('run: '), write(Target),nl,
+	debug(script(run),['target=',Target]),
 	run(Target,Opts,File),
-	write(run(Target,Opts,File)),nl,
-	write('Success '),
-	write(Target),
-	write(' ==> '),
-	write(File),
-	nl.
+	debug(script(run),[run(Target,Opts,File), ': Success',  Target, ' ==> ', File]).
 	
 run(lost_data_file(Identifier),_RunOpts,File) :-
 	atom(Identifier),
@@ -75,7 +71,7 @@ run(lost_sequence_file(Identifier),_RunOpts,File) :-
 
 run(file(File),_RunOpts,File) :-
 	atom(File),
-	write('Match file!!'),nl,
+	debug(script(run),'case: match filename.'),
 	% Check that file exists
 	(file_exists(File) ->
 		true
@@ -101,30 +97,25 @@ run(Target,_RunOpts,Target) :-
 run(Target,RunOpts,File) :-
 	match_target_rule(Target,Rule,TargetIndex),
 	parse_guard_and_body(Rule,Guard,Model,TaskSpec),
-	writeln('TASKSPEC: '),
-	writeln(TaskSpec),	
+	debug(script(run), ['TASKSPEC=',TaskSpec]),
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
-	write('GUARD:'),writeln(Guard),
+	debug(script(run), ['GUARD=',Guard,' OPTIONS=',Options]),
 	call(Guard),
-	writeln(TaskSpec),	
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
 	run_multiple(NewRunOpts,Inputs,InputFiles),
-	writeln(here1),
 	RealTaskSpec =.. [ Task, InputFiles, Options, Files ],
-	writeln(here2),
-	writeln(RealTaskSpec),
+	debug(script(run),['Expanded TASKSPEC:', RealTaskSpec]),
 	run_model(Model,RealTaskSpec,RunModelOptions),
 	nth1(TargetIndex,Files,File).
 
 run(Target,_RunOpts,_File) :-
-	write('failed to run target: '),
-	write_canonical(Target),nl,
+	debug(script(run),['failed to run target: ', Target]),
 	!,
 	fail.
 
 run_multiple(RunOpts,[],[]).
 run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
-	writeln(run(Target,RunOpts,File)),
+%	writeln(run(Target,RunOpts,File)),
 	run(Target,RunOpts,File),
 	run_multiple(RunOpts,TargetsRest,FilesRest).
 
@@ -189,7 +180,6 @@ parse_task_specification(TaskSpecification,Task,[Inputs],Options) :-
 parse_task_specification(TaskSpecification,Task,Inputs,[]) :-
 	TaskSpecification =.. [ Task | Inputs ],
 	is_list_fix(Inputs),
-	write(TaskSpecification),nl,
 	forall(member(L,Inputs),not(is_list_fix(L))).
 
 % Latest version of is_list/1 works correct for empty lists in latest b-prolog,

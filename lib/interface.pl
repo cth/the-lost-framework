@@ -6,7 +6,7 @@ Module that defines main predicates of the framework.
 */
 
 % APIs used
-:- use([path,misc_utils,io,prologdb,annotation_index,script,misc_utils,errorcheck]).
+:- use([path,misc_utils,io,prologdb,annotation_index,script,misc_utils,errorcheck,debug]).
 
 %:- lost_include_api(help).
 
@@ -28,32 +28,29 @@ run_model(Model,Goal) :-
 	run_model(Model,Goal,[caching(true)]).
 
 run_model(Model,Goal,RunModelOptions) :-
-	writeq(run_lost_model(Model,Goal,RunModelOptions)),nl,
+	debug(interface(run_model), run_model(Model,Goal,RunModelOptions)),
 	Goal =.. [ Functor, Inputs, Options, Filenames ],
 	lost_model_interface_file(Model, ModelFile),
 	check_valid_model_call(Model,Functor,Inputs,Options),
 	expand_model_options(Model, Functor, Options, ExpandedOptions),
-	writeln('options: '),
-	writeln(Options),
+	debug(interface(run_model), ['expanded options: ', ExpandedOptions]),
 	% Check if a result allready exists:
 	lost_data_index_file(AnnotIndex),
-	writeln(Filenames),
+	debug(interface(run_model), ['filenames: ', Filenames]),
 	declared_output_formats(Model,Functor,OutputFormats),
 	(is_list(OutputFormats) ->
 		length(OutputFormats,NumberOutputs),
 		OutputFilesAsList = true
 		;
-		writeln('not output as list!!!'),
 		NumberOutputs = 1,
-		OutputFilesAsList = false		
+		OutputFilesAsList = false
 	),
 	length(Filenames,NumberOutputs),
 	lost_file_index_get_filenames(AnnotIndex,Model,Functor,Inputs,ExpandedOptions,Filenames),
-	write('after lost_file_index_get_filenames'),nl,
 	writeln(Filenames),
 	!,
 	((member(caching(true),RunModelOptions),forall(member(Filename,Filenames),file_exists(Filename))) ->
-		write('Using existing result files: '), write(Filenames),nl
+		debug(interface(run_model), ['Using existing result files: ', Filenames])
 		;
 		(OutputFilesAsList ->
 			CallGoal =.. [Functor,Inputs,ExpandedOptions,Filenames]
@@ -62,7 +59,7 @@ run_model(Model,Goal,RunModelOptions) :-
 			CallGoal =.. [Functor,Inputs,ExpandedOptions,SingleFilename]
 		),
 		term2atom(CallGoal,GoalAtom),
-		write(launch_prism_process(ModelFile,GoalAtom)),nl,
+		debug(interface(run_model),[launch_prism_process(ModelFile,GoalAtom)]),
 		launch_prism_process(ModelFile,GoalAtom),
 		forall(member(Filename,Filenames), 
 		check_or_fail(file_exists(Filename),interface_error(missing_annotation_file(Filename)))),
@@ -165,8 +162,8 @@ launch_prism_process(PrismPrologFile, Goal) :-
 	lost_config(prism_command,PRISM),
 	lost_config(lost_base_directory,LostBaseDir),
 	atom_concat_list([PRISM,' -g "', 'consult(\'',LostBaseDir,'/lost.pl','\'), use(interface), ','consult(\'',Filename,'\'), ',Goal,'"'],Cmd),
-	write('working directory: '), write(Dirname), nl,
-	write('cmd: '), write(Cmd),nl,
+	debug(interface(launch_prism_process),['working directory: ', Dirname ]),
+	debug(interface(launch_prism_process),['cmd: ', Cmd]),
 	% FIXME: Setup some stdout redirection (this may be troublesome on windows)
 	% Run PRISM
 	% The following UGLY code is to catch arbitrary memory faults (ExitCode 11) - retry the command at most ten times **OTL**
@@ -222,7 +219,7 @@ check_valid_model_call(Model,Task,_InputFiles,Options) :-
 	% Checks there is an implementation of declared task
 	check_or_fail(task_has_implementation(Model,Task), error(no_task_implementation(Model,Task))),
 	% Check that the task is not call with unknown model options
-	writeln(Options),
+	debug(interface(check_valid_model_call),[' options: ',Options]),
 	check_or_fail(verify_model_options_declared(Model,Task,Options), error(interface(model_called_with_undeclared_options(Model,Options)))).
 	/*
 	check_or_warn(lost_interface_input_formats(Model,Task, _), warning(interface(missing_input_formats_declaration(Model,Task)))),
