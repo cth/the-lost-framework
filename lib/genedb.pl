@@ -33,6 +33,12 @@ gene_valid(GeneRecord) :-
 	member(Strand, ['+','-']),
 	member(Frame, [1,2,3]), % FIXME: Should alsp check that this corresponds to Left/Right Position
 	forall(member(ExtraField,Extra), ExtraField =.. [ _key, _value ]).
+	
+%% gene_create(+SeqId,+Left,+Right,+Strand,-GeneRecord)
+% Create a new GeneRecord with specified data
+gene_create(SeqId,Left,Right,Strand,GeneRecord) :-
+	Frame is 1 + (Left mod 3),
+	GeneRecord =.. [ seq, SeqId, Left, Right, Strand, Frame, []].
 
 %% gene_sequence_id(+GeneRecord,-SequenceId) is det
 % Extract the SequenceId field from a GeneRecord
