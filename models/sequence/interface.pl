@@ -6,6 +6,7 @@
 :- cl(matcher).
 
 :- use(dnaseq). % for complement
+:- use(genedb).
 
 :- task(match([text(fasta)], [sequences([])], text(prolog(ranges(_))))).
 :- task(extract([text(fasta)], [left(0),right(0),reverse_complement(false),sequence_identifier(na)], text(prolog(ranges(_))))).
@@ -28,7 +29,7 @@ match([FastaFile],Options,OutputFile) :-
 % Extracts a region of of =|FastaFile|= identified by positions given with options =|left|= and =|right|=.
 % If =|left|= is greater than =|right|=, then the sequence in =|FastaFile|= is treated as being circular.
 % Additionally, the extracted sequence may be reverse complemented by setting the option =|reverse_complement|= to true.
-% The extracted sequence is stored as a gene range fact, and the sequence identifier of fact is specified using t
+% The extracted sequence is stored as a gene range fact, and the sequence identifier of fact is specified using
 % the option =|sequence_identifier|=.
 extract([FastaFile],Options,OutputFile) :-
 	get_option(Options,left,Left),
@@ -45,4 +46,5 @@ extract([FastaFile],Options,OutputFile) :-
 	),
 	get_option(Options,sequence_identifier,SeqId),
 	gene_create(SeqId,Left,Right,Strand,GeneRecord),
-	terms_to_file(OutputFile,[GeneRecord]).
+	gene_add_extra_field(GeneRecord,sequence,Extracted,UpdGeneRecord),
+	terms_to_file(OutputFile,[UpdGeneRecord]).
