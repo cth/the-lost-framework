@@ -36,7 +36,7 @@ run_model(Model,Goal,RunModelOptions) :-
 	debug(interface(run_model), ['expanded options: ', ExpandedOptions]),
 	% Check if a result allready exists:
 	lost_data_index_file(AnnotIndex),
-	debug(interface(run_model), ['filenames: ', Filenames]),
+	debug(interface(run_model), ['filename pattern: ', Filenames]),
 	declared_output_formats(Model,Functor,OutputFormats),
 	(is_list(OutputFormats) ->
 		length(OutputFormats,NumberOutputs),
@@ -47,7 +47,7 @@ run_model(Model,Goal,RunModelOptions) :-
 	),
 	length(Filenames,NumberOutputs),
 	lost_file_index_get_filenames(AnnotIndex,Model,Functor,Inputs,ExpandedOptions,Filenames),
-	writeln(Filenames),
+	debug(interface(run_model),['generated file names:', Filenames]),
 	!,
 	((member(caching(true),RunModelOptions),forall(member(Filename,Filenames),file_exists(Filename))) ->
 		debug(interface(run_model), ['Using existing result files: ', Filenames])
@@ -84,6 +84,7 @@ goal_result_files(Model,Goal,ResultFiles) :-
 % Fail if a given option is undeclared.
 verify_model_options_declared(Model,Goal,Options) :-
 	declared_model_options(Model,Goal,DeclaredOptions),
+	writeln(DeclaredOptions),
 	option_is_declared(Options,DeclaredOptions).
 
 option_is_declared([], _).

@@ -33,7 +33,7 @@ extract_orfs1(FastaFile) :-
 codon_output_files(['codons+1.dat', 'codons+2.dat','codons+3.dat', 'codons-1.dat', 'codons-2.dat', 'codons-3.dat']).
 orfs_output_files(['orfs+1.dat', 'orfs+2.dat','orfs+3.dat', 'orfs-1.dat', 'orfs-2.dat', 'orfs-3.dat']).
 
-extract_orfs(FastaFile,OutputFile) :-
+extract_orfs(SeqId,FastaFile,OutputFile) :-
 	writeln(extract_orfs(FastaFile,OutputFile)),
 	lost_tmp_file('pyl-finder-codons+1', CodonsDirect1),
 	lost_tmp_file('pyl-finder-codons+2', CodonsDirect2),
@@ -49,12 +49,12 @@ extract_orfs(FastaFile,OutputFile) :-
 	lost_tmp_file('pyl-finder-orfs-3', ORFSReverse3),
 	extract_starts_and_stops(FastaFile,[CodonsDirect1,CodonsDirect2,CodonsDirect3,CodonsReverse1,CodonsReverse2,CodonsReverse3]),!,
 	load_genome(FastaFile,Genome),!,
-	find_orfs(Genome,CodonsDirect1,ORFSDirect1,'+',1),!,
-	find_orfs(Genome,CodonsDirect2,ORFSDirect2,'+',2),!,
-	find_orfs(Genome,CodonsDirect3,ORFSDirect3,'+',3),!,
-	find_orfs(Genome,CodonsReverse1,ORFSReverse1,'-',1),!,
-	find_orfs(Genome,CodonsReverse2,ORFSReverse2,'-',2),!,
-	find_orfs(Genome,CodonsReverse3,ORFSReverse3,'-',3),!,
+	find_orfs(SeqId,Genome,CodonsDirect1,ORFSDirect1,'+',1),!,
+	find_orfs(SeqId,Genome,CodonsDirect2,ORFSDirect2,'+',2),!,
+	find_orfs(SeqId,Genome,CodonsDirect3,ORFSDirect3,'+',3),!,
+	find_orfs(SeqId,Genome,CodonsReverse1,ORFSReverse1,'-',1),!,
+	find_orfs(SeqId,Genome,CodonsReverse2,ORFSReverse2,'-',2),!,
+	find_orfs(SeqId,Genome,CodonsReverse3,ORFSReverse3,'-',3),!,
 	writeln('Merging files for all reading frames into orfs.pl'),
 	merged_sorted_files([ORFSDirect1,ORFSDirect2,ORFSDirect3,ORFSReverse1,ORFSReverse2,ORFSReverse3],OutputFile),!,
 	writeln('Done.').
@@ -290,7 +290,6 @@ load_next_base(Pos,In,HashTable) :-
 	!,
 	load_next_base(Pos1,In,HashTable).
 
-
 get_range(StartEnd,StartEnd,HashTable,[Base]) :-
 	hashtable_get(HashTable,StartEnd,Base).
 
@@ -339,7 +338,7 @@ decrement_position(Pos,Subtract,NewPos) :-
 % Extract a range from the genome as a list
 ************************************************************/
 
-find_orfs(Genome,CodonFile,OrfFile,Strand,Frame) :-
+find_orfs(SeqId,Genome,CodonFile,OrfFile,Strand,Frame) :-
 	index_create(CodonFile),
 	write('Computing open reading frames positions for strand '), write(Strand), write(' and frame '), write(Frame),nl,
 	((Strand == '-') -> writeln('  - reversing index (for reverse strand lookups)'), index_reverse ; true),
@@ -352,18 +351,18 @@ find_orfs(Genome,CodonFile,OrfFile,Strand,Frame) :-
 	write('Writing orfs to file: '),
 	writeln(OrfFile), 
 	open(OrfFile,write,OutStream),
-	annotate_orfs(Strand,Frame,SortedOrfs,OutStream,Genome),
+	annotate_orfs(SeqId,Strand,Frame,SortedOrfs,OutStream,Genome),
 	close(OutStream),
 	writeln('Done.').
 	
-annotate_orfs(_Strand,_Frame,[],_OutStream,_Genome).
+annotate_orfs(_SeqId,_Strand,_Frame,[],_OutStream,_Genome).
 
 % Skip if the orf does not have an inframe stop
-annotate_orfs(Strand,Frame,[orf(_Stop,_Starts,[])|Rest],OutStream,Genome) :-
+annotate_orfs(SeqId,Strand,Frame,[orf(_Stop,_Starts,[])|Rest],OutStream,Genome) :-
 	!,
-	annotate_orfs(Strand,Frame,Rest,OutStream,Genome).
+	annotate_orfs(SeqId,Strand,Frame,Rest,OutStream,Genome).
 		
-annotate_orfs(Strand,Frame,[orf(Stop,Starts,InFrames)|Rest],OutStream,Genome) :-
+annotate_orfs(SeqId,Strand,Frame,[orf(Stop,Starts,InFrames)|Rest],OutStream,Genome) :-
 %	write('matched orf: '),
 %	writeln(orf(Stop,Starts,InFrames)),
 	((Strand == '+') ->
@@ -384,16 +383,15 @@ annotate_orfs(Strand,Frame,[orf(Stop,Starts,InFrames)|Rest],OutStream,Genome) :-
 			reverse(Sequence1,RevSeq),
 			complement(RevSeq,Sequence)
 		),
-		write_orf(OutStream,Left,Right,Strand,Frame,OrfLength,Stop,Starts,InFrames,Sequence)
+		write_orf(OutStream,SeqId,Left,Right,Strand,Frame,OrfLength,Stop,Starts,InFrames,Sequence)
 		;
 		true),
 	!,
-	annotate_orfs(Strand,Frame,Rest,OutStream,Genome).
+	annotate_orfs(SeqId,Strand,Frame,Rest,OutStream,Genome).
 
-write_orf(OutStream,Left,Right,Strand,Frame,Length,Stop,Starts,InFrames,Sequence) :-
-	writeq(OutStream,orf(na,Left,Right,Strand,Frame,[length(Length),stop(Stop),starts(Starts),in_frame_stops(InFrames),sequence(Sequence)])),
+write_orf(OutStream,SeqId,Left,Right,Strand,Frame,Length,Stop,Starts,InFrames,Sequence) :-
+	writeq(OutStream,orf(SeqId,Left,Right,Strand,Frame,[length(Length),stop(Stop),starts(Starts),in_frame_stops(InFrames),sequence(Sequence)])),
 	write(OutStream,'.\n').
-	
 
 index_create(File) :-
 	open(File,read,InStream),!,

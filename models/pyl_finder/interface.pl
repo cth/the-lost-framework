@@ -1,4 +1,4 @@
-:- task(candidate_orfs([text(fasta)],[],text(prolog(ranges(gene))))).
+:- task(candidate_orfs([text(fasta)],[sequence_identifier(na)],text(prolog(ranges(gene))))).
 
 :- task(candidate_pylis([text(prolog(ranges(gene)))],[extract_size(100)], text(prolog(ranges(gene))))).
 
@@ -10,7 +10,8 @@
 % The ORFs must be of at least 60 bp
 candidate_orfs([GenomeFastaFile],Options,OutputFile) :-
 	cl(extract_orfs),
-	extract_orfs(GenomeFastaFile,OutputFile).
+	get_option(Options,sequence_identifier,SeqId),
+	extract_orfs(SeqId,GenomeFastaFile,OutputFile).
 
 
 %% candidate_pylis(+InputFiles,+Options,+OutputFile)
