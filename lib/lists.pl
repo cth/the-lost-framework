@@ -147,7 +147,7 @@ filter(FilterPred,[X|Xs],[X|Ys]) :-
 	!,
 	filter(FilterPred,Xs,Ys).
 	
-filter(FilterPred,[X|Xs],Ys) :-
+filter(FilterPred,[_|Xs],Ys) :-
 	filter(FilterPred,Xs,Ys).
 
 %% match_tail(+InputList,-HeadOfInputList,+TailOfInputList)
