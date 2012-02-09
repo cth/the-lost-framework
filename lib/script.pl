@@ -100,7 +100,7 @@ run(Target,RunOpts,File) :-
 	debug(script(run), ['TASKSPEC=',TaskSpec]),
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
 	debug(script(run), ['GUARD=',Guard,' OPTIONS=',Options]),
-	call(Guard),
+	(call(Guard) -> debug(script(run),'guard => true') ; debug(script(run),'guard => fail')),
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
 	run_multiple(NewRunOpts,Inputs,InputFiles),
 	RealTaskSpec =.. [ Task, InputFiles, Options, Files ],
@@ -184,7 +184,7 @@ parse_task_specification(TaskSpecification,Task,Inputs,[]) :-
 
 % Latest version of is_list/1 works correct for empty lists in latest b-prolog,
 % but doesnt in latest version of prism.
-is_list_fix([]) :- !.
+is_list_fix(L) :- not(var(L)), L = [], !.
 is_list_fix(L) :- is_list(L).
 	
 
