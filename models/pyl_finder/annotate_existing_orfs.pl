@@ -28,7 +28,7 @@ uag_positions(Pos,[_,_,_|SeqRest],RestMatch) :-
 	NextPos is Pos + 3,
 	uag_positions(NextPos,SeqRest,RestMatch).
 
-calculate_absolute_positions(Orf,[],[]).
+calculate_absolute_positions(_Orf,[],[]).
 
 calculate_absolute_positions(Orf,[P|Ps],[R|Rs]) :-
 	gene_strand(Orf,'+'),
