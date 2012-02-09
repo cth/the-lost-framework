@@ -89,7 +89,7 @@ fasta_sequence(EolType,Rest) -->
 	 line_count(C1),
 	 retractall(line_count(_)),
 	 C2 is C1 + 1,
-	 assert(line_count(C2)),
+	 assert(line_count(C2))
 	},
 	fasta_sequence(EolType,Rest).
 
