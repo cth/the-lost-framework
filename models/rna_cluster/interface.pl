@@ -1,4 +1,5 @@
-:- task(cluster_rna_foldings(text(prolog(ranges(_))),[],text(newick))).
+
+:- task(cluster_rna_foldings(text(prolog(ranges(_))),[min_stem_length(0),max_pairing_mismatch(10),align_mutate_score(1.0),align_insert_delete_score(0.25)],text(newick))).
 
 :- use(lists).
 
@@ -20,7 +21,7 @@ cluster_rna_foldings([InputFile],Options,OutputFile) :-
 		pairing_count_mismatch_threshold(MaxPairMismatch)]
 		),
 	sort_alignments(AlignmentsFile),
-	clusterings_from_alignments(AlignmentsFile,OutputFile).
+	clustering_from_alignments(AlignmentsFile,OutputFile).
 
 %% create_alignments(+InputFile,+AlignmentsFile,+Constraints)
 create_alignments(InputFile,AlignmentsFile,Constraints) :-
@@ -30,24 +31,25 @@ create_alignments(InputFile,AlignmentsFile,Constraints) :-
 	config(bprolog_with_chr,PrologWithCHR),
 	lost_tmp_file('rna_alignments',AlignmentsFile),
 	CmdListNested = [
-		PrologWithCHR, 
+		PrologWithCHR,
 		' "',
 		'cl(rna_cluster), ',
 		AtomAssertConstraintsSeparated,
 		',',
-		'create_alignments(\'',InputFile,'\',\'', AlignmentsFile, '\'),', 
+		'create_alignments(\'',InputFile,'\',\'', AlignmentsFile, '\'),',
 		'halt.',
-		'"',
-	]
+		'"'],
 	flatten(CmdListNested,CmdList),
 	atom_concat_list(CmdList,InvokeCommand),
+	writeln('INVOKE COMMAND:'),
+	writeln(InvokeCommand),
 	system(InvokeCommand),
 	check_or_fail(file_exists(AlignmentsFile), 'alignments file not produced!').
 	% where
 	fact_assertion(Fact,assert(Fact)).
 
 %% sort_alignments(+AligmentsFile)
-sort_alignments(AlignmentsFile)
+sort_alignments(AlignmentsFile) :-
 	terms_from_file(AlignmentsFile,Alignments),
 	length(Alignments,NumAligns),
 	write(NumAligns), write(' alignments..'),nl,
@@ -60,10 +62,12 @@ sort_alignments(AlignmentsFile)
 clustering_from_alignments(AlignmentsFile,ClustersFile) :-
 	config(bprolog_with_chr,PrologWithCHR),
 	CmdList = [
-		PrologWithCHR, 
+		PrologWithCHR,
 		'"cl(rna_cluster), ',
 		'slink_cluster_by_distances(\'',AlignmentsFile,'\',\'', ClustersFile , '\'),', 
 		'halt."'
 	],
 	atom_concat_list(CmdList,InvokeCmd),
+	writeln('INVOKECMD:'),
+	writeln(InvokeCmd),	
 	system(InvokeCmd).

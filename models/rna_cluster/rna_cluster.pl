@@ -4,13 +4,13 @@
 :- use(lists).
 :- use(genedb).
 
-% Configuration
-minimal_stem_length(4).
-pairing_count_mismatch_threshold(4).
+% Configuration : Assert these...
+% minimal_stem_length(4).
+% pairing_count_mismatch_threshold(4).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Main control predicates
+% control predicates and test
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 go :-
@@ -18,11 +18,14 @@ go :-
 go_all :-
         go('ppfold_fold_33.gen','all.newick').
 
-
 go(InputFile,OutputFile) :-
-        % We run this part in BProlog 7.7 (since PRISM is not (yet) efficient
-        % for this sort of tabling)
-        atom_concat_list(['/opt/BProlog/bp -g "cl(rna_cluster), create_alignments(\'',
+		term2atom(assert(minimal_stem_length(4)),StemConstraint),
+		term2atom(assert(pairing_count_mismatch_threshold(2)),PairingConstraint),
+		assert(minimal_stem_length(4)),
+		assert(pairing_count_mismatch_threshold(4)),
+        atom_concat_list(['/opt/BProlog/bp -g "cl(rna_cluster), ',
+ 						StemConstraint, ',', PairingConstraint, ',',
+						'create_alignments(\'',
                         InputFile,
                         '\',\'alignments.pl\'), halt."'],
                         BPrologInvoke),
@@ -34,8 +37,7 @@ go(InputFile,OutputFile) :-
         sort(Alignments,SortedAlignments),
         writeln(done),
         terms_to_file('distance_matrix.pl',SortedAlignments),
-        compile_chr('slink.pl'),
-	slink_cluster_by_distances('distance_matrix.pl',OutputFile).
+		slink_cluster_by_distances('distance_matrix.pl',OutputFile).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Sequence constraints 
@@ -66,8 +68,10 @@ read_and_filter_terms(Stream,FilteredTerms,TermsRead) :-
 		((0 is TermsRead mod 100) -> write('.') ; true),
 		((0 is TermsRead mod 1000) -> write(TermsRead) ; true),
 		(apply_sequence_constraints(Term) ->
+			write('keeping one..'),nl,
 			FilteredTerms = [Term|FilterRest]
 			;
+			write('skipping one..'),nl,
 			FilteredTerms = FilterRest
 		),
 		TermsRead1 is TermsRead + 1,
@@ -98,20 +102,20 @@ apply_sequence_constraints(GeneTerm) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 create_alignments(InputFile,OutputFile) :-
-        write('Reading and filtering sequences by constraints..'),
+   write('Reading and filtering sequences by constraints..'),
 	open(InputFile,read,IS),
 	read_and_filter_terms(IS,FilteredTerms,1),
 	close(IS),
-        writeln(done),
+    writeln(done),
 	length(FilteredTerms,NumFilteredTerms),
 	write('After constraint filters, '), write(NumFilteredTerms), writeln(' left. '),
 	sort_by_paired_bases(FilteredTerms,SortedTerms),
 	writeln('sorted terms and added paired bases counts.'),
-        pairing_count_mismatch_threshold(Threshold),
+    pairing_count_mismatch_threshold(Threshold),
 	write('aligning sequences...'),
-        open(OutputFile,write,AlignedStream),
+    open(OutputFile,write,AlignedStream),
 	align_genes(Threshold,SortedTerms,AlignedStream),
-        close(AlignedStream),
+    close(AlignedStream),
 	writeln('done.').
 
 align_genes(_T,[],_).
@@ -126,12 +130,12 @@ align_genes(Threshold,[Gene|Rest],OutStream) :-
         % refs to the table area so we write all alignments to file 
         % before clearing again.
 	align_with_relevant(Gene,Rest,Threshold,Alignments),
-        write_alignments_to_stream(Alignments,OutStream),
+    write_alignments_to_stream(Alignments,OutStream),
 	align_genes(Threshold,Rest,OutStream).
 
 write_alignments_to_stream([],_Stream).
-write_alignments_to_stream([(Dist,A,B)|As],Stream) :-
-        write(Stream,[Dist,A,B]),
+write_alignments_to_stream([(Dist,(A,B))|As],Stream) :-
+        writeq(Stream,[Dist,A,B]),
         write(Stream,'.\n'),
         write_alignments_to_stream(As,Stream).
 	
@@ -156,7 +160,7 @@ align(A,B,(Cost,IdA,IdB)) :-
 	sequence_id(A,IdA),
 	sequence_id(B,IdB),
 	edit(FoldingA,FoldingB,Cost).
-	
+
 sequence_id(GeneTerm,(SeqId,Left,Right)) :-
         gene_extra_field(GeneTerm,in_frame_stops,[PylisStart]),
         (gene_strand(GeneTerm,'+') ->
@@ -192,7 +196,7 @@ edit([X|Xs],[Y|Ys],Dist) :-
 		InsDist1 is InsDist + 0.25,
 		DelDist1 is DelDist + 0.25,
 		TailDist1 is TailDist + 1,
-		% minimal of insertion, deletion or substitution 
+		% minimal of insertion, deletion or substitution
 		sort([InsDist1,DelDist1,TailDist1],[Dist|_])).
 	
 
@@ -202,6 +206,7 @@ edit([X|Xs],[Y|Ys],Dist) :-
 %
 
 write_newick_tree(Stream,T) :-
+	writeln(T),nl,
 	newick(T,NewickT,[]),
 	atom_codes(NewickA,NewickT),
 	write(Stream,NewickA),
@@ -249,7 +254,8 @@ to_atom_codes([C|Cs], [D|Ds]) :- atom_codes(C,[D]), to_atom_codes(Cs,Ds).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 slink_cluster_by_distances(DistancesFile,NewickTreesFile) :-
-        init_slink,
+	compile_chr('slink.pl'),
+    init_slink,
 	write('Reading distances: '),
 	open(DistancesFile,read,Stream),
 	read_from_distance_matrix(Stream,0),
@@ -259,11 +265,10 @@ slink_cluster_by_distances(DistancesFile,NewickTreesFile) :-
 	build_tree,
 	writeln('done.'),
 	write('writing trees to newick file: '),
-        writeln(NewickTreesFile),
-        tell(NewickTreesFile),
-        open(NewickTreesFile,write,OutStream),
-        extract_trees(OutStream),
-        close(OutStream).
+    writeln(NewickTreesFile),
+    open(NewickTreesFile,write,OutStream),
+    extract_trees(OutStream),
+    close(OutStream).
 	
 read_from_distance_matrix(Stream,Count) :-
 	read(Stream,Term),
