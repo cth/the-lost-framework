@@ -2,6 +2,8 @@
 
 :- task(candidate_pylis([text(prolog(ranges(gene)))],[extract_size(100)], text(prolog(ranges(gene))))).
 
+:- task(annotate_orf_with_amber_codons([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
+
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
 % ==
 % InputFiles = [ GenomeFastaFile ]
@@ -13,6 +15,15 @@ candidate_orfs([GenomeFastaFile],Options,OutputFile) :-
 	get_option(Options,sequence_identifier,SeqId),
 	extract_orfs(SeqId,GenomeFastaFile,OutputFile).
 
+%% annotate_orfs_with_in_frame_stops(+InputFiles,+Options,+OutputFile)
+% == 
+% InputFiles = [ OrfsFile ]
+% ==
+% Annotate existing ORFs with a =|sequence|= extra field with an additional extra field
+% =|in_frame_stops|= that contains a list of the positions of all in frame amber codons.
+annotate_orfs_with_in_frame_stops([OrfsFile],_Options,OutputFile) :-
+	cl(annotate_existing_orfs),
+	annotate_orfs(OrfsFile,OutputFile).
 
 %% candidate_pylis(+InputFiles,+Options,+OutputFile)
 % ==
