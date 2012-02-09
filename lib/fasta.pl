@@ -90,8 +90,6 @@ fasta_sequence(EolType,Rest) -->
 	 retractall(line_count(_)),
 	 C2 is C1 + 1,
 	 assert(line_count(C2)),
-	 %write('parsed line '), write(C1),
-	 nl
 	},
 	fasta_sequence(EolType,Rest).
 
