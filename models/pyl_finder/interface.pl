@@ -2,7 +2,7 @@
 
 :- task(candidate_pylis([text(prolog(ranges(gene)))],[extract_size(100)], text(prolog(ranges(gene))))).
 
-:- task(annotate_orf_with_amber_codons([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
+:- task(annotate_orfs_with_in_frame_stops([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
 % ==
