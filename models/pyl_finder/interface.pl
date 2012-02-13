@@ -2,7 +2,9 @@
 
 :- task(candidate_pylis([text(prolog(ranges(gene)))],[extract_size(100)], text(prolog(ranges(gene))))).
 
-:- task(annotate_orfs_with_in_frame_stops([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
+:- task(candidate_pylis([text(prolog(ranges(gene)))],[extract_size(100)], text(prolog(ranges(gene))))).
+
+:- task(add_downstream_inframe_stops_sequences([text(prolog(ranges(gene)))],[max_bases_downstream(100)], text(prolog(ranges(gene))))).
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
 % ==
@@ -24,6 +26,18 @@ candidate_orfs([GenomeFastaFile],Options,OutputFile) :-
 annotate_orfs_with_in_frame_stops([OrfsFile],_Options,OutputFile) :-
 	cl(annotate_existing_orfs),
 	annotate_orfs(OrfsFile,OutputFile).
+	
+%% add_downstream_inframe_stops_sequences(+InputFiles,+Options,+OutputFile)
+% == 
+% InputFiles = [ OrfsFile ]
+% ==
+% Annotate existing ORFs with a =|downstream_stops|= extra field containing a list 
+% of sequences downstream the stop. The list order corresponds to the the field =|in_frame_stops|=
+% that contains a list of the positions of all in frame amber codons.
+add_downstream_inframe_stops_sequences([OrfsFile],Options,OutputFile) :-
+	get_option(Options,max_bases_downstream,MaxBasesDownstream),
+	cl(add_pylis_seq),
+	inframe_stop_sequences(OrfsFile,OutputFile,MaxBasesDownstream).
 
 %% candidate_pylis(+InputFiles,+Options,+OutputFile)
 % ==
