@@ -10,6 +10,10 @@ goal1, goal2 <- test::multifile(sample_file).
 
 single_input_file_test <- test::one_input(sample_file).
 
+sample_file(X) <- sequence1(S) | file::from_sequence([],[sequence(S)]).
+
+append_file <- append_all((X in [1,2], labeling(X)), sample_file(X)).
+
 testcase(very_simple_run) :-
 	rerun_recursive(sample_file),
 	get_result_file(sample_file,File),
@@ -22,6 +26,12 @@ testcase(test_multi_file_goals) :-
 	sequence1(Seq1),	
 	terms_from_file(Goal1File,[sequence(_Id,1,S1L,Seq1)]),
 	terms_from_file(Goal2File,[sequence(_Id,1,S1L,Seq1)]).
+	
+testcase(append_all) :-
+	rerun_recursive(append_file),
+	get_result_file(append_file,F),
+	terms_from_file(F,Terms),
+	append(Same,Same,Terms).
 
 /* Not even sure I want this to work!
 testcase(single_input_file) :-
@@ -30,6 +40,7 @@ testcase(single_input_file) :-
 	sequence1(Seq1),
 	terms_from_file(OneFile,[sequence(_Id,1,S1L,Seq1)]).
 */
+
 testcase(match_target_rule) :-
 		match_target_rule(sample_file,_R,1),
 		match_target_rule(goal1,R,1),

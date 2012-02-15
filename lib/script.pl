@@ -93,14 +93,21 @@ run(Target,_RunOpts,Target) :-
 	map(atom_codes,['ftp://','http://', '"ftp://', '"http://'],Matchers),
 	member(MatchSyms,Matchers),
 	append(MatchSyms,_,TargetSyms).
-	
+
+% run with model call body
 run(Target,RunOpts,File) :-
 	match_target_rule(Target,Rule,TargetIndex),
-	parse_guard_and_body(Rule,Guard,Model,TaskSpec),
+	parse_guard_and_body(Rule,Guard,Body),
+	(call(Guard) -> 
+		debug(script(run),'guard => true')
+	; 
+		debug(script(run),'guard => fail'),
+		fail
+	),
+	Body =.. [ '::', Model, TaskSpec],
 	debug(script(run), ['TASKSPEC=',TaskSpec]),
 	parse_task_specification(TaskSpec,Task,Inputs,Options),
 	debug(script(run), ['GUARD=',Guard,' OPTIONS=',Options]),
-	(call(Guard) -> debug(script(run),'guard => true') ; debug(script(run),'guard => fail')),
 	run_options(RunOpts,RunModelOptions,NewRunOpts),
 	run_multiple(NewRunOpts,Inputs,InputFiles),
 	RealTaskSpec =.. [ Task, InputFiles, Options, Files ],
@@ -108,18 +115,58 @@ run(Target,RunOpts,File) :-
 	run_model(Model,RealTaskSpec,RunModelOptions),
 	nth1(TargetIndex,Files,File).
 
+%% run with append_all body
+run(Target,RunOpts,File) :-
+	match_target_rule(Target,Rule,1),
+	parse_guard_and_body(Rule,Guard,Body),
+	(call(Guard) -> 
+		debug(script(run),'guard => true')
+	; 
+		debug(script(run),'guard => fail'),
+		fail
+	),
+	Body =.. [ append_all, Goal, RunBody ],
+	findall(RunBody,Goal,RunGoals),
+	findall(RunFile,(member(RunGoal,RunGoals),run(RunGoal,RunOpts,RunFile)),RunFiles),
+	lost_data_index_file(AnnotIndex),
+	lost_file_index_get_filenames(AnnotIndex,internal,append_all,RunFiles,[],[File]),
+	((file_exists(File), not(member(rerun(_),RunOpts))) ->
+			debug(script(run), ['using existing file: ', File])
+			;
+			(file_exists(File) -> delete_file(File) ; true),
+			forall(member(RunFile,RunFiles), append_file_to_file(RunFile,File))).
+
 run(Target,_RunOpts,_File) :-
 	debug(script(run),['failed to run target: ', Target]),
 	!,
 	fail.
 
-run_multiple(RunOpts,[],[]).
+run_multiple(_,[],[]).
 run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
 %	writeln(run(Target,RunOpts,File)),
 	run(Target,RunOpts,File),
 	run_multiple(RunOpts,TargetsRest,FilesRest).
+	
+append_file_to_file(InputFile,OutputFile) :-
+	writeln('APPAND FILE 2 FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'),
+	open(InputFile,read,InStream),
+	open(OutputFile,append,OutStream),
+	append_stream_to_stream(InStream,OutStream),!,
+	close(InStream),
+	close(OutStream).
+	
+append_stream_to_stream(InStream,_) :-
+	at_end_of_stream(InStream),
+	!.
+append_stream_to_stream(InStream,OutStream) :-
+	get_char(InStream,Byte),
+	put_char(OutStream,Byte),
+	!,
+	append_stream_to_stream(InStream,OutStream).
 
-%% match_target_rule(+Target,-Rule,-Index)
+	
+
+%% match_target_rule(+Target,-Type,-Rule,-Index)
 % Matches a rule on database where Target is one of the goals of the rule and 
 % Index is the index of the goal in the rule. E.g. the first goal of a rule 
 % will have Index=1 and so on.
@@ -138,17 +185,19 @@ match_target_rule(Target,Rule,TargetIndex) :-
 %% parse_guard_and_body(+Spec,-Guard,-Model,-TaskSpec)
 % parses the right-hand side (of =|<-|=) of a rule,
 % ==
+% Goal
+% or
 % Guard | Model::TaskSpec
 % or
 % Model::TaskSpec
 % == 
-% In the latter case, =|Guard=true|=.
-parse_guard_and_body(Spec, true, Model, TaskSpec) :-
-	Spec =.. [ '::', Model, TaskSpec].
-	
-parse_guard_and_body(Spec, Guard, Model, TaskSpec) :-
+% In case with no guard we assume, =|Guard=true|=.
+
+parse_guard_and_body(Spec, Guard, Body) :-
 	Spec =.. [ '|', Guard, Body ],
-	Body =.. [ '::', Model, TaskSpec].
+	!.
+
+parse_guard_and_body(Body, true, Body).
 	
 %% parse_task_specification(+TaskSpec,-Task,-Inputs,-Options)
 % process different forms of specifying patterns for running a 
@@ -166,7 +215,7 @@ parse_task_specification(TaskSpecification,Task,Inputs,Options) :-
 	TaskSpecification =.. [ Task, Inputs, Options ],
 	is_list_fix(Inputs),
 	is_list_fix(Options).
-	
+
 % or 
 % 	task1(file,[opt1(foo)])
 parse_task_specification(TaskSpecification,Task,[Inputs],Options) :-
