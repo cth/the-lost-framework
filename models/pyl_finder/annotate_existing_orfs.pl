@@ -11,7 +11,7 @@ annotate_with_amber_codons([],[]).
 
 annotate_with_amber_codons([Orf|Rest],[UpdatedOrf|UpdatedRest]) :-
 	gene_extra_field(Orf,sequence,Sequence),
-	uag_positions(Sequence,RelativePositions),
+	uag_positions(1,Sequence,RelativePositions),
 	calculate_absolute_positions(Orf,RelativePositions,AbsolutePositions),
 	gene_add_extra_field(Orf,in_frame_stops,AbsolutePositions,UpdatedOrf),
 	annotate_with_amber_codons(Rest,UpdatedRest).

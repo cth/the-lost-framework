@@ -20,6 +20,13 @@ being written to standard out.
 
 :- use(lists).
 
+debug(off) :-
+        assert(lost_no_debug).
+
+debug(Source,Message) :-
+        catch(lost_no_debug,_,fail),
+        !.
+
 %% debug(+Source,+MessageList)
 % Write each element of MessageList to standard out with Source prepended to it.
 debug(Source,MessageList) :-
