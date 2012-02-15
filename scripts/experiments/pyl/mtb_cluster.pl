@@ -61,6 +61,15 @@ gene_uag_annot(G) <-  pyl_finder::annotate_orfs_with_in_frame_stops(geneseq(G)).
 
 gene_pyl(G) <- pyl_finder::add_downstream_inframe_stops_sequences(  gene_uag_annot(G) ).
 
+% This is something that we need to implement in the language!
+% all_pyl_genes <<- genome_link(X,_) | gene_pyl(X). 
+% all_pyl_genes <- merge_files([A,B,C]).
+% 
+% run(all_pyl_genes) :- 
+%     forall(genome_line(X,_), run(gene_pyl(X))),
+%     get_results)
+%
+% i
 
 
 go :-
