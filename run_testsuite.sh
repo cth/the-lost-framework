@@ -1,9 +1,10 @@
 #!/bin/sh
 
+PRISM=`cat lost.pl | grep "prism_command" | grep -v "^%.*" | cut -d"'" -f 2`
 
 case $# in
-	1)  prism -g "[lost], use(unittest), test_and_report_single_suite('$1')";;
-	2)  prism -g "[lost], use(unittest), test_and_report_single_testcase('$1','$2')";;
+	1)  $PRISM -g "[lost], use(unittest), test_and_report_single_suite('$1')";;
+	2)  $PRISM -g "[lost], use(unittest), test_and_report_single_testcase('$1','$2')";;
 	*) 
 		echo "Wrong number of arguments $#"
 		echo "Usage is:"
