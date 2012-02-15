@@ -36,6 +36,7 @@ extract([FastaFile],Options,OutputFile) :-
 	get_option(Options,right,Right),
 	cl(extracter),
 	extract_from_sequence(FastaFile,Left,Right,Extracted),
+	get_option(Options,reverse_complement(RC)),
 	(get_option(Options,reverse_complement(true)) ->
 		reverse(Extracted,ReverseExtracted),
 		complement(ReverseExtracted,ExtractedFinal),
@@ -46,5 +47,5 @@ extract([FastaFile],Options,OutputFile) :-
 	),
 	get_option(Options,sequence_identifier,SeqId),
 	gene_create(SeqId,Left,Right,Strand,GeneRecord),
-	gene_add_extra_field(GeneRecord,sequence,Extracted,UpdGeneRecord),
+	gene_add_extra_field(GeneRecord,sequence,ExtractedFinal,UpdGeneRecord),
 	terms_to_file(OutputFile,[UpdGeneRecord]).
