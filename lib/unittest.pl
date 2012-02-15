@@ -43,6 +43,18 @@ test_and_report_single_suite(TestSuiteFilePartial) :-
 	run_testcases_in_file(TestSuiteFileFull,Results),
 	writeln('=============== RESULTS: '),
 	report_file_results([[TestSuiteFileFull,Results]]).
+
+%% test_and_report_single_suite(+TestSuiteFile)
+% Runs all testcases and writes a report to File
+test_and_report_single_testcase(TestSuiteFilePartial,Testcase) :-
+	writeln('================== RUNNING TESTS ======================'),
+	expand_file_spec(TestSuiteFilePartial,TestSuiteFileFull),
+	write('-->'),
+	writeln(TestSuiteFileFull),
+	run_testcase_in_file(TestSuiteFileFull,Testcase,Results),
+	writeln('=============== RESULTS: '),
+	report_file_results([[TestSuiteFileFull,Results]]).
+
 	
 expand_file_spec(PartialFileName,FullFileName) :-
 	% Check .pl file suffix,
@@ -119,6 +131,15 @@ testcase_files_rec([D|Ds],TestCaseFiles) :-
 	append(AbsFiles,RestFiles,TestCaseFiles).
 	
 testcase_files_rec([],[]).
+
+%%  run_testcase_in_file(+Filename,+Testcase,-TestCaseResults)
+% Runs a single testcase in a particular testcase file.
+run_testcase_in_file(Filename,Testcase,TestCaseResults) :-
+	nl, write('===== Runnning test '), write(Testcase), 
+	write(' in file: '), write(Filename), write(' ====='),nl,
+	terms_from_file(Filename,FilePredicates),
+	findall(TC,(member(FP,FilePredicates),FP=..[:-,TC,_],TC=..[testcase,Testcase]),TCPreds),
+	run_testcase_rules(Filename,TCPreds,TestCaseResults).
 
 %%  run_testcases_in_file(+Filename,-TestCaseResults)
 % Runs all testcases in a particular testcase file.

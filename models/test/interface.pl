@@ -15,5 +15,7 @@ multifile([InputFile],Options,[OutputFile1,OutputFile2]) :-
 	copy_file(InputFile,OutputFile1),
 	copy_file(InputFile,OutputFile2).
 	
-one_input(InputFile,_,[OutputFile]) :-
+one_input([InputFile],_,[OutputFile]) :-
+	writeln(copy_file(InputFile,OutputFile)),
 	copy_file(InputFile,OutputFile).
+	
