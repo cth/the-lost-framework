@@ -19,7 +19,7 @@
 % Assumes that the genome is circular.
 match([FastaFile],Options,OutputFile) :-
 	get_option(Options,sequences,Sequences),
-	writeln('Option sequences: '), writeln(Sequences),
+	%writeln('Option sequences: '), writeln(Sequences),
 	match_sequences(Sequences,FastaFile,OutputFile).
 
 %% extract(+InputFiles,+Options,+OutputFile)
