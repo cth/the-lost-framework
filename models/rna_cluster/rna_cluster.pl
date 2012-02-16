@@ -25,7 +25,7 @@ go(InputFile,OutputFile) :-
 		assert(pairing_count_mismatch_threshold(4)),
         atom_concat_list(['/opt/BProlog/bp -g "cl(rna_cluster), ',
  						StemConstraint, ',', PairingConstraint, ',',
-						'create_alignments(\'',
+						'build_alignments(\'',
                         InputFile,
                         '\',\'alignments.pl\'), halt."'],
                         BPrologInvoke),
@@ -78,9 +78,6 @@ read_and_filter_terms(Stream,FilteredTerms,TermsRead) :-
 		!,
 		read_and_filter_terms(Stream,FilterRest,TermsRead1)).
 		
-			
-
-
 filter_by_constraints([],[]).
 	
 filter_by_constraints([G|Xs], [G|Ys]) :-
@@ -101,8 +98,8 @@ apply_sequence_constraints(GeneTerm) :-
 % Alignment 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-create_alignments(InputFile,OutputFile) :-
-   write('Reading and filtering sequences by constraints..'),
+build_alignments(InputFile,OutputFile) :-
+	write('Reading and filtering sequences by constraints..'),
 	open(InputFile,read,IS),
 	read_and_filter_terms(IS,FilteredTerms,1),
 	close(IS),
@@ -114,7 +111,7 @@ create_alignments(InputFile,OutputFile) :-
     pairing_count_mismatch_threshold(Threshold),
 	write('aligning sequences...'),
     open(OutputFile,write,AlignedStream),
-	align_genes(Threshold,SortedTerms,AlignedStream),
+	align_genes(Threshold,SortedTerms,AlignedStream),!,
     close(AlignedStream),
 	writeln('done.').
 
@@ -155,11 +152,12 @@ align_with_relevant(_Gene,[_OtherGene|_],_Threshold,[]).
 % place holder
 %align(_A,_B,0).
 align(A,B,(Cost,IdA,IdB)) :-
-	gene_extra_field(A,folding,FoldingA),
-	gene_extra_field(B,folding,FoldingB),
 	sequence_id(A,IdA),
 	sequence_id(B,IdB),
-	edit(FoldingA,FoldingB,Cost).
+	align_method(Method),
+	AlignGoal =.. [ Method, A, B, Cost ],
+	writeln(AlignGoal),
+	call(AlignGoal).
 
 sequence_id(GeneTerm,(SeqId,Left,Right)) :-
         gene_extra_field(GeneTerm,in_frame_stops,[PylisStart]),
@@ -180,6 +178,11 @@ sequence_id(GeneTerm,(SeqId,Left,Right)) :-
 % (otherwise will be inefficient).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 :- table edit/3.
+
+align_edit(A,B,Cost) :-
+	gene_extra_field(A,folding,FoldingA),
+	gene_extra_field(B,folding,FoldingB),
+	edit(FoldingA,FoldingB,Cost).
 
 edit([],[],0).
 edit([],[_Y|Ys],Dist) :- edit([],Ys,Dist1), Dist is 1 + Dist1.

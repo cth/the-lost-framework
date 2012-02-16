@@ -1,5 +1,6 @@
 
 :- task(cluster_rna_foldings(text(prolog(ranges(_))),[min_stem_length(0),max_pairing_mismatch(10),align_mutate_score(1.0),align_insert_delete_score(0.25)],text(newick))).
+:- task(cluster_pmcomp(text(prolog(ranges(_))),[min_stem_length(0),max_pairing_mismatch(10)],text(newick))).
 
 :- use(lists).
 
@@ -13,19 +14,39 @@ config(bprolog_with_chr,'/opt/BProlog/bp leuven_chr.out -g ').
 % InputFiles = [InputFile]
 % ==
 % This tasks creates an hierarchical clustering of RNA foldings.
+cluster_pmcomp([InputFile],Options,OutputFile) :-
+	get_option(Options,min_stem_length,MinStemLength),
+	get_option(Options,max_pairing_mismatch,MaxPairMismatch),
+	assert(minimal_stem_length(MinStemLength)),
+	assert(pairing_count_mismatch_threshold(MaxPairMismatch)),
+	assert(align_method(pmcomp_align)),
+	cl(pmcomp),
+	cl(rna_cluster),
+	lost_tmp_file('rna_alignments',AlignmentsFile),
+	build_alignments(InputFile,AlignmentsFile),
+	check_or_fail(file_exists(AlignmentsFile), 'alignments file not produced!'),
+	sort_alignments(AlignmentsFile), % Overwrites AlignmentsFile with sorted alignments
+	clustering_from_alignments(AlignmentsFile,OutputFile).
+
+%% cluster_rna_foldings(+InputFiles,+Options,+OutputFile)
+% == 
+% InputFiles = [InputFile]
+% ==
+% This tasks creates an hierarchical clustering of RNA foldings.
 cluster_rna_foldings([InputFile],Options,OutputFile) :-
 	get_option(Options,min_stem_length,MinStemLength),
 	get_option(Options,max_pairing_mismatch,MaxPairMismatch),
-	create_alignments(InputFile,AlignmentsFile,
+	create_edit_distance_alignments(InputFile,AlignmentsFile,
 		[minimal_stem_length(MinStemLength),
 		pairing_count_mismatch_threshold(MaxPairMismatch)]
 		),
 	sort_alignments(AlignmentsFile),
 	clustering_from_alignments(AlignmentsFile,OutputFile).
 
-%% create_alignments(+InputFile,+AlignmentsFile,+Constraints)
-create_alignments(InputFile,AlignmentsFile,Constraints) :-
-	map(fact_assertion,Constraints,AssertConstraints),
+%% create_edit_distance_alignments(+InputFile,+AlignmentsFile,+Constraints)
+% Invoked in external B-Prolog
+create_edit_distance_alignments(InputFile,AlignmentsFile,Constraints) :-
+	map(fact_assertion,[align_method(edit)|Constraints],AssertConstraints),
 	map(term2atom,AssertConstraints,AtomAssertConstraints),
 	intersperse(',',AtomAssertConstraints,AtomAssertConstraintsSeparated),	
 	config(bprolog_with_chr,PrologWithCHR),
@@ -36,7 +57,7 @@ create_alignments(InputFile,AlignmentsFile,Constraints) :-
 		'cl(rna_cluster), ',
 		AtomAssertConstraintsSeparated,
 		',',
-		'create_alignments(\'',InputFile,'\',\'', AlignmentsFile, '\'),',
+		'build_alignments(\'',InputFile,'\',\'', AlignmentsFile, '\'),',
 		'halt.',
 		'"'],
 	flatten(CmdListNested,CmdList),
