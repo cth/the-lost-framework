@@ -6,6 +6,9 @@
 
 :- task(sort_folded_by_energy([text(prolog(ranges(gene)))], [], text(prolog(ranges(gene))))).
 
+:- task(filter_by_folding_constraints([text(prolog(ranges(_)))],[min_stem_length(0),min_base_pairs(0),min_energy(0)],text(prolog(ranges(_))))).
+%:- task(filter_by_folding_constraints([text(prolog(ranges(_)))],[min_stem_length(4),min_base_pairs(20),min_energy(0.1)],text(prolog(ranges(_))))).
+
 %% ppfold(+InputFiles,+Options,+OutputFile)
 % ==
 % InputFile = [InputFile]
@@ -40,3 +43,17 @@ sort_folded_by_energy([InputFile],Options,OutputFile) :-
 % where, 
 by_energy(GeneTerm,(Energy,GeneTerm)) :-
 	gene_extra_field(GeneTerm,energy,Energy).
+	
+%% filter_by_folding_constraints(+InputFiles,+Options,+OutputFile)
+% ==
+% InputFiles = [InputFile]
+% ==
+% Removes candidates from input file which are invalid by given constraints
+filter_by_folding_constraints([InputFile],Options,OutputFile) :-
+	forall(member(Opt,Options),assert(Opt)),
+	cl(folding_constraints),
+	open(InputFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	read_and_filter_terms(InStream,OutStream,0),
+	close(InStream),
+	close(OutStream).
