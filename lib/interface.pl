@@ -32,6 +32,7 @@ run_model(Model,Goal,RunModelOptions) :-
 	Goal =.. [ Functor, Inputs, Options, Filenames ],
 	lost_model_interface_file(Model, ModelFile),
 	check_valid_model_call(Model,Functor,Inputs,Options),
+	debug(interface(run_model), here),	
 	expand_model_options(Model, Functor, Options, ExpandedOptions),
 	debug(interface(run_model), ['expanded options: ', ExpandedOptions]),
 	% Check if a result allready exists:
@@ -377,6 +378,19 @@ task_output_filetypes(TaskDeclaration,[OutputFileType]) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Some utilitites
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% clean_tmp
+% 
+% Removes all files in tmp directory
+clean_tmp :-
+	lost_tmp_directory(TmpDir),
+	directory_files(TmpDir,Files),
+	working_directory(CurDir),
+	chdir(TmpDir),
+	forall(member(File,Files),(hidden_file(File) -> true ; delete_file(File))),
+	chdir(CurDir).
+% where
+hidden_file(File) :- atom_codes(File,[46|_]).
 
 %% list_lost_models_to_file(File)
 %
