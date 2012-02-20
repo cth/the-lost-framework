@@ -50,14 +50,11 @@ fasta_save_sequence(OutputFile,SequenceData,Header) :-
 % Given a sequence as a list and a Header create as fasta format
 to_fasta(Header,SequenceData,Fasta) :-
 	atom_codes('>',HeaderArrow),
-	writeln(Header),
 	atom_codes(Header,HeaderCodes),
-	writeln(HeaderCodes),
 	atom_codes('\n',NewLine),
 	atom_code_list(SequenceCodes, SequenceData), 	% Convert sequence to codes
 	map(upper_lower(output,input), SequenceCodes, SequenceCodesUppercase), % Convert all codes to upper case
 	split_list_in_chunks(70,SequenceCodesUppercase,Chunks), % Divide the sequence into chunks for each fasta line
-	writeln(Chunks),
 	intersperse(NewLine,Chunks,WithNewLines),
 	flatten([HeaderArrow,HeaderCodes,NewLine,WithNewLines,NewLine],Fasta).
 	
