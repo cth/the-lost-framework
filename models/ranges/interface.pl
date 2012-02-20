@@ -1,5 +1,6 @@
 
 :- task(as_fasta([text(prolog(ranges(gene)))], [sequence_functor(sequence)], text(fasta))).
+:- task(take([text(prolog(ranges(gene)))], [count(10)], [text(prolog(ranges(gene)))])).
 
 :- use(fasta).
 :- use(genedb).
@@ -13,6 +14,17 @@ as_fasta([InputFile],Options,OutputFile) :-
 	read_term_and_write_fasta_entry(SeqFunc,InStream,OutStream),!,
 	close(InStream),
 	close(OutStream).
+
+%% take(+InputFiles,+Options,+OutputFile)
+% ==
+% InputFiles = [InputFile]
+% ==
+% OutputFile contains the the N first elements of InputFile, where N is determined by option count
+take([InputFile],Options,OutputFile) :-
+	get_option(Options,count,Count),
+	terms_from_file(InputFile,Terms),
+	take(Count,Terms,Taken),
+	terms_to_file(OutputFile,Taken).
 	
 read_term_and_write_fasta_entry(SeqFunc,InStream,OutStream) :-
 	read(InStream,Term),
