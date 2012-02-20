@@ -5,14 +5,25 @@
 :- use(genedb).
 :- use(lists).
 
+% FIXME: Makes this read and write terms one at a time...
 as_fasta([InputFile],Options,OutputFile) :-
-	terms_from_file(InputFile,GeneTerms),
 	get_option(Options,sequence_functor,SeqFunc),
-	map(create_fasta_entry(input,SeqFunc,output),GeneTerms,FastaElements),
-	flatten(FastaElements,FastaCodes),
+	open(InputFile,read,InStream),
 	open(OutputFile,write,OutStream),
-	forall(member(Code,FastaCodes),put_code(OutStream,Code)),
+	read_term_and_write_fasta_entry(SeqFunc,InStream,OutStream),!,
+	close(InStream),
 	close(OutStream).
+	
+read_term_and_write_fasta_entry(SeqFunc,InStream,OutStream) :-
+	read(InStream,Term),
+	((Term == end_of_file) ->
+		true
+		;
+		write('.'),
+		create_fasta_entry(Term,SeqFunc,FastaEntry),
+		forall(member(Code,FastaEntry),put_code(OutStream,Code)),
+		read_term_and_write_fasta_entry(SeqFunc,InStream,OutStream)
+	).
 
 create_fasta_entry(GeneTerm,SeqFunc,FastaEntry) :-
 	gene_sequence_id(GeneTerm,SeqId),
