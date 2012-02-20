@@ -26,7 +26,7 @@ add_aug_term(Orf,OutStream,MaxBasesDownstream) :-
 	gene_extra_field(Orf,sequence,Sequence),
 	gene_start_codon(Orf,Start),
 	map(extract_uag_downstream(Sequence,Start,MaxBasesDownstream,input,output),InFrameStops,DownstreamSequences),
-	gene_add_extra_field(Orf,downstream_stops,DownstreamSequences,UpdatedOrf),
+	gene_add_extra_field(Orf,pylis,DownstreamSequences,UpdatedOrf),
 	writeq(OutStream,UpdatedOrf),
 	write(OutStream,'.\n').
 
