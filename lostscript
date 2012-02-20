@@ -1,0 +1,43 @@
+#!/bin/sh
+
+
+if [ x$LOST = x ]; then
+	echo "LOST ENVIRONMENT VARIABLE NOT SET."
+	echo "do 'export LOST=/path/to/lost'"
+	exit
+fi
+
+PRISM=`cat $LOST/lost.pl | grep "prism_command" | grep -v "^%.*" | cut -d"'" -f 2`
+
+case $1 in
+	-r|--rerun)
+	 	echo "rerun"
+		RUN=rerun
+		;;
+	-rr|-rerunrec)
+		RUN=rerun_recursive
+		;;
+esac
+
+case $# in
+	1)
+		if [ -e $1 ]; then
+			$PRISM -g "['$LOST/lost.pl'], [$1]"
+		else
+			echo "No such script: $1"
+		fi
+		;;
+	2)  
+		if [ -e $1 ]; then
+			$PRISM -g "['$LOST/lost.pl'], [$1], run($2)"
+		else
+			echo "No such script: $1"
+		fi
+	;;
+	*) 
+		echo "Wrong number of arguments $#"
+		echo "Usage is:"
+		echo "$0 script goal"
+		echo "    which runs 'goal' in script."
+		;;
+esac
