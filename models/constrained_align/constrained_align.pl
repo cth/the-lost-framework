@@ -64,11 +64,14 @@ write_alignments_to_stream([(Dist,(A,B))|As],Stream) :-
 align_with_relevant(_Gene,[],[]).
 	
 align_with_relevant(Gene,[OtherGene|Rest],[Alignment|AlignmentsRest]) :-
-	(is_valid_alignment(Gene,OtherGene) ->
-		align(Gene,OtherGene,Alignment)
-		;
-		pseudo_align(Gene,OtherGene,Alignment)),
+	is_valid_alignment(Gene,OtherGene),
+	!,
+	align(Gene,OtherGene,Alignment),!,
 	align_with_relevant(Gene,Rest,AlignmentsRest).
+	
+align_with_relevant(Gene,[_OtherGene|Rest],AlignmentsRest) :-
+	align_with_relevant(Gene,Rest,AlignmentsRest).
+
 	
 align(A,B,(Cost,IdA,IdB)) :-
 	sequence_id(A,IdA),

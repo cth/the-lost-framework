@@ -1,5 +1,6 @@
 :- task(align_edit_distance(text(prolog(ranges(_))),[min_stem_length(0),max_pairing_mismatch(10)],text(prolog(alignments)))).
 :- task(align_pmcomp(text(prolog(ranges(_))),[min_stem_length(0),max_pairing_mismatch(10)],text(prolog(alignments)))).
+:- task(align_clustalw(text(prolog(ranges(_))),[min_stem_length(0),max_pairing_mismatch(10)],text(prolog(alignments)))).
 :- task(as_phylip_matrix(text(prolog(alignments)),[],text(phylip))).
 
 :- use(lists).
@@ -12,7 +13,9 @@ config(bprolog_with_chr,'/opt/BProlog/bp leuven_chr.out -g ').
 	
 %% align_edit_distance(+InputFile,+AlignmentsFile,+Constraints)
 % Invoked in external B-Prolog
+% Currently, does not terminate as it should!
 align_edit_distance([InputFile],Options,AlignmentsFile) :-
+	writeln(here),
 	map(fact_assertion,[align_method(edit_align)|Options],AssertConstraints),
 	map(term2atom,AssertConstraints,AtomAssertConstraints),
 	intersperse(',',AtomAssertConstraints,AtomAssertConstraintsSeparated),
@@ -48,6 +51,20 @@ align_pmcomp([InputFile],Options,OutputFile) :-
 	cl(constrained_align),
 	build_alignments(InputFile,OutputFile),
 	check_or_fail(file_exists(OutputFile), 'alignments file not produced!').
+
+%% align_clustalw(+InputFiles,+Options,+OutputFile)
+% == 
+% InputFiles = [InputFile]
+% ==
+% Align sequences in InputFile using ordinary clustalw primary sequence alignment
+align_clustalw([InputFile],Options,OutputFile) :-
+	assert(align_method(clustalw_align)),
+	forall(member(Opt,Options),assert(Opt)),
+	cl(clustalw),
+	cl(constrained_align),
+	build_alignments(InputFile,OutputFile),
+	check_or_fail(file_exists(OutputFile), 'alignments file not produced!').
+
 	
 %% sort_alignments(+InputFiles,+Options,+OutputFile)
 sort_alignments([AlignmentsFile],_Options,OutputFile) :-

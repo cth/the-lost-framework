@@ -6,7 +6,8 @@
 build_phylip_matrix(AligmentsFile,OutputFile) :-
 	write(open(AligmentsFile,read,InStream)),
 	open(AligmentsFile,read,InStream),	
-	make_unique_table(InStream,1,NumEntries),
+	make_unique_table(InStream,1,NumEntries,0,MaxCost),
+	assert(max_cost(MaxCost)),
 	close(InStream),
 	foreach(I in 1..NumEntries, assert(align(I,I,0))), % Self-alignments
 	tell(OutputFile),
@@ -14,16 +15,21 @@ build_phylip_matrix(AligmentsFile,OutputFile) :-
 	foreach(I in 1..NumEntries, phylip_line(I,NumEntries)),
 	told.
 	
-make_unique_table(InStream,Idx,FinalIdx) :-
+make_unique_table(InStream,Idx,FinalIdx,MaxCostAcc,MaxCost) :-
 	read(InStream,Term),
 	((Term == end_of_file) ->
-		FinalIdx is Idx - 1
+		FinalIdx is Idx - 1,
+		MaxCost = MaxCostAcc
 		;
 		Term = [ Cost, A, B ],
 		add_to_table(A,IdxA,Idx,Idx1),
 		add_to_table(B,IdxB,Idx1,Idx2),
 		assert(align(IdxA,IdxB,Cost)),
-		make_unique_table(InStream,Idx2,FinalIdx)
+		((Cost > MaxCostAcc) ->
+			MaxCostAcc1 = Cost
+			;
+			MaxCostAcc1 = MaxCostAcc),
+		make_unique_table(InStream,Idx2,FinalIdx,MaxCostAcc1,MaxCost)
 	).
 
 add_to_table(A,IdxA,Idx,Idx) :-
@@ -87,8 +93,9 @@ write_alignment_cost(I,J) :-
 	(align_entry(I,J,Cost) ->
 		true
 		;
-		listing(align(_,_)),
-		throw(no_align(I,J))),
+		max_cost(Cost)),
+/*		listing(align(_,_)),
+		throw(no_align(I,J))), */
 	write(Cost),
 	write(' ').
 	
