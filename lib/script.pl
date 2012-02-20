@@ -143,12 +143,10 @@ run(Target,_RunOpts,_File) :-
 
 run_multiple(_,[],[]).
 run_multiple(RunOpts,[Target|TargetsRest],[File|FilesRest]) :-
-%	writeln(run(Target,RunOpts,File)),
 	run(Target,RunOpts,File),
 	run_multiple(RunOpts,TargetsRest,FilesRest).
 	
 append_file_to_file(InputFile,OutputFile) :-
-	writeln('APPAND FILE 2 FILE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'),
 	open(InputFile,read,InStream),
 	open(OutputFile,append,OutStream),
 	append_stream_to_stream(InStream,OutStream),!,
