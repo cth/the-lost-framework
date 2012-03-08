@@ -7,14 +7,16 @@ filter_by_overlap(MaxOverlap,OrfsFile,KnownGenesFile,OutputFile) :-
 	report_overlaps(MaxOverlap,CandidateOrfs,KnownGenes,OutStream),
 	close(OutStream).
 	
-filter_overlaps(_,[],_KnownGenes,[]).
+report_overlaps(_,[],_KnownGenes,_OutStream).
 
-filter_overlaps(MaxOverlap,[ORF|RestORFs],KnownGenes,NonOverlapping) :-
+report_overlaps(MaxOverlap,[ORF|RestORFs],KnownGenes,OutStream) :-
 	(foreach(Gene in KnownGenes, not(overlap(MaxOverlap,ORF,Gene))) ->
-		NonOverlapping = [ORF|RestNonOverlapping]
+		writeq(OutStream,ORF),
+		write(OutStream,'.\n')
 		;
-		NonOverlapping = RestNonOverlapping),
-	filter_overlaps(MaxOverlap,RestORFs,KnownGenes,RestNonOverlapping).
+		true),
+	!,
+	report_overlaps(MaxOverlap,RestORFs,KnownGenes,OutStream).
 
 overlap(MaxOverlap,ORF,G) :-
 	gene_left(G,GeneLeft),
