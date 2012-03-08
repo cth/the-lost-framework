@@ -1,5 +1,7 @@
 % Find and filter pylis-orfs which overlap a known gene by at least xxx bases
 
+:- use(genedb).
+
 filter_by_overlap(MaxOverlap,OrfsFile,KnownGenesFile,OutputFile) :-
 	terms_from_file(KnownGenesFile,KnownGenes),
 	terms_from_file(OrfsFile,CandidateOrfs),
