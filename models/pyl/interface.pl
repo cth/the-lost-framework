@@ -6,6 +6,10 @@
 
 :- task(candidate_pylis([text(prolog(ranges(gene)))],[extract_size(100)], text(prolog(ranges(gene))))).
 
+:- task(filter_pylis_orfs_by_overlaps([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[max_overlap(100)], text(prolog(ranges(gene))))).
+
+
+
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
 % ==
 % InputFiles = [ GenomeFastaFile ]
