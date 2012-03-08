@@ -1,12 +1,13 @@
 :- dynamic base/3.
 
 :- use(path).
+:- use(lists).
 
 /****************************************************************************************************
 Options and constraints
 *****************************************************************************************************/
 
-min_orf_length(60).
+min_orf_length(100).
 
 
 /****************************************************************************************************
@@ -343,6 +344,7 @@ find_orfs(SeqId,Genome,CodonFile,OrfFile,Strand,Frame) :-
 	write('Computing open reading frames positions for strand '), write(Strand), write(' and frame '), write(Frame),nl,
 	((Strand == '-') -> writeln('  - reversing index (for reverse strand lookups)'), index_reverse ; true),
 	forward_orfs(Orfs),!,
+	% We should split forward orfs into multiple orfs
 	writeln('Sorting orfs in order of left position ascending'),nl,
 	sort(Orfs,SortedOrfs),
 	writeln('Done.'),
@@ -378,7 +380,7 @@ annotate_orfs(SeqId,Strand,Frame,[orf(Stop,Starts,InFrames)|Rest],OutStream,Geno
 	((OrfLength >= MinLength) ->
 		get_range(Left,Right,Genome,Sequence1),
 		((Strand == '+') ->
-			Sequence = Sequence1		
+			Sequence = Sequence1
 			;
 			reverse(Sequence1,RevSeq),
 			complement(RevSeq,Sequence)
@@ -398,11 +400,9 @@ index_create(File) :-
 	writeln('Reading file into memory and creating indexes.'),!,
 	create_circular_index(1,1,InStream),!,
 	writeln('Done').
-%	catch(close(InStream, [force(true)]),_,true).
 
 create_circular_index(Index,FirstIndex,InStream) :-
 	read(InStream,Term),
-%	((0 is Index mod 10000) -> statistics ; true),	
 	((Term == end_of_file) ->
 		retract(ci(PrevIndex,Index,Type,Position)),
 		assert(ci(PrevIndex,FirstIndex,Type,Position))
@@ -428,7 +428,6 @@ index_reverse(Idx,NextIdx) :-
 index_reverse(Idx,FirstIndex) :-
 	ci(Idx,NextIdx,_,_),
 	ci(NextIdx,_,NextType,NextPos),
-%	((0 is Idx mod 1000) -> write(index_reverse(Idx)),nl, statistics ; true),
 	assert(ci_rev(NextIdx,Idx,NextType,NextPos)),
 	!,
 	index_reverse(NextIdx,FirstIndex).
@@ -463,48 +462,110 @@ ci_search_backward_rec(Type,StartIdx,MatchIdx) :-
 forward_orfs(Orfs) :-
 	ci_search_forward(stop,1,FirstStopIdx),   % Find first stop codon
 	ci(FirstStopIdx,NextIdx,_,_),             % Let, NextIdx be the position after that
-	forward_orfs_rec(FirstStopIdx,NextIdx,[],[],Orfs).
+	forward_orfs_rec(FirstStopIdx,NextIdx,[],Orfs).
 
 % Collect orfs on the direct strand.
-% WE CIRCLED AROUND!
-forward_orfs_rec(CurrentIdx,CurrentIdx,[],_,[]) :- !.
 
-forward_orfs_rec(CurrentIdx,CurrentIdx,StartsInBetween, StopsInBetween, [orf(Position,Starts,InFrameStops)]) :-
-	reverse(StartsInBetween,Starts),
-	reverse(StopsInBetween,InFrameStops),
-	ci(CurrentIdx,_,stop,Position).
+% We have two cases for termination which happens when we circled around,
+% e.g StartIdx == CurrentIdx:
 
-% In the case where there are no preceding start codons, it is not an ORF, so just skip it.
-forward_orfs_rec(StartIdx,CurrentIdx,[],_,RestOrfs) :-
-	ci(CurrentIdx,NextIdx,stop,_),
+/*
+forward_orfs_rec(_,CurrentIdx,Acc,whatever) :-
+	ci(CurrentIdx,_,amber,Position),
+	Encounter =.. [ amber, CurrentIdx, Position, Acc ],
+	writeln(Encounter),
+	fail.
+*/
+
+% Termination 1: We have accumulated a possible P-ORF at this point and the codon at this
+% position is either a stop or and amber (stop).
+forward_orfs_rec(CurrentIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[Amber])]) :-
+	ci(CurrentIdx,_,Codon,Position),
+	member(Codon,[amber,stop]),
+	append(_DownstreamAmber,[amber(Amber)|PriorStarts],Accumulated),
 	!,
-	forward_orfs_rec(StartIdx,NextIdx,[],[],RestOrfs).
-	
-forward_orfs_rec(StartIdx,CurrentIdx,StartsInBetween,StopsInBetween,[orf(Position,Starts,InFrameStops)|RestOrfs]) :-
-	ci(CurrentIdx,NextIdx,stop,Position),
-	reverse(StartsInBetween,Starts),
-	reverse(StopsInBetween,InFrameStops),
-	!,
-	forward_orfs_rec(StartIdx,NextIdx,[],[],RestOrfs).
+%	writeln(termination1(CurrentIdx,Accumulated)),	
+	reverse(PriorStarts,Starts),
+	foreach(start(X) in Starts,ac1(StartPositions,[]),StartPositions^0=[X|StartPositions^1]).	
 
+% Termination 2: We have accumulated no possible P-ORF at this point.
+forward_orfs_rec(CurrentIdx,CurrentIdx,Accumulated,[]) :-
+%	writeln(termination2(CurrentIdx,Accumulated)),
+	true.
 
-forward_orfs_rec(StartIdx,CurrentIdx,StartsInBetween,StopsInBetween,RestOrfs) :-
+% Recursion 1: Next codon is a start codon, simply add it to Accumulated
+forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,start,Position),
+%	writeln(recursion1(CurrentIdx,Accumulated)),
 	!,
-	forward_orfs_rec(StartIdx,NextIdx,[Position|StartsInBetween],StopsInBetween,RestOrfs).
+	forward_orfs_rec(StartIdx,NextIdx,[start(Position)|Accumulated],RestOrfs).
 
-forward_orfs_rec(StartIdx,CurrentIdx,StartsInBetween,StopsInBetween,RestOrfs) :-
+% Recursion 2:
+% We encounter an amber/stop codon and have empty acccumulater, i.e. no preceding start codons:
+% Skip over, and continue with empty accumulator
+forward_orfs_rec(StartIdx,CurrentIdx,[],RestOrfs) :-
+	ci(CurrentIdx,NextIdx,Codon,_Position),
+	member(Codon,[amber,stop]),
+%	writeln(recursion2(CurrentIdx,[])),
+	!,
+	forward_orfs_rec(StartIdx,NextIdx,[],RestOrfs).
+
+% Recursion 3:
+% We encounter a stop and have accumulated an amber codon:
+% Construct a P-ORF and continue search with empty accumulator
+forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartsPositions,[Amber])|RestOrfs]) :-
+	ci(CurrentIdx,NextIdx,stop,Position),
+%	writeln(recursion3(CurrentIdx,Accumulated)),	
+	append(_,[amber(Amber)|PriorStarts],Accumulated),
+	!,
+	reverse(PriorStarts,Starts),
+	foreach(start(X) in Starts,ac1(StartPositions,[]),StartPositions^0=[X|StartPositions^1]),
+	forward_orfs_rec(StartIdx,NextIdx,[],RestOrfs).
+
+% Recursion 4:
+% We encounter a stop and have _not_ accumulated an amber codon:
+% continue search with empty accumulator
+forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
+	ci(CurrentIdx,NextIdx,stop,Position),
+	not(member(amber(_),Accumulated)),
+%	writeln(recursion4(CurrentIdx,Accumulated)),	
+	!,
+	forward_orfs_rec(StartIdx,NextIdx,[],RestOrfs).
+
+
+% Recursion 5:
+% We encounter an amber codon and have allready accumulated an amber codon:
+% The current partial ORF has an amber codon in between, so we construct a P-ORF 
+% and continue search with the accumulator from the first start codon downstream the amber codon
+forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[Amber])|RestOrfs]) :-
 	ci(CurrentIdx,NextIdx,amber,Position),
+	append(DownstreamAmber,[amber(Amber)|PriorStarts],Accumulated),
+%	writeln(recursion5(CurrentIdx,Accumulated)),	
 	!,
-	((StartsInBetween = []) ->
-		StopsInBetweenNext = []
+	reverse(PriorStarts,Starts),
+	foreach(start(X) in Starts,ac1(StartPositions,[]),StartPositions^0=[X|StartPositions^1]),
+	((DownstreamAmber == []) ->
+		% If we do not have any start codons downstream the Amber codon, then we search with empty accumulator:
+		forward_orfs_rec(StartIdx,NextIdx,[],RestOrfs)
 		;
-		StopsInBetweenNext = [Position|StopsInBetween]),
-	forward_orfs_rec(StartIdx,NextIdx,StartsInBetween,StopsInBetweenNext,RestOrfs).
+		% otherwise, search with Starts before amber and amber as accumulator:
+		forward_orfs_rec(StartIdx,NextIdx,[amber(Position)|DownstreamAmber],RestOrfs)).
 
+% Recursion 6:
+% By mutual exclusion by the previous four cases, we are guaranteed that 
+% the current partial orf has at least one start, but have no amber in between yet.
+% Therefore, we may safely add it
+forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
+	ci(CurrentIdx,NextIdx,amber,Position),
+%	writeln(recursion6(CurrentIdx,Accumulated)),
+	!,
+	forward_orfs_rec(StartIdx,NextIdx,[amber(Position)|Accumulated],RestOrfs).
+
+strip_functor(Term1,Arg) :-
+	Term =.. [_,Arg].
 
 /***********************************************************
-% Merged sorted files. 
+% Merged sorted files.
 % This merges files containing sorted prolog facts such that
 % the merged file is also sorted.
 ************************************************************/
@@ -531,7 +592,3 @@ recursive_merge_files(OutStream,Terms) :-
 	read(InStream,NextTerm),
 	!,
 	recursive_merge_files(OutStream,[[NextTerm,InStream]|SortedTerms]).
-		
-
-
-

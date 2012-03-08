@@ -1,0 +1,2 @@
+Simple wrapper model for the rapidnj program which does fast neighbor joining clustering.
+The output is a tree in newick format.

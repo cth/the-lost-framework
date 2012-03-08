@@ -5,9 +5,9 @@
 % Load a short plasmid file, just for testing..
 fasta_file <- file::get('ftp://ftp.ncbi.nlm.nih.gov/genomes/Plasmids/fna/NC_000843.fna').
 
-candidate_orfs <- pyl_finder::candidate_orfs(fasta_file).
+candidate_orfs <- pyl::candidate_orfs(fasta_file).
 
-candidate_orfs_w_seqid <- pyl_finder::candidate_orfs([fasta_file],[sequence_identifier('NC_000843')]).
+candidate_orfs_w_seqid <- pyl::candidate_orfs([fasta_file],[sequence_identifier('NC_000843')]).
 
 testcase(candidate_orfs) :-
 	Target = candidate_orfs,

@@ -21,3 +21,7 @@ build([AlignmentFile],_Options,ModelFile) :-
 	infernal_cmbuild(CMBUILD),
 	atom_concat_list([CMBUILD, ' ', ModelFile, ' ', AlignmentFile],BuildCommand),
 	system(BuildCommand).
+	
+% TODO:
+% parse([InfernalResultFile],_Options,OutputFile) :-
+	
