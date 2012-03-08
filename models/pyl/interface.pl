@@ -49,3 +49,17 @@ add_downstream_inframe_stops_sequences([OrfsFile],Options,OutputFile) :-
 candidate_pylis([OrfsFile],_Options,OutputFile) :-
 	cl(candidate_pylis),
 	extract_candidate_pylis(OrfsFile,OutputFile).
+
+
+%% filter_pylis_by_overlaps(+InputFiles,+Options,+OutputFile)
+% ==
+% InputFiles = [PylisCandidateOrfsFile,KnownGenesFile]
+% ==
+% Given a file with candidate pylis ORFs, =|PylisCandidateOrfsFile|= and a file containing known genes,
+% =|KnownGenesFile|=, extract the pylis candidate ORFs which satisfy certain constraints about the overlap
+% with existing genes.
+filter_pylis_orfs_by_overlaps([OrfsFile,KnownGenesFile],Options,OutputFile) :-
+	get_option(Options,max_overlap,MaxOverlap),
+	cl(overlap_filter),
+	filter_by_overlap(MaxOverlap,OrfsFile,KnownGenesFile,OutputFile).
+	
