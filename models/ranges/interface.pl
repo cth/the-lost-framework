@@ -1,6 +1,7 @@
-
 :- task(as_fasta([text(prolog(ranges(gene)))], [sequence_functor(sequence)], text(fasta))).
 :- task(take([text(prolog(ranges(gene)))], [count(10)], [text(prolog(ranges(gene)))])).
+:- task(translate([text(prolog(ranges(gene)))], [sequence_functor(sequence),genecode(11)], text(prolog(ranges(gene))))).
+
 
 :- use(fasta).
 :- use(genedb).
@@ -14,17 +15,6 @@ as_fasta([InputFile],Options,OutputFile) :-
 	read_term_and_write_fasta_entry(SeqFunc,InStream,OutStream),!,
 	close(InStream),
 	close(OutStream).
-
-%% take(+InputFiles,+Options,+OutputFile)
-% ==
-% InputFiles = [InputFile]
-% ==
-% OutputFile contains the the N first elements of InputFile, where N is determined by option count
-take([InputFile],Options,OutputFile) :-
-	get_option(Options,count,Count),
-	terms_from_file(InputFile,Terms),
-	take(Count,Terms,Taken),
-	terms_to_file(OutputFile,Taken).
 	
 read_term_and_write_fasta_entry(SeqFunc,InStream,OutStream) :-
 	read(InStream,Term),
@@ -47,4 +37,36 @@ create_fasta_entry(GeneTerm,SeqFunc,FastaEntry) :-
 	intersperse('_',[SeqId,Left,Right,Strand,Frame],HeaderElemList),
 	atom_concat_list(HeaderElemList,HeaderAtom),
 	to_fasta(HeaderAtom,Sequence,FastaEntry).
+
+%% take(+InputFiles,+Options,+OutputFile)
+% ==
+% InputFiles = [InputFile]
+% ==
+% OutputFile contains the the N first elements of InputFile, where N is determined by option count
+take([InputFile],Options,OutputFile) :-
+	get_option(Options,count,Count),
+	terms_from_file(InputFile,Terms),
+	take(Count,Terms,Taken),
+	terms_to_file(OutputFile,Taken).
+
+%% translate(+InputFile,+Options,+OutputFile)
+% ==
+% InputFiles = [InputFile]
+% ==
+% Translates nucleotide sequence indicated by =|sequence_functor|= to a protein.
+% The protein sequence is added as an extra field with the functor =|protein_sequence|=.
+translate([InputFile],Options,OutputFile) :-
+	write('!!!'),
+	get_option(Options,genecode,GeneCode),
+	get_option(Options,sequence_functor,SequenceFunctor),
+	open(InputFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	cl(translate),
+	translate_terms(InStream,OutStream,SequenceFunctor,GeneCode),
+	close(InStream),
+	close(OutStream).
+
+
+
+
 
