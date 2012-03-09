@@ -1,3 +1,7 @@
+# Parsing of blast xml result files, which hits into prolog facts.
+# 
+# Author: Christian Theil Have
+
 require 'rubygems'
 require 'nokogiri'
 
@@ -52,7 +56,7 @@ class HSP
   
   def initialize(query_id)
     @query_id = query_id
-    if query_id =~ /(.+) (\d+) (\d+) (\+|\-)(\d)/
+    if query_id =~ /(.+) (\d+) (\d+) (\+|\-)(\d)/ or query_id  =~ /(.+)_(\d+)_(\d+)_(\+|\-)_(\d)/ 
       @seq_id = $1.to_s
       @left_pos = $2.to_i
       @right_pos = $3.to_i
@@ -110,21 +114,20 @@ class PostCallbacks < XML::SAX::Document
     @context = [] if @contect.nil?
 
     case element
-    when "Iteration"
-      @context << "Iteration"
-    when "Iteration_message"
-        @context << element
-    when "Iteration_query-def"
-        @context << element
-    when "Hsp"
-      @context << element      
-    when "Hsp_evalue"
-        @context << element
-    when "Hsp_qseq"
-      @context << element
-    when "Hsp_hseq"
-      @context << element      
-    when "Hsp_midline"
+    when  "Iteration",
+          "Iteration_message",
+          "Iteration_query-def",
+          "Hit_id",
+          "Hsp",
+          "Hsp_evalue",
+          "Hsp_score",
+          "Hsp_bit-score",
+          "Hsp_qseq",
+          "Hsp_hseq",
+          "Hsp_midline",
+          "Hsp_hit-from",
+          "Hsp_hit-to",
+          "Hsp_hit-frame"
       @context << element
     end
   end
@@ -145,18 +148,28 @@ class PostCallbacks < XML::SAX::Document
     when "Hsp"
       @hsp = HSP.new(@query_def)
       @hsp.features[:evalue] = @evalue
+      @hsp.features[:bitscore] = @bitscore
+      @hsp.features[:score] = @score
       @hsp.features[:qseq] = @qseq.to_prolog_array
       @hsp.features[:hseq] = @hseq.to_prolog_array
       @hsp.features[:midline] = @midline.to_prolog_array
+      @hsp.features[:hit_left] = @hit_from
+      @hsp.features[:hit_right] = @hit_to
+      @hsp.features[:hit_id] = "'#{@hit_id}'"
+      @hsp.features[:hit_strand] = "'#{@hit_strand}'"
+      @hsp.features[:hit_frame] = @hit_frame
       puts @hsp.to_prolog
       @context.pop
-    when "Hsp_evalue" 
-      @context.pop      
-    when "Hsp_qseq"
-      @context.pop
-    when "Hsp_hseq"
-      @context.pop      
-    when "Hsp_midline"
+    when  "Hsp_evalue",
+          "Hsp_score",
+          "Hsp_bit-score",
+          "Hsp_qseq",
+          "Hsp_hseq",
+          "Hsp_midline",
+          "Hsp_hit-to",
+          "Hsp_hit-from",
+          "Hsp_hit-frame",
+          "Hit_id"
       @context.pop
     end
   end
@@ -166,16 +179,31 @@ class PostCallbacks < XML::SAX::Document
     case @context.last
     when "Iteration_message" 
         @iteration_message = text
+    when "Hit_id"
+      @hit_id = text
     when "Iteration_query-def"
       @query_def = text
     when "Hsp_evalue"
       @evalue = text
+    when "Hsp_score"
+      @score = text
+    when "Hsp_bit-score"
+      @bitscore = text
     when "Hsp_qseq"
       @qseq = text
     when "Hsp_hseq"
       @hseq = text
     when "Hsp_midline"
       @midline = text
+    when "Hsp_hit-to"
+      @hit_to = text
+    when "Hsp_hit-from"
+      @hit_from = text
+    when "Hsp_hit-frame"
+      if text =~ /(\+|-)(\d)/
+        @hit_strand = $1
+        @hit_frame = $2
+      end
     end
   end
 end
