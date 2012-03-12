@@ -139,7 +139,8 @@ class PostCallbacks < XML::SAX::Document
     when "Iteration_message"
       if @iteration_message == "No hits found"
         @hsp = FakeHSP.new(@query_def)
-        puts @hsp.to_prolog
+        # We don't want to output lack of hits no more..
+        # puts @hsp.to_prolog
       end
       @iteration_message == "reset"
       @context.pop
@@ -203,6 +204,9 @@ class PostCallbacks < XML::SAX::Document
       if text =~ /(\+|-)(\d)/
         @hit_strand = $1
         @hit_frame = $2
+      elsif text =~ /(\d)/
+        @hit_strand = "+"
+        @hit_frame = $1
       end
     end
   end
