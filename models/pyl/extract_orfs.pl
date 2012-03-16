@@ -227,7 +227,7 @@ start_codon([g,t,g]).
 
 % Stop Codons:
 stop_codon([t,a,a]).
-stop_codon([t,a,g]). % amber codon (dont consider for now)
+%stop_codon([t,a,g]). % amber codon (dont consider for now)
 stop_codon([t,g,a]).
 
 inframe_stop_codon([t,a,g]).
@@ -557,7 +557,8 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[A
 % Therefore, we may safely add it
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,amber,Position),
-%	writeln(recursion6(CurrentIdx,Accumulated)),
+%
+	writeln(recursion6(CurrentIdx,Accumulated)),
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[amber(Position)|Accumulated],RestOrfs).
 
