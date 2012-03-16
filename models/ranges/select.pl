@@ -2,12 +2,10 @@
 % This model filters away some genes given a set of genes
 :- ['../../lost.pl'].
 
-:- lost_include_api(interface).
-:- lost_include_api(regex).
-:- lost_include_api(io).
-:- lost_include_api(genecode).
-:- lost_include_api(sequence).
-:- lost_include_api(misc_utils).
+:- use(regex).
+:- use(genecode).
+:- use(dnaseq).
+:- use(lists).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Declaration of input and output formats:
@@ -197,7 +195,7 @@ left_range_filter(_,[],[]).
 
 left_range_filter(Left,[Gene|Us],Fs) :-
         integer(Left),
-	Gene =.. [ _functor, _Genome_Key, GeneLeft, _end, _strand, _frame, _extra ],
+		Gene =.. [ _functor, _Genome_Key, GeneLeft, _end, _strand, _frame, _extra ],
         Left > GeneLeft, 
         !,
         left_range_filter(Left,Us,Fs).
