@@ -33,7 +33,7 @@ mtb_gene('Acetohalobium arabaticum',385142,386602).
 mtb_gene('Desulfitobacterium_hafniense_DCB_2_uid205',5192551,5191061).
 mtb_gene('Desulfobacterium_autotrophicum_HRM2_uid20931',64449,65876).
 mtb_gene('Desulfotomaculum_acetoxidans_DSM_771_uid27947',25960,27348).
-mtb_gene('Methanococcoides_burtonii_DSM_6242_uid9634 - gene 1',2438105,2439109).
+mtb_gene('Methanococcoides_burtonii_DSM_6242_uid9634 - gene 1',2438105,2439598).
 mtb_gene('Methanococcoides_burtonii_DSM_6242_uid9634 - gene 2',1461495,1460005).
 mtb_gene('Methanohalophilus_mahii_DSM_5219_uid30711',1670949,1669459).
 mtb_gene('Methanosarcina_acetivorans_uid290',172570,171194).
@@ -84,12 +84,12 @@ all_pyl_genes <- append_all(mtb_gene(G,_,_), gene_pyl(G)).
 folded <- ppfold::fold(all_pyl_genes,[sequence_functor(pylis_sequence)]).
 
 % Align all pylis regions using the pmcomp tool
-aligned_genes(pmcomp) <- constrained_align::align_pmcomp(folded).
+aligned_genes(pmcomp) <- constrained_align::align_pmcomp(folded,[max_pairing_mismatch(100)]).
 
 % Build a PHYLIP alignment 
 alignment_matrix(AlignMethod) <- constrained_align::as_phylip_matrix(aligned_genes(AlignMethod)).
 
-tree(AlignMethod) <- rapidnj::cluster(alignment_matrix).
+tree(AlignMethod) <- rapidnj::cluster(alignment_matrix(AlignMethod)).
 
 
 % Other:
