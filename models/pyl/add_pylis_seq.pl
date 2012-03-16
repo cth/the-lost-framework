@@ -22,11 +22,11 @@ add_aug_stream_term(N,InStream,OutStream,MaxBasesDownstream) :-
 	).
 
 add_aug_term(Orf,OutStream,MaxBasesDownstream) :-
-	gene_extra_field(Orf,in_frame_stops,InFrameStops),
+	gene_extra_field(Orf,in_frame_stops,[InFrameStop|_]), % There is never more than one
 	gene_extra_field(Orf,sequence,Sequence),
 	gene_start_codon(Orf,Start),
-	map(extract_uag_downstream(Sequence,Start,MaxBasesDownstream,input,output),InFrameStops,DownstreamSequences),
-	gene_add_extra_field(Orf,pylis,DownstreamSequences,UpdatedOrf),
+	extract_uag_downstream(Sequence,Start,MaxBasesDownstream,InFrameStop,DownstreamSequence),
+	gene_add_extra_field(Orf,pylis_sequence,DownstreamSequence,UpdatedOrf),
 	writeq(OutStream,UpdatedOrf),
 	write(OutStream,'.\n').
 
