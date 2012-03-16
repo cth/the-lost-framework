@@ -18,8 +18,10 @@
 				db_gencode(11)
 			],
 			blast)).
-
+			
 :- task(parse_xml([xml(blast)],[],text(prolog(ranges(gene))))).
+
+:- task(remove_self_hits([text(prolog(ranges(gene)))],[],text(prolog(ranges(gene))))).
 			
 %% makeblastdb(+InputFiles,+Options,+OutputFile)
 % calls the =|makeblastdb|= utility to create a database for searching with blast
@@ -51,6 +53,39 @@ parse_xml([BlastXML],Options,OutputFile) :-
 	writeln(ParseCmd),
 	system(ParseCmd).
 	
+%% remove_self_hits(+InputFiles,+Options,+OutputFile)
+% == 
+% InputFile = [BlastResults]
+% ==
+remove_self_hits([BlastResultFile],_Options,OutputFile) :-
+	use(genedb),
+	open(BlastResultFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	remove_self_hits_rec(InStream,OutStream),
+	close(InStream),
+	close(OutStream).
+	
+remove_self_hits_rec(InStream,OutStream) :-
+	read(InStream,Term),
+	write('.'),
+	((Term == end_of_file) ->
+		true
+		;
+		gene_left(Term,Left),
+		gene_right(Term,Right),
+		gene_strand(Term,Strand),
+		gene_extra_field(Term,hit_strand,HitStrand),
+		gene_extra_field(Term,hit_left,HitLeft),
+		gene_extra_field(Term,hit_right,HitRight),
+		((Left =< HitLeft, Right >= HitRight, Strand == HitStrand) ->
+			true 
+			;
+			writeq(OutStream,Term),
+			write(OutStream,'.\n')
+			),
+		!,
+		remove_self_hits_rec(InStream,OutStream)).
+
 %% Utilities
 
 to_blast_opts([],[]).
