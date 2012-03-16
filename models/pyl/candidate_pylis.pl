@@ -9,8 +9,7 @@ extract_candidate_pylis(OrfsFile,OutputFile) :-
 	open(OutputFile,write,OutStream),
 	process_stream(0,InStream,OutStream),
 	close(InStream),
-	close(OutStream).	
-	
+	close(OutStream).
 	
 process_stream(N,InStream,OutStream) :-
 	read(InStream,OrfTerm),

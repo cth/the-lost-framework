@@ -1,11 +1,3 @@
-%
-% Create a clustering of the known mtb genes 
-
-
-
-%:- debug(off).
-
-% Organisms of interest:
 genome_link('Thermincola potens','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Thermincola_JR_uid41467/CP002028.fna').
 genome_link('Acetohalobium arabaticum','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Acetohalobium_arabaticum_DSM_5501_uid32769/CP002105.fna').
 genome_link('Desulfitobacterium_hafniense_DCB_2_uid205', 'ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Desulfitobacterium_hafniense_DCB_2_uid205/CP001336.fna').
@@ -18,6 +10,7 @@ genome_link('Methanohalobium_evestigatum_Z_7303_uid37945','ftp://ftp.ncbi.nlm.ni
 genome_link('Methanosarcina_mazei_uid300','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Methanosarcina_mazei_uid300/AE008384.fna').
 genome_link('Methanosarcina_barkeri_fusaro_uid103','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Methanosarcina_barkeri_fusaro_uid103/CP000099.fna').
 genome_link('Methanosalsum_zhilinae_DSM_4017_uid40771','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Methanosalsum_zhilinae_DSM_4017_uid40771/CP002101.fna').
+
 
 % Connecting a gene to its genome
 genome_gene_link(OrganismGene, Link) :-
@@ -43,6 +36,22 @@ mtb_gene('Methanosarcina_mazei_uid300 - gene 2',2031368,2032855).
 mtb_gene('Methanosarcina_barkeri_fusaro_uid103 - gene 1',1858475,1859959).
 mtb_gene('Methanosarcina_barkeri_fusaro_uid103 - gene 2',3034,4410).
 mtb_gene('Methanosalsum_zhilinae_DSM_4017_uid40771',511852,513300).
+
+
+genome_fasta(Genome) <- genome_link(Genome,URL) | file::get(URL).
+
+% Extract all candidate p-orfs 
+porfs_all_candidates(Genome) <- pyl::candidate_orfs(genome_fasta(Genome),[sequence_identifier(Genome)]).
+
+all_porf_candidates <- append_all(genome_link(Genome,_),porfs_all_candidates(Genome)).
+
+% Filter all candidate p-orfs which have less than 100 bases downstream the UAG
+porfs_long_candidates1(Genome) <- pyl::candidate_pylis(porfs_all_candidates(Genome)).
+
+% Add the sequence downstream the UAG as an extra field to all candidates
+porfs_long_candidates2(Genome) <- pyl::add_downstream_inframe_stops_sequences(porfs_long_candidates1(Genome)).
+
+all_porfs <- append_all(genome_link(Genome,_),porfs_long_candidates2(Genome)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Extracting relevant parts of the genomes and annotating the results 
@@ -72,27 +81,11 @@ gene_uag_annot(G) <-  pyl::annotate_orfs_with_in_frame_stops(geneseq(G)).
 % Annotate G with the sequence 100 bp downstream the in-frame uag
 gene_pyl(G) <- pyl::add_downstream_inframe_stops_sequences(  gene_uag_annot(G) ).
 
-% Merge all PYL genes in one file
 all_pyl_genes <- append_all(mtb_gene(G,_,_), gene_pyl(G)).
 
+% We expect in_common to include all pyl genes and only the pyl genes
+in_common <- pyl::hits_matching_pylis_orfs([all_pyl_genes, all_porfs], [min_overlap(90)]).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Cluster the mttB PYLIS regions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% We expect in_common to include all pyl genes and only the pyl genes
+in_common2 <- pyl::hits_matching_pylis_orfs([all_pyl_genes, all_porf_candidates], [min_overlap(90)]).
 
-% Create putative foldings of PYLIS regions
-folded <- ppfold::fold(all_pyl_genes,[sequence_functor(pylis_sequence)]).
-
-% Align all pylis regions using the pmcomp tool
-aligned_genes(pmcomp) <- constrained_align::align_pmcomp(folded,[max_pairing_mismatch(100)]).
-
-% Build a PHYLIP alignment 
-alignment_matrix(AlignMethod) <- constrained_align::as_phylip_matrix(aligned_genes(AlignMethod)).
-
-tree(AlignMethod) <- rapidnj::cluster(alignment_matrix(AlignMethod)).
-
-
-% Other:
-
-mtb_gene_length :-
-       forall(mtb_gene(X,L,R), (Len is L-R, writeln(Len))). 

@@ -1,0 +1,38 @@
+CLUSTAL 2.0.12 multiple sequence alignment
+
+
+Thermincola                         TAGACTGACAGTAAAGTTCCTGATCCCCAGCAAGCTTTCGAGTTTGCCCT
+Desulfitobacterium_hafniense_D      TAGGTAGACAGCAAGATTCCCGATGCCCAGGCAAGTCATGAATTTACTCT
+Methanosarcina_mazei_uid300         TAGTCTGATGCAAAGATCCCGGACAACCAGGCAGGACACGAAAAGACAAT
+Methanosarcina_barkeri_fusaro_      TAGTCTGATGCCAAGGTTCCGGACGACCAGGCAGGCCACGAAAAAACCAT
+Methanohalophilus_mahii_DSM_52      TAGGCTGATGCCAAGGTCCCAGATGGCCAGGCAGGTCATGAAAAGACCAT
+Methanosalsum_zhilinae_DSM_401      TAGGCAGACGCCAAGATACCTGACGGCCAGGCTGGCCATGAGAAGACAAT
+Acetohalobium                       TAGGCGGACAGCAAGTTATGTGACGTACAATCCGGATATGAAAAGACTAT
+Desulfotomaculum_acetoxidans_D      TAGG-GGAATGAAACTTCACTTTCACCTGCCGGAGTTAT-CGCTGCAGAT
+Methanosarcina_acetivorans_uid      TAGG-GCCCGGAGACTTCCCTGTCTGCTCAGGGAAATAT-ATCCTCTGAC
+Methanohalobium_evestigatum_Z_      TAGGTAGGAGTCGGCGACCCAGTGGGTATGCCGATAGCACACGTATCCGC
+                                    ***                                               
+
+Thermincola                         TACCGGAATTATACCAGCGTTAGCAGGAGCTAACATGATATATGGTCTGG
+Desulfitobacterium_hafniense_D      GACTGGGTTCTTAACCGCCTTAGCCGGTGCCAATCTGATTTATGGCGCCG
+Methanosarcina_mazei_uid300         GACCTGTCTCCTTCCAGCTCTTGCAGGTGCAAACACCCTGTACGGTGCCG
+Methanosarcina_barkeri_fusaro_      GACCACCCTTCTGCCTGCTCTTTCCGGTGCCAACACCATCTACGGAGCTG
+Methanohalophilus_mahii_DSM_52      GACAACCCTGCTTCCAGCGCTTTCAGGATGTAACACCCTTTATGGTGCGG
+Methanosalsum_zhilinae_DSM_401      GACCACTCTTCTACCAGCTCTTTCCGGTGCAAACACCCTCTATGGTGCAG
+Acetohalobium                       GACTTATATGCTGCCAGCTATGGCAGGTGCTAACGTGCTTTACGGCTCAG
+Desulfotomaculum_acetoxidans_D      TTTCCCGGTGGGATGAGGCCTTCTGACAGCCATGAGGTATCACAGTTAAA
+Methanosarcina_acetivorans_uid      TGCGTTGGCGGCCAGATCTCTTCGGATAGCCACGAAGTCTCCCAGCTCAA
+Methanohalobium_evestigatum_Z_      ATCCGGTATGACCGGTATGCGTGCAGGTGGAGACCTTGTTGCAAGAATGC
+                                                                                *     
+
+Thermincola                         --
+Desulfitobacterium_hafniense_D      --
+Methanosarcina_mazei_uid300         --
+Methanosarcina_barkeri_fusaro_      --
+Methanohalophilus_mahii_DSM_52      --
+Methanosalsum_zhilinae_DSM_401      --
+Acetohalobium                       --
+Desulfotomaculum_acetoxidans_D      TG
+Methanosarcina_acetivorans_uid      CG
+Methanohalobium_evestigatum_Z_      --
+                                      

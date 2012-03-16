@@ -85,7 +85,7 @@ goal_result_files(Model,Goal,ResultFiles) :-
 % Fail if a given option is undeclared.
 verify_model_options_declared(Model,Goal,Options) :-
 	declared_model_options(Model,Goal,DeclaredOptions),
-	writeln(DeclaredOptions),
+	debug(interface,declared_options(DeclaredOptions)),
 	option_is_declared(Options,DeclaredOptions).
 
 option_is_declared([], _).

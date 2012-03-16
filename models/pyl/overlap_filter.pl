@@ -40,17 +40,28 @@ overlap(MaxOverlap,ORF,G) :-
 	overlap_length((OrfMatchLeft,OrfMatchRight),(GeneLeft,GeneRight),OverlapLength),
 	OverlapLength =< MaxOverlap.
 	
-% Swap if inverse order	
-overlap_length((Left1,Right1),(Left2,Right2),L) :-
-	Left1 > Left2,
-	!,
-	overlap_length((Left2,Right2),(Left1,Right1),L).
-	
+
 % No overlap
-overlap_length((_Left1,Right1),(Left2,_Right2),0) :-
+% L1    R1
+% |-----|
+%          |----| 
+%         L2   R2
+overlap_length((Left1,Right1),(Left2,Right2),0) :-
  	Right1 < Left2,
 	!.
 	
+% L1         R1
+% |----------|
+%    |----|   
+%    L2   R2
 overlap_length((Left1,Right1),(Left2,Right2),OverlapLength) :-
-	sort([Left1,Right1,Left2,Right2], [_P1,P2,P3,_P4]),
-	OverlapLength is 1 + P3 - P2.
+	Right1 =< Right2,
+	OverlapLength is 1 + Right1 - Left1.
+	
+% L1         R1
+% |----------|
+%     |----------|   
+%     L2        R2
+overlap_length((Left1,Right1),(Left2,Right2),OverlapLength) :-
+	Right1 =< Right2,
+	OverlapLength is 1 + Right1 - Left2.
