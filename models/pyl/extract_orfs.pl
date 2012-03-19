@@ -485,19 +485,19 @@ forward_orfs_rec(CurrentIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,
 	member(Codon,[amber,stop]),
 	append(_DownstreamAmber,[amber(Amber)|PriorStarts],Accumulated),
 	!,
-	writeln(termination1(CurrentIdx,Accumulated)),
+%	writeln(termination1(CurrentIdx,Accumulated)),
 	reverse(PriorStarts,Starts),
 	foreach(start(X) in Starts,ac1(StartPositions,[]),StartPositions^0=[X|StartPositions^1]).	
 
 % Termination 2: We have accumulated no possible P-ORF at this point.
 forward_orfs_rec(CurrentIdx,CurrentIdx,Accumulated,[]) :-
-	writeln(termination2(CurrentIdx,Accumulated)),
+%	writeln(termination2(CurrentIdx,Accumulated)),
 	true.
 
 % Recursion 1: Next codon is a start codon, simply add it to Accumulated
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,start,Position),
-	writeln(recursion1(CurrentIdx,Accumulated)),
+%	writeln(recursion1(CurrentIdx,Accumulated)),
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[start(Position)|Accumulated],RestOrfs).
 
@@ -507,7 +507,7 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 forward_orfs_rec(StartIdx,CurrentIdx,[],RestOrfs) :-
 	ci(CurrentIdx,NextIdx,Codon,_Position),
 	member(Codon,[amber,stop]),
-	writeln(recursion2(CurrentIdx,[])),
+%	writeln(recursion2(CurrentIdx,[])),
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[],RestOrfs).
 
@@ -516,7 +516,7 @@ forward_orfs_rec(StartIdx,CurrentIdx,[],RestOrfs) :-
 % Construct a P-ORF and continue search with empty accumulator
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[Amber])|RestOrfs]) :-
 	ci(CurrentIdx,NextIdx,stop,Position),
-	writeln(recursion3(CurrentIdx,Accumulated)),
+%	writeln(recursion3(CurrentIdx,Accumulated)),
 	append(_,[amber(Amber)|PriorStarts],Accumulated),
 	!,
 	reverse(PriorStarts,Starts),
@@ -529,7 +529,7 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[A
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,stop,_Position),
 	not(member(amber(_),Accumulated)),
-	writeln(recursion4(CurrentIdx,Accumulated)),	
+%	writeln(recursion4(CurrentIdx,Accumulated)),	
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[],RestOrfs).
 
@@ -540,7 +540,7 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[Amber])|RestOrfs]) :-
 	ci(CurrentIdx,NextIdx,amber,Position),
 	append(DownstreamAmber,[amber(Amber)|PriorStarts],Accumulated),
-	writeln(recursion5(CurrentIdx,Accumulated)),	
+%	writeln(recursion5(CurrentIdx,Accumulated)),	
 	!,
 	reverse(PriorStarts,Starts),
 	foreach(start(X) in Starts,ac1(StartPositions,[]),StartPositions^0=[X|StartPositions^1]),
@@ -558,7 +558,7 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[A
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,amber,Position),
 	(member(amber(_),Accumulated) -> throw(violation) ; true),
-	writeln(recursion6(CurrentIdx,Accumulated)),
+%	writeln(recursion6(CurrentIdx,Accumulated)),
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[amber(Position)|Accumulated],RestOrfs).
 
