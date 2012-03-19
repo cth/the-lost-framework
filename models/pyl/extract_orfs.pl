@@ -1,3 +1,5 @@
+:- ['../../lost.pl'].
+
 :- dynamic base/3.
 
 :- use(path).
@@ -227,10 +229,8 @@ start_codon([g,t,g]).
 
 % Stop Codons:
 stop_codon([t,a,a]).
-%stop_codon([t,a,g]). % amber codon (dont consider for now)
+stop_codon([t,a,g]). % amber codon (dont consider for now)
 stop_codon([t,g,a]).
-
-inframe_stop_codon([t,a,g]).
 
 :- table downcase(+,-).
 
@@ -399,6 +399,7 @@ index_create(File) :-
 	open(File,read,InStream),!,
 	writeln('Reading file into memory and creating indexes.'),!,
 	create_circular_index(1,1,InStream),!,
+	close(InStream),
 	writeln('Done').
 
 create_circular_index(Index,FirstIndex,InStream) :-
@@ -460,7 +461,7 @@ ci_search_backward_rec(Type,StartIdx,MatchIdx) :-
 	ci_search_backward_rec(Type,PrevIdx,MatchIdx).
 
 forward_orfs(Orfs) :-
-	ci_search_forward(stop,1,FirstStopIdx),   % Find first stop codon
+	ci_search_forward(_,1,FirstStopIdx),   % Find first stop codon
 	ci(FirstStopIdx,NextIdx,_,_),             % Let, NextIdx be the position after that
 	forward_orfs_rec(FirstStopIdx,NextIdx,[],Orfs).
 
@@ -484,19 +485,19 @@ forward_orfs_rec(CurrentIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,
 	member(Codon,[amber,stop]),
 	append(_DownstreamAmber,[amber(Amber)|PriorStarts],Accumulated),
 	!,
-%	writeln(termination1(CurrentIdx,Accumulated)),	
+	writeln(termination1(CurrentIdx,Accumulated)),
 	reverse(PriorStarts,Starts),
 	foreach(start(X) in Starts,ac1(StartPositions,[]),StartPositions^0=[X|StartPositions^1]).	
 
 % Termination 2: We have accumulated no possible P-ORF at this point.
 forward_orfs_rec(CurrentIdx,CurrentIdx,Accumulated,[]) :-
-%	writeln(termination2(CurrentIdx,Accumulated)),
+	writeln(termination2(CurrentIdx,Accumulated)),
 	true.
 
 % Recursion 1: Next codon is a start codon, simply add it to Accumulated
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,start,Position),
-%	writeln(recursion1(CurrentIdx,Accumulated)),
+	writeln(recursion1(CurrentIdx,Accumulated)),
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[start(Position)|Accumulated],RestOrfs).
 
@@ -506,16 +507,16 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 forward_orfs_rec(StartIdx,CurrentIdx,[],RestOrfs) :-
 	ci(CurrentIdx,NextIdx,Codon,_Position),
 	member(Codon,[amber,stop]),
-%	writeln(recursion2(CurrentIdx,[])),
+	writeln(recursion2(CurrentIdx,[])),
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[],RestOrfs).
 
 % Recursion 3:
 % We encounter a stop and have accumulated an amber codon:
 % Construct a P-ORF and continue search with empty accumulator
-forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartsPositions,[Amber])|RestOrfs]) :-
+forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[Amber])|RestOrfs]) :-
 	ci(CurrentIdx,NextIdx,stop,Position),
-%	writeln(recursion3(CurrentIdx,Accumulated)),	
+	writeln(recursion3(CurrentIdx,Accumulated)),
 	append(_,[amber(Amber)|PriorStarts],Accumulated),
 	!,
 	reverse(PriorStarts,Starts),
@@ -526,12 +527,11 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartsPositions,[
 % We encounter a stop and have _not_ accumulated an amber codon:
 % continue search with empty accumulator
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
-	ci(CurrentIdx,NextIdx,stop,Position),
+	ci(CurrentIdx,NextIdx,stop,_Position),
 	not(member(amber(_),Accumulated)),
-%	writeln(recursion4(CurrentIdx,Accumulated)),	
+	writeln(recursion4(CurrentIdx,Accumulated)),	
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[],RestOrfs).
-
 
 % Recursion 5:
 % We encounter an amber codon and have allready accumulated an amber codon:
@@ -540,7 +540,7 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[Amber])|RestOrfs]) :-
 	ci(CurrentIdx,NextIdx,amber,Position),
 	append(DownstreamAmber,[amber(Amber)|PriorStarts],Accumulated),
-%	writeln(recursion5(CurrentIdx,Accumulated)),	
+	writeln(recursion5(CurrentIdx,Accumulated)),	
 	!,
 	reverse(PriorStarts,Starts),
 	foreach(start(X) in Starts,ac1(StartPositions,[]),StartPositions^0=[X|StartPositions^1]),
@@ -557,13 +557,16 @@ forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,[orf(Position,StartPositions,[A
 % Therefore, we may safely add it
 forward_orfs_rec(StartIdx,CurrentIdx,Accumulated,RestOrfs) :-
 	ci(CurrentIdx,NextIdx,amber,Position),
-%
+	(member(amber(_),Accumulated) -> throw(violation) ; true),
 	writeln(recursion6(CurrentIdx,Accumulated)),
 	!,
 	forward_orfs_rec(StartIdx,NextIdx,[amber(Position)|Accumulated],RestOrfs).
 
-strip_functor(Term1,Arg) :-
-	Term =.. [_,Arg].
+testit :-
+	index_create('tcodons.pl'),
+	forward_orfs(Orfs),
+	retractall(ci(_,_,_,_)),
+	writeln(Orfs).
 
 /***********************************************************
 % Merged sorted files.
