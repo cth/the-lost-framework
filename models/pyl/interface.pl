@@ -10,6 +10,8 @@
 
 :- task(hits_matching_pylis_orfs([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[min_overlap(100)], text(prolog(ranges(gene))))).
 
+:- task(hits_rna_match([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
+
 
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
@@ -80,6 +82,15 @@ hits_matching_pylis_orfs([HitListFile,MustMatchListFile],Options,OutputFile) :-
 	get_option(Options,min_overlap,MinOverlap),
 	cl(hit_match),
 	hit_match(MinOverlap,HitListFile,MustMatchListFile,OutputFile).
-	
+
+%% hits_rna_match(+InputFiles,+Options,+OutputFile)
+% == 
+% InputFiles = [ HitListFile, RNAFile ]
+% ==
+% For each hit, check if it overlaps a known RNA in =|RNAFile|=. If so, add an extra field
+% rna_match(RNA).
+hits_rna_match([HitListFile,RNAFile],_Options,OutputFile) :-
+	cl(hit_match),
+	no_rna_overlap(HitListFile,RNAFile,OutputFile).
 
 	

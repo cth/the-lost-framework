@@ -9,6 +9,38 @@ hit_match(MinOverlap,HitsFile,PylisFile,OutputFile) :-
 	report_overlaps(MinOverlap,BlastHits,PylisORFs,OutStream),
 	close(OutStream).
 	
+no_rna_overlap(HitsFile,RNAFile,OutputFile) :-
+	terms_from_file(RNAFile,RNAs),
+	open(HitsFile,read,HitsIn),
+	open(OutputFile,write,HitsOut),
+	annotate_hits_with_rnas(HitsIn,RNAs,HitsOut),
+	close(HitsIn),
+	close(HitsOut).
+
+annotate_hits_with_rnas(HitsIn,RNAs,HitsOut) :-
+	read(HitsIn,Hit),
+	((Hit == end_of_file) ->
+		true
+		;
+		(find_rna_match(Hit,RNAs,RNA) ->
+			gene_add_extra_field(Hit,rna_overlap,RNA,HitUpdated)
+			;
+			HitUpdated = Hit
+		),
+		writeq(HitsOut,HitUpdated),
+		write('.\n'),
+		!,
+		annotate_hits_with_rnas(HitsIn,RNAs,HitsOut)).
+	
+find_rna_match(Hit,RNAs,RNA) :-
+		gene_left(Hit,HitLeft),
+		gene_right(Hit,HitRight),
+		member(RNA,RNAs),
+		gene_left(RNA,RNALeft),
+		gene_right(RNA,RNARight),
+		overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL),
+		OL > 0.
+	
 report_overlaps(_,[],_,_).
 
 report_overlaps(MinOverlap,[Hit|RestHits],PylisOrfs,OutStream) :-
