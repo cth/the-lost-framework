@@ -45,6 +45,8 @@ hits_with_match(DatabaseGenome,QueryGenome) <- pyl::hits_matching_pylis_orfs([bl
 
 all_results <- append_all((genome_link(GenomeA,_),genome_link(GenomeB,_)),hits_with_match(GenomeA,GenomeB)).
 
+all_results_different <- append_all((genome_link(GenomeA,_),genome_link(GenomeB,_), GenomeA \= GenomeB),hits_with_match(GenomeA,GenomeB)).
+
 all_results_sorted <- ranges::sort_by_field(all_results,[sort_field(evalue)]).
 
 /*
