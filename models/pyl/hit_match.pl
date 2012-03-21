@@ -33,9 +33,8 @@ annotate_hits_with_rnas(HitsIn,RNAs,HitsOut) :-
 		annotate_hits_with_rnas(HitsIn,RNAs,HitsOut)).
 	
 find_rna_match(Hit,RNAs,RNA) :-
-	gene_extra_field(Hit,match_to,MatchTo),
-	gene_extra_field(MatchTo,hit_left,HitLeft),
-	gene_extra_field(MatchTo,hit_right,HitRight),
+	gene_extra_field(Hit,hit_left,HitLeft),
+	gene_extra_field(Hit,hit_right,HitRight),
 	member(RNA,RNAs),
 	gene_left(RNA,RNALeft),
 	gene_right(RNA,RNARight),
