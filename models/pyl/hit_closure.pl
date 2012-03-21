@@ -14,7 +14,8 @@ link([OrganismA,LeftA,RightA,StrandA,FrameA],[OrganismB,LeftB,RightB,StrandB,Fra
 	blast_match(OrganismAFullname,LeftA,RightA,StrandA,FrameA,ExtraA),
 	member(match_to(orf(OrganismB,LeftB,RightB,StrandB,FrameB,_ExtraB)), ExtraA),
 	extract_organism_name(OrganismAFullname,OrganismA).
-	
+
+/* quadratic version. Too slow for large files.
 clusters(Clusters) :-
 	findall(C,cluster(C),ClustersDup),
 	length(ClustersDup,DupLen),
@@ -23,12 +24,40 @@ clusters(Clusters) :-
 	eliminate_duplicate(ClustersDup,Clusters),
 	length(Clusters,CLen),
 	writeln(clusters(CLen)).
-	
+
 cluster(SortC) :-
 	tlink(A,_),
 	findall(B,tlink(A,B),C1),
 	eliminate_duplicate(C1,C),
 	sort(C,SortC).
+*/		
+	
+clusters(Clusters) :-
+	findall(A,link(A,_),Seeds),
+	length(Seeds,SeedsLen),
+	writeln(seeds_length(SeedsLen)),
+	eliminate_duplicate(Seeds,UniqSeeds),
+	length(UniqSeeds,UniqSeedsLen),
+	writeln(uniq_seeds_length(UniqSeedsLen)),
+	clusters_from_seeds(UniqSeeds,[],Clusters).
+
+clusters_from_seeds([],C,C).
+
+clusters_from_seeds([Seed|SeedsRest],ClustersIn,ClustersOut) :-
+	member(Cluster,ClustersIn),
+	member(Seed,Cluster),
+	!,
+	clusters_from_seeds(SeedsRest,ClustersIn,ClustersOut).
+	
+clusters_from_seeds([Seed|Seeds],ClustersIn,ClustersOut) :-
+	cluster(Seed,Cluster),
+	writeln(Cluster),
+	clusters_from_seeds(Seeds,[Cluster|ClustersIn],ClustersOut).
+
+cluster(OneMember,Members) :-
+	findall(OtherMember,tlink(OneMember,OtherMember),AllMembers),!,
+	eliminate_duplicate([OneMember|AllMembers],UniqMembers),
+	sort(UniqMembers,Members).
 	
 hit_closure(HitsFile,ClusterFile) :-
 	[HitsFile], % Load the HitsFile into memory
@@ -38,7 +67,7 @@ hit_closure(HitsFile,ClusterFile) :-
 	close(ClusterStream).
 
 test :-
-	hit_closure('data100.pl','clusters.pl').
+	hit_closure('data1000.pl','clusters.pl').
 
 extract_organism_name(SeqId,JustName) :-
 	atom_codes(SeqId,Codes),
