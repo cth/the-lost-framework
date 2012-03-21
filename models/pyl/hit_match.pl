@@ -19,7 +19,6 @@ no_rna_overlap(HitsFile,RNAFile,OutputFile) :-
 
 annotate_hits_with_rnas(HitsIn,RNAs,HitsOut) :-
 	read(HitsIn,Hit),
-	writeln(Hit),
 	((Hit == end_of_file) ->
 		true
 		;
@@ -28,7 +27,6 @@ annotate_hits_with_rnas(HitsIn,RNAs,HitsOut) :-
 			;
 			HitUpdated = Hit
 		),
-		writeln(HitUpdated),
 		writeq(HitsOut,HitUpdated),
 		write(HitsOut,'.\n'),
 		!,
@@ -42,6 +40,7 @@ find_rna_match(Hit,RNAs,RNA) :-
 	gene_left(RNA,RNALeft),
 	gene_right(RNA,RNARight),
 	overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL),
+	writeln(overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL)),
 	OL > 0.
 	
 report_overlaps(_,[],_,_).
