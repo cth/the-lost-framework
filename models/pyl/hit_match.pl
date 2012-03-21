@@ -27,8 +27,9 @@ annotate_hits_with_rnas(HitsIn,RNAs,HitsOut) :-
 			;
 			HitUpdated = Hit
 		),
+		writeln(HitUpdated),
 		writeq(HitsOut,HitUpdated),
-		write('.\n'),
+		write(HitsOut,'.\n'),
 		!,
 		annotate_hits_with_rnas(HitsIn,RNAs,HitsOut)).
 	
