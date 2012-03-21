@@ -19,6 +19,7 @@ no_rna_overlap(HitsFile,RNAFile,OutputFile) :-
 
 annotate_hits_with_rnas(HitsIn,RNAs,HitsOut) :-
 	read(HitsIn,Hit),
+	writeln(Hit),
 	((Hit == end_of_file) ->
 		true
 		;
