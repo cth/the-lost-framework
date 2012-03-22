@@ -1,5 +1,7 @@
 :- table tlink/2.
 
+:- dynamic visited/1.
+
 tlink(A,B) :-
 	link(A,B).
 
@@ -21,24 +23,8 @@ link([OrganismA,LeftA,RightA,StrandA,FrameA],[OrganismB,LeftB,RightB,StrandB,Fra
 	blast_match(OrganismA,LeftA,RightA,StrandA,FrameA,ExtraA),
 	member(match_to(orf(OrganismB,LeftB,RightB,StrandB,FrameB,_ExtraB)), ExtraA).
 
-/* quadratic version. Too slow for large files.
 clusters(Clusters) :-
-	findall(C,cluster(C),ClustersDup),
-	length(ClustersDup,DupLen),
-	writeln(duplen(DupLen)),
-	!,
-	eliminate_duplicate(ClustersDup,Clusters),
-	length(Clusters,CLen),
-	writeln(clusters(CLen)).
-
-cluster(SortC) :-
-	tlink(A,_),
-	findall(B,tlink(A,B),C1),
-	eliminate_duplicate(C1,C),
-	sort(C,SortC).
-*/		
-	
-clusters(Clusters) :-
+	retractall(visited(_)),
 	findall(A,link(A,_),Seeds),
 	length(Seeds,SeedsLen),
 	writeln(seeds_length(SeedsLen)),
@@ -46,26 +32,27 @@ clusters(Clusters) :-
 	length(UniqSeeds,UniqSeedsLen),
 	writeln(uniq_seeds_length(UniqSeedsLen)),
 	clusters_from_seeds(UniqSeeds,[],Clusters).
-
+	
 clusters_from_seeds([],C,C).
 
 clusters_from_seeds([Seed|SeedsRest],ClustersIn,ClustersOut) :-
-	member(Cluster,ClustersIn),
-	member(Seed,Cluster),
+%	member(Cluster,ClustersIn),
+%	member(Seed,Cluster),
+	visited(Seed),
 	!,
 	clusters_from_seeds(SeedsRest,ClustersIn,ClustersOut).
 	
 clusters_from_seeds([Seed|Seeds],ClustersIn,ClustersOut) :-
 	cluster(Seed,Cluster),
 	writeln(Cluster),
+	forall(member(M,Cluster),assert(visited(M))),
 	clusters_from_seeds(Seeds,[Cluster|ClustersIn],ClustersOut).
 
 cluster(OneMember,Members) :-
 	findall(OtherMember,tlink(OneMember,OtherMember),AllMembers),!,
 	eliminate_duplicate([OneMember|AllMembers],UniqMembers),
 	sort(UniqMembers,Members).
-	
-	
+		
 hit_closure(HitsFile,ClusterFile) :-
 	[HitsFile], % Load the HitsFile into memory
 	clusters(Clusters),
@@ -74,8 +61,8 @@ hit_closure(HitsFile,ClusterFile) :-
 	close(ClusterStream).
 
 test :-
-	trim_sequence_identifier('data1000.pl','data1000_trim.pl'),
-	hit_closure('data1000_trim.pl','clusters.pl').
+	trim_sequence_identifier('data4000.pl','data4000_trim.pl'),
+	hit_closure('data4000_trim.pl','clusters.pl').
 
 trim_sequence_identifier(InputFile,OutputFile) :-
 	open(InputFile,read,IS),
