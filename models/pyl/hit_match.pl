@@ -40,8 +40,8 @@ find_rna_match(Hit,RNAs,RNA) :-
 	gene_left(RNA,RNALeft),
 	gene_right(RNA,RNARight),
 	overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL),
-	writeln(overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL)),
-	OL > 0.
+	OL > 0,
+	writeln(overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL)).	
 	
 report_overlaps(_,[],_,_).
 
