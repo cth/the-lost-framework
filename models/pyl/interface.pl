@@ -12,6 +12,8 @@
 
 :- task(hits_rna_match([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
 
+:- task(trim_blast_hits([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
+
 
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
@@ -92,5 +94,13 @@ hits_matching_pylis_orfs([HitListFile,MustMatchListFile],Options,OutputFile) :-
 hits_rna_match([HitListFile,RNAFile],_Options,OutputFile) :-
 	cl(hit_match),
 	no_rna_overlap(HitListFile,RNAFile,OutputFile).
-
 	
+%% trim_blast_hits(+InputFiles,+Options,+OutputFile)
+% == 
+% InputFiles = [ HitListFile ]
+% ==
+% Blast hits will have both the organism name and the position in the sequence id of each hit. 
+% this task removes everything but the organism name
+trim_blast_hits([Inputfile],_Options,OutputFile) :-
+	cl(hit_trim),
+	trim_sequence_identifier(InputFile,OutputFile).
