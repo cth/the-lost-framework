@@ -10,10 +10,16 @@ tlink(A,C) :-
 	tlink(A,B),
 	tlink(B,C).
 
+/*
 link([OrganismA,LeftA,RightA,StrandA,FrameA],[OrganismB,LeftB,RightB,StrandB,FrameB]) :-
 	blast_match(OrganismAFullname,LeftA,RightA,StrandA,FrameA,ExtraA),
 	member(match_to(orf(OrganismB,LeftB,RightB,StrandB,FrameB,_ExtraB)), ExtraA),
 	extract_organism_name(OrganismAFullname,OrganismA).
+*/
+
+link([OrganismA,LeftA,RightA,StrandA,FrameA],[OrganismB,LeftB,RightB,StrandB,FrameB]) :-
+	blast_match(OrganismA,LeftA,RightA,StrandA,FrameA,ExtraA),
+	member(match_to(orf(OrganismB,LeftB,RightB,StrandB,FrameB,_ExtraB)), ExtraA).
 
 /* quadratic version. Too slow for large files.
 clusters(Clusters) :-
@@ -59,6 +65,7 @@ cluster(OneMember,Members) :-
 	eliminate_duplicate([OneMember|AllMembers],UniqMembers),
 	sort(UniqMembers,Members).
 	
+	
 hit_closure(HitsFile,ClusterFile) :-
 	[HitsFile], % Load the HitsFile into memory
 	clusters(Clusters),
@@ -67,7 +74,28 @@ hit_closure(HitsFile,ClusterFile) :-
 	close(ClusterStream).
 
 test :-
-	hit_closure('data1000.pl','clusters.pl').
+	trim_sequence_identifier('data1000.pl','data1000_trim.pl'),
+	hit_closure('data1000_trim.pl','clusters.pl').
+
+trim_sequence_identifier(InputFile,OutputFile) :-
+	open(InputFile,read,IS),
+	open(OutputFile,write,OS),
+	trim_sequence_identifier_rec(IS,OS),
+	close(IS),
+	close(OS).
+	
+trim_sequence_identifier_rec(IS,OS) :-
+	read(IS,Term),
+	((Term == end_of_file) ->
+		true
+		;
+		Term =.. [ Functor, SeqId | Rest ],
+		extract_organism_name(SeqId,SeqIdTrim),		
+		NewTerm =.. [ Functor, SeqIdTrim | Rest ],
+		writeq(OS,NewTerm),
+		write(OS,'.\n'),
+		trim_sequence_identifier_rec(IS,OS)).
+		
 
 extract_organism_name(SeqId,JustName) :-
 	atom_codes(SeqId,Codes),
