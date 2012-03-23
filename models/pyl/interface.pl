@@ -14,6 +14,7 @@
 
 :- task(trim_blast_hits([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
 
+:- task(hit_clusters([text(prolog(ranges(gene)))],[], [text(prolog(ranges(gene))),text(prolog(ranges(gene)))])).
 
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
@@ -101,6 +102,18 @@ hits_rna_match([HitListFile,RNAFile],_Options,OutputFile) :-
 % ==
 % Blast hits will have both the organism name and the position in the sequence id of each hit. 
 % this task removes everything but the organism name
-trim_blast_hits([Inputfile],_Options,OutputFile) :-
+trim_blast_hits([InputFile],_Options,OutputFile) :-
 	cl(hit_trim),
 	trim_sequence_identifier(InputFile,OutputFile).
+
+%% hit_clusters(+InputFiles,+Options,+OutputFiles)
+% ==
+% InputFiles = [ HitListFile]
+% ==
+% and 
+% == 
+% OutputFiles = [ ClustersSimple, ClustersDetailed ]
+% ==
+hit_clusters([InputFile],_Options,[ClustersSimple,ClustersDetailed]) :-
+	cl(hit_closure),
+	hit_closure(InputFile,ClustersSimple,ClustersDetailed).
