@@ -108,7 +108,7 @@ report_clusters(I,[Cluster|ClustersRest],SimpleClusterStream,DetailClusterStream
 is_ribosomal_cluster(Matches) :-
 	member(Match,Matches),
 	gene_extra_field(Match,rna_overlap,_).
-	
+
 multi_organism_clusters([],[]).
 
 multi_organism_clusters([cluster(Cluster)|Clusters],[cluster(Cluster)|MultiOrganismClusters]) :-

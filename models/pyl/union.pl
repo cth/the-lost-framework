@@ -8,8 +8,8 @@ makeset(X) :-
 		;
 		assert(set(X,X))).
 	
-find(Elem,Root) :-
-	set(Elem,Root).
+find(Root,Root) :-
+	set(Root,Root).
 
 find(Element,Root) :-
 	ground(Element),
@@ -17,17 +17,25 @@ find(Element,Root) :-
 	Element \= Parent,
 	find(Parent,Root).
 
-find(Elem,Root) :-
+find2(Root,Root) :-
+	set(Root,Root).
+
+find2(Elem,Root) :-
+	ground(Root),
+	set(Elem,Root),
+	Elem \= Root.
+
+find2(Elem,Root) :-
 	ground(Root),
 	set(Child,Root),
 	Child \= Root,
-	find(Elem,Child).
-
+	find2(Elem,Child).
+	
 roots(Roots) :-
 	findall(Root,find(Root,Root),Roots).
 
 transitive_closure(Root,Elements) :-
-	findall(Element,find(Element,Root),Elements).
+	findall(Element,find2(Element,Root),Elements).
 
 union(X,X).
 
@@ -42,7 +50,8 @@ union_find_test :-
 	forall(member(X,Set),makeset(X)),
 	union(1,3),
 	union(2,4),
-	union(2,6),
+	union(2,6).
+	/*
 	find(2,Root2),
 	transitive_closure(Root2,Xs),
-	sort(Xs,[2,4,6]).
+	sort(Xs,[2,4,6]). */
