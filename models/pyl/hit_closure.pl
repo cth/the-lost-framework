@@ -2,7 +2,12 @@
 
 %:- ['../../lost.pl'].
 
+:- dynamic lookup_match/2.
+:- dynamic uag_position/2.
+
 :- use(genedb).
+
+assert_once(Term) :-	(Term -> true ; assert(Term)).
 
 build_links(InputFile) :-
 	open(InputFile,read,IS),
@@ -17,13 +22,15 @@ build_links_rec(I,IS) :-
 		true
 		;
 		Term = blast_match(OrganismA,LeftA,RightA,StrandA,FrameA,ExtraA),
-		member(match_to(orf(OrganismB,LeftB,RightB,StrandB,FrameB,_ExtraB)), ExtraA),
+		member(match_to(orf(OrganismB,LeftB,RightB,StrandB,FrameB,ExtraB)), ExtraA),
 		makeset([OrganismA,LeftA,RightA,StrandA,FrameA]),
 		makeset([OrganismB,LeftB,RightB,StrandB,FrameB]),
 		union([OrganismA,LeftA,RightA,StrandA,FrameA],[OrganismB,LeftB,RightB,StrandB,FrameB]),
 		% Associate blast match Term with organism A
-		assert(lookup_match([OrganismA,LeftA,RightA,StrandA,FrameA],Term)),
-		assert(lookup_match([OrganismB,LeftB,RightB,StrandB,FrameB],Term)),
+		assert_once(lookup_match([OrganismA,LeftA,RightA,StrandA,FrameA],Term)),
+		assert_once(lookup_match([OrganismB,LeftB,RightB,StrandB,FrameB],Term)),
+		member(in_frame_stops([UAG]),ExtraB),
+		assert_once(uag_position([OrganismB,LeftB,RightB,StrandB,FrameB],UAG)),
 		I1 is I + 1,
 		build_links_rec(I1,IS)).
 
@@ -50,6 +57,15 @@ add_cluster_size([],[]).
 add_cluster_size([Cluster|ClusterRest],[[Size,Cluster]|SizeClusterRest]) :-
 	length(Cluster,Size),
 	add_cluster_size(ClusterRest,SizeClusterRest).
+	
+add_uag_positions([],[]).
+add_uag_positions([C|Cs],[D|Ds]) :-
+	(uag_position(C,UAG) ->
+		append(C,[UAG],D)
+		;
+		append(C,[na],D)),
+	add_uag_positions(Cs,Ds).
+
 
 hit_closure(HitsFile,ClusterFile,DetailedClusterFile) :-
 	writeln('reading matches and building union-find data structure:'),
@@ -65,16 +81,17 @@ hit_closure(HitsFile,ClusterFile,DetailedClusterFile) :-
 	close(SimpleClusterStream),
 	close(DetailClusterStream).
 	
-report_clusters(I,[],_,_).
+report_clusters(_,[],_,_).
 
 report_clusters(I,[Cluster|ClustersRest],SimpleClusterStream,DetailClusterStream) :-
 	((0 is I mod 10) -> write(I) ; write('.')),
 	findall(FullMatch,(member(Match,Cluster),lookup_match(Match,FullMatch)),FullMatches),
 	eliminate_duplicate(FullMatches,UniqMatches),
+	add_uag_positions(Cluster,ClusterWithUAG),
 	(is_ribosomal_cluster(UniqMatches) ->
 		true
 		;
-		writeq(SimpleClusterStream,cluster(Cluster)),
+		writeq(SimpleClusterStream,cluster(ClusterWithUAG)),
 		write(SimpleClusterStream,'.\n'),
 		writeq(DetailClusterStream,cluster_matches(Cluster,UniqMatches)),
 		write(DetailClusterStream,'.\n')),
