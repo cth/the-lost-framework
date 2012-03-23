@@ -1,5 +1,9 @@
 :- [union].
 
+%:- ['../../lost.pl'].
+
+:- use(genedb).
+
 build_links(InputFile) :-
 	open(InputFile,read,IS),
 	build_links_rec(1,IS),
@@ -41,17 +45,33 @@ hit_closure(HitsFile,ClusterFile,DetailedClusterFile) :-
 	build_links(HitsFile),!,
 	writeln('building clusters:'),	
 	clusters(Clusters),
-	open(ClusterFile,write,ClusterStream),
-	forall(member(Cluster,Clusters), (writeq(ClusterStream,cluster(Cluster)),write(ClusterStream,'.\n'))),
-	close(ClusterStream),
+	open(ClusterFile,write,SimpleClusterStream),
 	open(DetailedClusterFile,write,DetailClusterStream),
-	forall(member(Cluster,Clusters), 
-			(findall(FullMatch,(member(Match,Cluster),lookup_match(Match,FullMatch)),FullMatches),
-			eliminate_duplicate(FullMatches,UniqMatches),
-			writeq(DetailClusterStream,cluster_matches(Cluster,UniqMatches)),
-			write(DetailClusterStream,'.\n'))),
+	writeln('writing clusters to output files...'),
+	report_clusters(1,Clusters,SimpleClusterStream,DetailClusterStream),
+	close(SimpleClusterStream),
 	close(DetailClusterStream).
 	
+report_clusters(I,[],_,_).
+
+report_clusters(I,[Cluster|ClustersRest],SimpleClusterStream,DetailClusterStream) :-
+	((0 is I mod 10) -> write(I) ; write('.')),
+	findall(FullMatch,(member(Match,Cluster),lookup_match(Match,FullMatch)),FullMatches),
+	eliminate_duplicate(FullMatches,UniqMatches),
+	(is_ribosomal_cluster(UniqMatches) ->
+		true
+		;
+		writeq(SimpleClusterStream,cluster(Cluster)),
+		write(SimpleClusterStream,'.\n'),
+		writeq(DetailClusterStream,cluster_matches(Cluster,UniqMatches)),
+		write(DetailClusterStream,'.\n')),
+	!,
+	I1 is I + 1,
+	report_clusters(I1,ClustersRest,SimpleClusterStream,DetailClusterStream).
+	
+is_ribosomal_cluster(Matches) :-
+	member(Match,Matches),
+	gene_extra_field(Match,rna_overlap,_).
 
 test :-
-	hit_closure('data4000_trim.pl','clusters.pl','cluster_matches.pl').
+	hit_closure('data1000_trim.pl','clusters.pl','cluster_matches.pl').
