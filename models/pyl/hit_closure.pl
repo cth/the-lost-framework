@@ -39,16 +39,29 @@ clusters_rec(I,[Root|RootsRest],[Cluster|ClustersRest]) :-
 	I1 is I + 1,
 	!,
 	clusters_rec(I1,RootsRest,ClustersRest).
+	
+sort_clusters_by_size(Clusters,ClustersBySizeDescending) :-
+	add_cluster_size(Clusters,ClustersWithSize),
+	sort(ClustersWithSize,ClustersWithSizeBySize),
+	add_cluster_size(ClustersBySizeAscending,ClustersWithSizeBySize),
+	reverse(ClustersBySizeAscending,ClustersBySizeDescending).
+
+add_cluster_size([],[]).
+add_cluster_size([Cluster|ClusterRest],[[Size,Cluster]|SizeClusterRest]) :-
+	length(Cluster,Size),
+	add_cluster_size(ClusterRest,SizeClusterRest).
 
 hit_closure(HitsFile,ClusterFile,DetailedClusterFile) :-
 	writeln('reading matches and building union-find data structure:'),
 	build_links(HitsFile),!,
 	writeln('building clusters:'),	
 	clusters(Clusters),
+	writeln('sorting clusters by size..'),
+	sort_clusters_by_size(Clusters,SortClusters),
 	open(ClusterFile,write,SimpleClusterStream),
 	open(DetailedClusterFile,write,DetailClusterStream),
 	writeln('writing clusters to output files...'),
-	report_clusters(1,Clusters,SimpleClusterStream,DetailClusterStream),
+	report_clusters(1,SortClusters,SimpleClusterStream,DetailClusterStream),
 	close(SimpleClusterStream),
 	close(DetailClusterStream).
 	
