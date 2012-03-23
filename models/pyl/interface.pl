@@ -103,7 +103,7 @@ hits_rna_match([HitListFile,RNAFile],_Options,OutputFile) :-
 % Blast hits will have both the organism name and the position in the sequence id of each hit. 
 % this task removes everything but the organism name
 trim_blast_hits([InputFile],_Options,OutputFile) :-
-	cl(hit_trim),
+	cl(trim_hits),
 	trim_sequence_identifier(InputFile,OutputFile).
 
 %% hit_clusters(+InputFiles,+Options,+OutputFiles)
