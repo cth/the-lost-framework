@@ -15,14 +15,20 @@ build_links(InputFile) :-
 	nl,
 	close(IS).
 	
+translate_name('Thermincola potens','Thermincola_potens') :- !.
+translate_name('Acetohalobium arabaticum','Acetohalobium_arabaticum') :- !.
+translate_name(X,X).
+	
 build_links_rec(I,IS) :-
 	((0 is I mod 100) -> write(I) ; write('.')),
 	read(IS,Term),
 	((Term == end_of_file) ->
 		true
 		;
-		Term = blast_match(OrganismA,LeftA,RightA,StrandA,FrameA,ExtraA),
-		member(match_to(orf(OrganismB,LeftB,RightB,StrandB,FrameB,ExtraB)), ExtraA),
+		Term = blast_match(OrganismA_1,LeftA,RightA,StrandA,FrameA,ExtraA),
+		member(match_to(orf(OrganismB_1,LeftB,RightB,StrandB,FrameB,ExtraB)), ExtraA),
+		translate_name(OrganismA_1,OrganismA),
+		translate_name(OrganismB_1,OrganismB),
 		makeset([OrganismA,LeftA,RightA,StrandA,FrameA]),
 		makeset([OrganismB,LeftB,RightB,StrandB,FrameB]),
 		union([OrganismA,LeftA,RightA,StrandA,FrameA],[OrganismB,LeftB,RightB,StrandB,FrameB]),
@@ -102,6 +108,27 @@ report_clusters(I,[Cluster|ClustersRest],SimpleClusterStream,DetailClusterStream
 is_ribosomal_cluster(Matches) :-
 	member(Match,Matches),
 	gene_extra_field(Match,rna_overlap,_).
+	
+multi_organism_clusters([],[]).
 
+multi_organism_clusters([cluster(Cluster)|Clusters],[cluster(Cluster)|MultiOrganismClusters]) :-
+	findall(Organism,member([Organism|_],Cluster),Organisms), % Only one organism
+	eliminate_duplicate(Organisms,NoDups),
+	length(NoDups,Num),
+	Num > 1,
+	!,
+	multi_organism_clusters(Clusters,MultiOrganismClusters).
+
+multi_organism_clusters([Cluster|Clusters],MultiOrganismClusters) :-
+	multi_organism_clusters(Clusters,MultiOrganismClusters).	
+	
+report_multi_organism_clusters(InputFile,OutputFile) :-
+	terms_from_file(InputFile,Clusters),
+	multi_organism_clusters(Clusters,MultiClusters),
+	terms_to_file(OutputFile,MultiClusters).
+	
+test_multi :-
+	report_multi_organism_clusters('all.pl','multi.pl').
+		
 test :-
 	hit_closure('data1000_trim.pl','clusters.pl','cluster_matches.pl').
