@@ -37,6 +37,7 @@ is_valid_alignment(Gene,OtherGene) :-
 
 build_alignments(InputFile,OutputFile) :-
 	terms_from_file(InputFile,Terms),
+	writeln('sorting by paired bases'),
 	sort_by_paired_bases(Terms,SortedTerms),
 	writeln('sorted terms and added paired bases counts.'),
 	write('aligning sequences...'),
@@ -95,3 +96,11 @@ sequence_id(GeneTerm,(SeqId,Left,Right)) :-
 
         ),
 	gene_sequence_id(GeneTerm,SeqId).
+
+% In the case that the sequence does not have in_frame_stops
+% we just use left and right
+sequence_id(GeneTerm,(SeqId,Left,Right)) :-
+        gene_sequence_id(GeneTerm,SeqId),
+        gene_left(GeneTerm,Left),
+        gene_right(GeneTerm,Right).
+
