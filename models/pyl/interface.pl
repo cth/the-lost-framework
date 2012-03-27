@@ -16,6 +16,8 @@
 
 :- task(hit_clusters([text(prolog(ranges(gene)))],[], [text(prolog(ranges(gene))),text(prolog(ranges(gene)))])).
 
+:- task(rank_clusters([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[sort_by(size)], [text(prolog(ranges(gene))),text(prolog(ranges(gene)))])).
+
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
 % ==
@@ -117,3 +119,19 @@ trim_blast_hits([InputFile],_Options,OutputFile) :-
 hit_clusters([InputFile],_Options,[ClustersSimple,ClustersDetailed]) :-
 	cl(hit_closure),
 	hit_closure(InputFile,ClustersSimple,ClustersDetailed).
+	
+%% rank_clusters(Clusters,File)
+rank_cluster([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
+	cl(rank_clusters),
+	get_option(Options,sort_by,size),
+	rank_by_size(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
+
+rank_cluster([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
+	cl(rank_clusters),
+	get_option(Options,sort_by,average_orf_length),
+	rank_by_average_length(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
+	
+rank_cluster([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
+	cl(rank_clusters),
+	get_option(Options,sort_by,number_of_organisms),
+	rank_by_organisms(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
