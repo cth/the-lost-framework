@@ -1,6 +1,5 @@
 :- [union].
 
-%:- ['../../lost.pl'].
 
 :- dynamic lookup_match/2.
 :- dynamic uag_position/2.
@@ -25,8 +24,10 @@ build_links_rec(I,IS) :-
 	((Term == end_of_file) ->
 		true
 		;
-		Term = blast_match(OrganismA_1,LeftA,RightA,StrandA,FrameA,ExtraA),
-		member(match_to(orf(OrganismB_1,LeftB,RightB,StrandB,FrameB,ExtraB)), ExtraA),
+%		Term = blast_match(OrganismA_1,LeftA,RightA,StrandA,FrameA,ExtraA),
+		Term = blast_match(_,LeftA,RightA,StrandA,FrameA,ExtraMatch),
+		member(match_to(orf(OrganismB_1,LeftB,RightB,StrandB,FrameB,ExtraB)), ExtraMatch),
+		member(query_orf(orf(OrganismA_1, LeftA, RightA, StrandA, FrameA,ExtraA)), ExtraMatch),
 		translate_name(OrganismA_1,OrganismA),
 		translate_name(OrganismB_1,OrganismB),
 		makeset([OrganismA,LeftA,RightA,StrandA,FrameA]),
@@ -35,8 +36,10 @@ build_links_rec(I,IS) :-
 		% Associate blast match Term with organism A
 		assert_once(lookup_match([OrganismA,LeftA,RightA,StrandA,FrameA],Term)),
 		assert_once(lookup_match([OrganismB,LeftB,RightB,StrandB,FrameB],Term)),
-		member(in_frame_stops([UAG]),ExtraB),
-		assert_once(uag_position([OrganismB,LeftB,RightB,StrandB,FrameB],UAG)),
+		member(in_frame_stops([UAG_A]),ExtraA),
+		assert_once(uag_position([OrganismA,LeftA,RightA,StrandA,FrameA],UAG_A)),
+		member(in_frame_stops([UAG_B]),ExtraB),
+		assert_once(uag_position([OrganismB,LeftB,RightB,StrandB,FrameB],UAG_B)),		
 		I1 is I + 1,
 		build_links_rec(I1,IS)).
 
@@ -53,17 +56,6 @@ clusters_rec(I,[Root|RootsRest],[Cluster|ClustersRest]) :-
 	!,
 	clusters_rec(I1,RootsRest,ClustersRest).
 	
-sort_clusters_by_size(Clusters,ClustersBySizeDescending) :-
-	add_cluster_size(Clusters,ClustersWithSize),
-	sort(ClustersWithSize,ClustersWithSizeBySize),
-	add_cluster_size(ClustersBySizeAscending,ClustersWithSizeBySize),
-	reverse(ClustersBySizeAscending,ClustersBySizeDescending).
-
-add_cluster_size([],[]).
-add_cluster_size([Cluster|ClusterRest],[[Size,Cluster]|SizeClusterRest]) :-
-	length(Cluster,Size),
-	add_cluster_size(ClusterRest,SizeClusterRest).
-	
 add_uag_positions([],[]).
 add_uag_positions([C|Cs],[D|Ds]) :-
 	(uag_position(C,UAG) ->
@@ -72,18 +64,16 @@ add_uag_positions([C|Cs],[D|Ds]) :-
 		append(C,[na],D)),
 	add_uag_positions(Cs,Ds).
 
-
 hit_closure(HitsFile,ClusterFile,DetailedClusterFile) :-
 	writeln('reading matches and building union-find data structure:'),
 	build_links(HitsFile),!,
 	writeln('building clusters:'),	
 	clusters(Clusters),
 	writeln('sorting clusters by size..'),
-	sort_clusters_by_size(Clusters,SortClusters),
 	open(ClusterFile,write,SimpleClusterStream),
 	open(DetailedClusterFile,write,DetailClusterStream),
 	writeln('writing clusters to output files...'),
-	report_clusters(1,SortClusters,SimpleClusterStream,DetailClusterStream),
+	report_clusters(1,Clusters,SimpleClusterStream,DetailClusterStream),
 	close(SimpleClusterStream),
 	close(DetailClusterStream).
 	
@@ -119,9 +109,9 @@ multi_organism_clusters([cluster(Cluster)|Clusters],[cluster(Cluster)|MultiOrgan
 	!,
 	multi_organism_clusters(Clusters,MultiOrganismClusters).
 
-multi_organism_clusters([Cluster|Clusters],MultiOrganismClusters) :-
-	multi_organism_clusters(Clusters,MultiOrganismClusters).	
-	
+multi_organism_clusters([_Cluster|Clusters],MultiOrganismClusters) :-
+	multi_organism_clusters(Clusters,MultiOrganismClusters).
+
 report_multi_organism_clusters(InputFile,OutputFile) :-
 	terms_from_file(InputFile,Clusters),
 	multi_organism_clusters(Clusters,MultiClusters),
