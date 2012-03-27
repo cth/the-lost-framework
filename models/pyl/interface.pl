@@ -10,6 +10,8 @@
 
 :- task(hits_matching_pylis_orfs([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[min_overlap(100)], text(prolog(ranges(gene))))).
 
+:- task(hits_match_query_orfs([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
+
 :- task(hits_rna_match([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
 
 :- task(trim_blast_hits([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
@@ -97,7 +99,18 @@ hits_matching_pylis_orfs([HitListFile,MustMatchListFile],Options,OutputFile) :-
 hits_rna_match([HitListFile,RNAFile],_Options,OutputFile) :-
 	cl(hit_match),
 	no_rna_overlap(HitListFile,RNAFile,OutputFile).
-	
+
+
+%% hits_matching_list
+% ==
+%  InputFiles = [Hits,MustMatchList]
+% ==
+% For each hit in Hits, check if the hit corresponds to a range in the MustMatchList.
+% Only hits that does match, are written to OutputFile
+hits_match_query_orfs([HitListFile,QueryORFS],Options,OutputFile) :-
+	cl(hit_match),
+	hit_query_match(HitListFile,QueryORFS,OutputFile).
+
 %% trim_blast_hits(+InputFiles,+Options,+OutputFile)
 % == 
 % InputFiles = [ HitListFile ]
@@ -119,6 +132,7 @@ trim_blast_hits([InputFile],_Options,OutputFile) :-
 hit_clusters([InputFile],_Options,[ClustersSimple,ClustersDetailed]) :-
 	cl(hit_closure),
 	hit_closure(InputFile,ClustersSimple,ClustersDetailed).
+
 	
 %% rank_clusters(Clusters,File)
 rank_cluster([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
