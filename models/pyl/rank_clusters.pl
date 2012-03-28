@@ -103,7 +103,8 @@ add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile) :-
 	align_sequences(ClustersWithPairs,ClustersWithScores),
 	writeln('Sorting by score: '),
 	sort(ClustersWithScores,ClustersByScores),
-	add_number_of_organisms(ClustersByScores,ClusterWithOrganisms),
+	reverse(ClustersByScores,ClustersByScoresRev)
+	add_number_of_organisms(ClustersByScoresRev,ClusterWithOrganisms),
 	writeln('Writing to file: '),
 	terms_to_file(SortedClustersFile,ClusterWithOrganisms),
 	close(Stream).
