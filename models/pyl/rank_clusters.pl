@@ -94,20 +94,30 @@ rank_by_diversity(ClustersFile,ClustersDetailFile,SortedClustersFile,F) :-
 	add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile),
 	atom_concat_list(['touch ',F],Cmd),
 	system(Cmd).
-
+	
 add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile) :-
 	open(ClustersDetailFile,read,Stream),
 	clusters_with_pylis_pairs(Stream,ClustersWithPairs),
 	nl,
 	writeln('Aligning sequences:'),
 	align_sequences(ClustersWithPairs,ClustersWithScores),
-	writeln('Sorting by score: '),
-	sort(ClustersWithScores,ClustersByScores),
-	reverse(ClustersByScores,ClustersByScoresRev)
-	add_number_of_organisms(ClustersByScoresRev,ClusterWithOrganisms),
+	writeln('add_number_of_organisms'),
+	add_number_of_organisms(ClustersWithScores,ClustersWithOrganisms),
+	writeln('add_combined_measure'),
+	add_combined_measure(ClustersWithOrganisms,ClustersWithCombined),
+	writeln('Sorting by combined score: '),
+	sort(ClustersWithCombined,ClustersByScores),
+	reverse(ClustersByScores,ClustersByScoresRev),
 	writeln('Writing to file: '),
-	terms_to_file(SortedClustersFile,ClusterWithOrganisms),
+	terms_to_file(SortedClustersFile,ClustersByScoresRev),
 	close(Stream).
+	
+add_combined_measure([],[]).
+add_combined_measure([cluster(Measures,Cluster)|ClusterRest],[cluster([combined(Combined)|Measures],Cluster)|OrgClusterRest]) :-
+	member(diversity(Diversity),Measures),
+	member(organisms(Organisms),Measures),
+	Combined is Diversity * Organisms,
+	add_combined_measure(ClusterRest,OrgClusterRest).
 
 add_number_of_organisms([],[]).
 add_number_of_organisms([cluster(Measures,Cluster)|ClusterRest],[cluster([organisms(NumOrganisms)|Measures],Cluster)|OrgClusterRest]) :-
