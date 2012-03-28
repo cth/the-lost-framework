@@ -133,7 +133,6 @@ hit_clusters([InputFile],_Options,[ClustersSimple,ClustersDetailed]) :-
 	cl(hit_closure),
 	hit_closure(InputFile,ClustersSimple,ClustersDetailed).
 
-	
 %% rank_clusters(Clusters,File)
 rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
 	cl(rank_clusters),
@@ -149,3 +148,9 @@ rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailO
 	cl(rank_clusters),
 	get_option(Options,sort_by,number_of_organisms),
 	rank_by_organisms(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
+	
+rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
+	cl(rank_clusters),
+	get_option(Options,sort_by,diversity),
+	rank_by_diversity(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
+	
