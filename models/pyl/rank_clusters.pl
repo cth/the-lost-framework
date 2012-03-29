@@ -45,20 +45,22 @@ sort_clusters_by_average_length(Clusters,ClustersBySizeDescending) :-
 	sort(ClustersWithAvgLength,ClustersWithAvgLengthByAvgLength),
 	add_average_cluster_length(ClustersByAvgLengthAscending,ClustersWithAvgLengthByAvgLength),
 	reverse(ClustersByAvgLengthAscending,ClustersBySizeDescending).
-
+/*n
 add_average_cluster_length([],[]).
 add_average_cluster_length([Cluster|ClusterRest],[[AvgLength,Cluster]|SizeClusterRest]) :-
 	average_cluster_length(Cluster,AvgLength),
 	add_average_cluster_length(ClusterRest,SizeClusterRest).
+*/
+
+average_cluster_length(cluster(_,Cluster),AvgLength) :-
+	average_cluster_length(cluster(Cluster),AvgLength).
 
 average_cluster_length(cluster(Cluster),AvgLength) :-
 	write('Average_cluster_length: '),
 	findall(L,(member([_,Left,Right|_],Cluster),L is Right-Left),Lengths),
 	length(Cluster,NumElems),
 	sumlist(Lengths,TotalLengths),
-	AvgLength is TotalLengths / NumElems,
-	writeln(AvgLength).
-
+	AvgLength is TotalLengths / NumElems.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Rank by number of organisms
@@ -97,27 +99,58 @@ rank_by_diversity(ClustersFile,ClustersDetailFile,SortedClustersFile,F) :-
 	
 add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile) :-
 	open(ClustersDetailFile,read,Stream),
-	clusters_with_pylis_pairs(Stream,ClustersWithPairs),
-	nl,
-	writeln('Aligning sequences:'),
-	align_sequences(ClustersWithPairs,ClustersWithScores),
-	writeln('add_number_of_organisms'),
-	add_number_of_organisms(ClustersWithScores,ClustersWithOrganisms),
-	writeln('add average cluster orf length: '),
-	add_average_cluster_length(ClustersWithOrganisms,ClustersWithOrfLengths),
-	writeln('add_combined_measure'),
-	add_combined_measure(ClustersWithOrfLengths,ClustersWithCombined),
+	clusters_with_pylis_pairs(Stream,Clusters1),
+	align_sequences(Clusters1,Clusters2),
+	add_number_of_organisms(Clusters2,Clusters3),
+	add_average_cluster_length(Clusters3,Clusters4),
+	normalize_measure(organisms,Clusters4,Clusters5),
+	normalize_measure(diversity,Clusters5,Clusters6),
+	normalize_measure(orf_length,Clusters6,Clusters7),
+	writeln('add_combined_measure'),	
+	add_combined_measure(Clusters7,Clusters8),
 	writeln('Sorting by combined score: '),
-	sort(ClustersWithCombined,ClustersByScores),
-	reverse(ClustersByScores,ClustersByScoresRev),
+	sort(Clusters8,Clusters9),
+	reverse(Clusters9,Clusters10),
+
 	writeln('Writing to file: '),
-	terms_to_file(SortedClustersFile,ClustersByScoresRev),
+	terms_to_file(SortedClustersFile,Clusters10),
 	close(Stream).
+	
+normalize_measure(M,Clusters,ClustersNorm) :-
+	range_for_measure(M,Clusters,9999999,-9999999,Min,Max),
+	writeln(min(Min)),
+	writeln(max(Max)),
+	normalize_measure_rec(M,Min,Max,Clusters,ClustersNorm).
+
+normalize_measure_rec(_,_,_,[],[]).
+normalize_measure_rec(M,Min,Max,[cluster(Measures,C)|ClustersRest],[cluster([NewRelMeasure|Measures],C)|ClustersNormRest]) :-
+	univ(MatchMeasure,[ M, Value]),
+	member(MatchMeasure,Measures),
+	RelativeMeasure is (Value-Min) / (Max-Min),
+	atom_concat('relative_',M,RelM),
+	univ(NewRelMeasure,[ RelM, RelativeMeasure ]),
+	normalize_measure_rec(M,Min,Max,ClustersRest,ClustersNormRest).
+
+range_for_measure(_,[],Min,Max,Min,Max).
+range_for_measure(M,[cluster(Measures,_)|Cs],Min,Max,FinalMin,FinalMax) :-
+	MatchMeasure =.. [ M, Value ],
+	member(MatchMeasure,Measures),
+	NextMin is min(Min,Value),
+	NextMax is max(Max,Value),
+	range_for_measure(M,Cs,NextMin,NextMax,FinalMin,FinalMax).
+
+total_for_measure(_,[],0).
+total_for_measure(M,[cluster(Measures,_)|Cs],Total) :-
+	MatchMeasure =.. [ M, Value ],
+	member(MatchMeasure,Measures),
+	total_for_measure(Cs,TotalRest),
+	Total is Value + TotalRest.
 	
 add_combined_measure([],[]).
 add_combined_measure([cluster(Measures,Cluster)|ClusterRest],[cluster([combined(Combined)|Measures],Cluster)|OrgClusterRest]) :-
-	member(diversity(Diversity),Measures),
-	member(organisms(Organisms),Measures),
+	member(relative_diversity(Diversity),Measures),
+	member(relative_organisms(Organisms),Measures),
+%	member(relative_orf_length(OrfLength),Measures),	
 	Combined is Diversity * Organisms,
 	add_combined_measure(ClusterRest,OrgClusterRest).
 
@@ -130,7 +163,11 @@ add_number_of_organisms([cluster(Measures,Cluster)|ClusterRest],[cluster([organi
 	
 add_average_cluster_length([],[]).
 add_average_cluster_length([cluster(Measures,Cluster)|ClusterRest],[cluster([orf_length(AvgLength)|Measures],Cluster)|OrgClusterRest]) :-
-	average_cluster_length(cluster(Cluster),AvgLength),
+%	average_cluster_length(cluster(Cluster),AvgLength),
+	findall(L,(member([_,Left,Right|_],Cluster),L is 1+Right-Left),Lengths),
+	length(Cluster,NumElems),
+	sumlist(Lengths,TotalLengths),
+	AvgLength is TotalLengths / NumElems,!,
 	add_average_cluster_length(ClusterRest,OrgClusterRest).
 	
 sort_cluster_by_score(Clusters,ClustersSorted) :-
