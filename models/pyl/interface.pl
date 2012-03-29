@@ -99,6 +99,7 @@ hits_matching_pylis_orfs([HitListFile,MustMatchListFile],Options,OutputFile) :-
 % ==
 % filter hits which match known genes in other strand/frame.
 hits_no_gene_overlaps([HitsFile,GenesFile],_Options,OutputFile) :-
+	cl(hit_match),
 	filter_by_gene_overlap(HitsFile,GenesFile,OutputFile).
 
 %% hits_rna_match(+InputFiles,+Options,+OutputFile)
