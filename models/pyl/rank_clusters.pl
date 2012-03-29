@@ -103,8 +103,10 @@ add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile) :-
 	align_sequences(ClustersWithPairs,ClustersWithScores),
 	writeln('add_number_of_organisms'),
 	add_number_of_organisms(ClustersWithScores,ClustersWithOrganisms),
+	writeln('add average cluster orf length: '),
+	add_average_cluster_length(ClustersWithOrganisms,ClustersWithOrfLengths),
 	writeln('add_combined_measure'),
-	add_combined_measure(ClustersWithOrganisms,ClustersWithCombined),
+	add_combined_measure(ClustersWithOrfLengths,ClustersWithCombined),
 	writeln('Sorting by combined score: '),
 	sort(ClustersWithCombined,ClustersByScores),
 	reverse(ClustersByScores,ClustersByScoresRev),
@@ -125,7 +127,12 @@ add_number_of_organisms([cluster(Measures,Cluster)|ClusterRest],[cluster([organi
 	eliminate_duplicate(OrganismsDup,Organisms),
 	length(Organisms,NumOrganisms),
 	add_number_of_organisms(ClusterRest,OrgClusterRest).
-
+	
+add_average_cluster_length([],[]).
+add_average_cluster_length([cluster(Measures,Cluster)|ClusterRest],[cluster([orf_length(AvgLength)|Measures],Cluster)|OrgClusterRest]) :-
+	average_cluster_length(cluster(Cluster),AvgLength),
+	add_average_cluster_length(ClusterRest,OrgClusterRest).
+	
 sort_cluster_by_score(Clusters,ClustersSorted) :-
 	findall(ByScore,(member(cluster([O,L,R,S,F,UAG,Score]),Clusters),ByScore=[Score,[O,L,R,S,F,UAG,Score]]),ClustersByScores),
 	sort(ClustersByScores,ClusterByScoresSorted),
