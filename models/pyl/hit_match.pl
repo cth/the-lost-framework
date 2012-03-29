@@ -9,13 +9,45 @@ hit_match(MinOverlap,HitsFile,PylisFile,OutputFile) :-
 	report_overlaps(MinOverlap,BlastHits,PylisORFs,OutStream),
 	close(OutStream).
 	
-no_rna_overlap(HitsFile,RNAFile,OutputFile) :-
+rna_overlap(HitsFile,RNAFile,OutputFile) :-
 	terms_from_file(RNAFile,RNAs),
 	open(HitsFile,read,HitsIn),
 	open(OutputFile,write,HitsOut),
 	annotate_hits_with_rnas(HitsIn,RNAs,HitsOut),
 	close(HitsIn),
 	close(HitsOut).
+
+filter_by_gene_overlap(HitsFile,GenesFile,OutputFile) :-
+	terms_from_file(GenesFile,Genes),
+	terms_from_file(HitsFile,Hits),
+	open(OutputFile,write,HitsOut),
+	filter_by_gene_overlap_rec(Hits,Genes,HitsOut),
+	close(HitsOut).
+
+filter_by_gene_overlap_rec([],_,_).
+filter_by_gene_overlap_rec([Hit|Hits],Genes,HitsOut) :-
+	(hit_region_overlapped(Hit,Genes) ->
+		writeq(HitsOut,Hit),
+		write(HitsOut,'.\n')
+		;
+		true
+	),
+	filter_by_gene_overlap_rec(Hits,Genes,HitsOut).
+	
+hit_region_overlapped(Hit,Genes) :-
+	gene_extra_field(Hit,hit_strand,HitStrand),
+	gene_extra_field(Hit,hit_frame,HitFrame),
+	member(Gene,Genes),
+	gene_frame(Gene,GeneFrame),
+	gene_strand(Gene,GeneStrand),
+	[HitFrame,HitStrand] \= [GeneFrame,GeneStrand],
+	gene_left(Gene,GeneLeft),
+	gene_right(Gene,GeneRight),
+	gene_extra_field(Hit,hit_left,HitLeft),
+	gene_extra_field(Hit,hit_right,HitRight),
+	HitLength is 1 + HitRight - HitLeft,
+	overlap_length((HitLeft,HitRight),(GeneLeft,GeneRight),OverlapLength),
+	OverlapLength >= HitLength.
 
 annotate_hits_with_rnas(HitsIn,RNAs,HitsOut) :-
 	read(HitsIn,Hit),
@@ -41,7 +73,7 @@ find_rna_match(Hit,RNAs,RNA) :-
 	gene_right(RNA,RNARight),
 	overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL),
 	OL > 0,
-	writeln(overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL)).	
+	writeln(overlap_length((HitLeft,HitRight),(RNALeft,RNARight),OL)).
 	
 report_overlaps(_,[],_,_).
 
@@ -105,7 +137,7 @@ overlap_length((Left1,Right1),(Left2,Right2),0) :-
 %    |----|   
 %    L2   R2
 overlap_length((Left1,Right1),(Left2,Right2),OverlapLength) :-
-	Right1 =< Right2,
+	Right1 >= Right2,
 	OverlapLength is 1 + Right1 - Left1.
 	
 % L1         R1

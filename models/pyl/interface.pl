@@ -10,6 +10,8 @@
 
 :- task(hits_matching_pylis_orfs([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[min_overlap(100)], text(prolog(ranges(gene))))).
 
+:- task(hit_no_gene_overlaps([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
+
 :- task(hits_match_query_orfs([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
 
 :- task(hits_rna_match([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
@@ -89,6 +91,15 @@ hits_matching_pylis_orfs([HitListFile,MustMatchListFile],Options,OutputFile) :-
 	get_option(Options,min_overlap,MinOverlap),
 	cl(hit_match),
 	hit_match(MinOverlap,HitListFile,MustMatchListFile,OutputFile).
+	
+
+%% hits_no_gene_overlap(+InputFiles,+Options,+OutputFile)
+% ==
+% InputFiles = [HitsFile,GenesFile]
+% ==
+% filter hits which match known genes in other strand/frame.
+hit_no_gene_overlaps([HitsFile,GenesFile],_Options,OutputFile) :-
+	filter_by_gene_overlap(HitsFile,GenesFile,OutputFile).
 
 %% hits_rna_match(+InputFiles,+Options,+OutputFile)
 % == 
@@ -107,7 +118,7 @@ hits_rna_match([HitListFile,RNAFile],_Options,OutputFile) :-
 % ==
 % For each hit in Hits, check if the hit corresponds to a range in the MustMatchList.
 % Only hits that does match, are written to OutputFile
-hits_match_query_orfs([HitListFile,QueryORFS],Options,OutputFile) :-
+hits_match_query_orfs([HitListFile,QueryORFS],_Options,OutputFile) :-
 	cl(hit_match),
 	hit_query_match(HitListFile,QueryORFS,OutputFile).
 
