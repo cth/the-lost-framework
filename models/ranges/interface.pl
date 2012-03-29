@@ -1,7 +1,8 @@
 :- task(as_fasta([text(prolog(ranges(gene)))], [sequence_functor(sequence)], text(fasta))).
 :- task(take([text(prolog(ranges(gene)))], [count(10)], [text(prolog(ranges(gene)))])).
 :- task(translate([text(prolog(ranges(gene)))], [sequence_functor(sequence),genecode(11)], text(prolog(ranges(gene))))).
-
+:- task(add_extra_field([text(prolog(ranges(gene)))],[extra_field(extra(na))],text(prolog(ranges(gene))))).
+:- task(sort_by_field([text(prolog(ranges(gene)))],[sort_field(na)],text(prolog(ranges(gene))))).
 
 :- use(fasta).
 :- use(genedb).
@@ -66,7 +67,49 @@ translate([InputFile],Options,OutputFile) :-
 	close(InStream),
 	close(OutStream).
 
+%% add_extra_field(+InputFile,+Option,+OutputFile)
+add_extra_field([InputFile],Options,OutputFile) :-
+	get_option(Options,extra_field,ExtraField),
+	open(InputFile,read,InStream),
+	open(OutputFile,write,OutStream),
+	add_extra_field_rec(InStream,OutStream,ExtraField),
+	close(InStream),
+	close(OutStream).
 
+add_extra_field_rec(InStream,OutStream,ExtraField) :-
+	read(InStream,Term),
+	write('.'),
+	((Term == end_of_file) ->
+		true
+		;
+		ExtraField =.. [ Key, Value ],
+		gene_add_extra_field(Term,Key,Value,NewTerm),
+		writeq(OutStream,NewTerm),
+		write(OutStream,'.\n'),
+		!,
+		add_extra_field_rec(InStream,OutStream,ExtraField)).
+		
+%% sort_by_field(+InputFile,+Option,+OutputFile)
+sort_by_field([InputFile],Options,OutputFile) :-
+	get_option(Options,sort_field,SortFieldFunctor),
+	terms_from_file(InputFile,Terms),
+	writeln('wrapping..'),
+	wrap_by_field(SortFieldFunctor,Terms,Wrapped),
+	writeln('sorting...'),
+	sort(Wrapped,WrappedSorted),
+	writeln('unwrapping..'),
+	unwrap(WrappedSorted,SortedTerms),
+	writeln('writing terms..'),
+	terms_to_file(OutputFile,SortedTerms).
+	
+wrap_by_field(_Field,[],[]).
 
+wrap_by_field(Field,[T|Ts],[[Value,T]|Ws]) :-
+	gene_extra_field(T,Field,Value),
+	wrap_by_field(Field,Ts,Ws).
+	
+unwrap([],[]).
+unwrap([[_,T]|Ws],[T|Ts]) :-
+		unwrap(Ws,Ts).
 
 
