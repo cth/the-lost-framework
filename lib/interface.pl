@@ -163,7 +163,7 @@ launch_prism_process(PrismPrologFile, Goal) :-
 	% Build PRISM command line:
 	lost_config(prism_command,PRISM),
 	lost_config(lost_base_directory,LostBaseDir),
-	atom_concat_list([PRISM,' -g "', 'consult(\'',LostBaseDir,'/lost.pl','\'), use(interface), ','consult(\'',Filename,'\'), ',Goal,'"'],Cmd),
+	atom_concat_list([PRISM,' -g "', 'consult(\'',LostBaseDir,'/lost.pl','\'), use(interface), ','consult(\'',Filename,'\'), ',Goal,',halt."'],Cmd),
 	debug(interface(launch_prism_process),['working directory: ', Dirname ]),
 	debug(interface(launch_prism_process),['cmd: ', Cmd]),
 	% FIXME: Setup some stdout redirection (this may be troublesome on windows)
