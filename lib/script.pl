@@ -59,7 +59,7 @@ run(Target) :-
 run(Target,Opts) :-
 	debug(script(run),['target=',Target]),
 	run(Target,Opts,File),
-	debug(script(run),[run(Target,Opts,File), ': Success',  Target, ' ==> ', File]).
+	debug(script(run),[run(Target,Opts,File), ': Success\n',  Target, ' ==> ', File]).
 	
 run(lost_data_file(Identifier),_RunOpts,File) :-
 	atom(Identifier),
