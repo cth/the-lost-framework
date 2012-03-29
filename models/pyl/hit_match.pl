@@ -35,11 +35,11 @@ filter_by_gene_overlap(HitsFile,GenesFile,OutputFile) :-
 filter_by_gene_overlap_rec([],_,_).
 filter_by_gene_overlap_rec([Hit|Hits],Genes,HitsOut) :-
 	(hit_region_overlapped(Hit,Genes) ->
-		writeq(HitsOut,Hit),
-		write(HitsOut,'.\n')
+		write('-')
 		;
-		true
-	),
+		write('+'),
+		writeq(HitsOut,Hit),
+		write(HitsOut,'.\n')),
 	filter_by_gene_overlap_rec(Hits,Genes,HitsOut).
 	
 hit_region_overlapped(Hit,Genes) :-
