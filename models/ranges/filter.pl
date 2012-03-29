@@ -1,90 +1,13 @@
 % Gene filter model
 % This model filters away some genes given a set of genes
-:- ['../../lost.pl'].
 
 :- use(regex).
 :- use(genecode).
 :- use(dnaseq).
 :- use(lists).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Declaration of input and output formats:
-
-lost_input_formats(annotate, [text(prolog(ranges(gene))),text(prolog(sequence))]).
-lost_output_format(annotate, _, [text(prolog(ranges(gene)))]).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Declaration of input and output formats:
-
-lost_option(annotate,
-	    match_frames,
-	    [1,2,3],
-	    'A list of valid frames. Genes in other frames will be filtered.').
-
-lost_option(annotate,
-	    match_strands,
-	    ['-','+'],
-	    'A list of valid strands. Genes occuring an other strand will be filtered.').
-
-lost_option(annotate,
-	    exact_match_extra_fields,
-	    [],
-	    'A list of Prolog terms terms each of which must unify with an element of the Extralist.').
-
-lost_option(annotate,
-	    exact_no_match_extra_fields,
-	    [],
-	    'A list of Prolog terms terms any of which must NOT unify with any element of the Extralist.').
-
-lost_option(annotate,
-	    regex_match_extra_fields,
-	    [],
-	    'A list of regular field names in the extra and regular expressions to match those fields. If a gene is matched by one of these regular expressions, then it is a candidate for the output.').
-
-lost_option(annotate,
-	    regex_no_match_extra_fields,
-	    [],
-	    'A list of field names in the extra and regular expressions to match those fields. If a gene is matched by any of these regular expression, it will be filtered and will not occur in the output.').
-
-lost_option(annotate,
-	    match_protein_coding,
-	    no,
-	    'Specifies that the gene should start with a valid start codon and end with a valid stop codon').
-
-lost_option(annotate,
-	    genecode,
-	    11,
-	    'The gene code to used. This is used to determine which genes are protein coding').
-
-lost_option(annotate,
-	    invert_results,
-	    no,
-	    'When this option is set to \'yes\', then the filtered genes will appear in the output instead of non-filtered genes').
-
-lost_option(annotate,
-            left,
-            min,
-            'An integer value denoting the left-most nucleotide to include in results. The default value (min) refers to the left-most nucleotide in the input data').
-
-lost_option(annotate,
-            right,
-            max,
-            'An integer value denoting the right-most nucleotide to include in results. The default value (min) refers to the right-most nucleotide in the input data').
-
-lost_option(annotate,
-            range,
-            [default,default],
-            'A range [RangeMin,RangeMax] used to filter genes with a length in this range').
-            
-lost_option_values(annotate,match_protein_coding, [yes,no]).
-lost_option_values(annotate,gene_code,[11]). % FIXME: add more..
-lost_option_values(annotate,insert_results,[yes,no]).
-
-annotate([GeneListFile], Options, OutFile) :-
-	annotate([GeneListFile,_], Options, OutFile).
-
-annotate([GeneListFile,GeneDataFile], Options, OutFile) :-
-	write('gene_filter: annotate called.'),nl,
+filter_impl([GeneListFile,GeneDataFile], Options, OutFile) :-
+	write('gene_filter: filter called.'),nl,
 	terms_from_file(GeneListFile,GeneTerms),
 
         length(GeneTerms,NumTerms),nl,

@@ -100,6 +100,7 @@ rank_by_diversity(ClustersFile,ClustersDetailFile,SortedClustersFile,F) :-
 add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile) :-
 	open(ClustersDetailFile,read,Stream),
 	clusters_with_pylis_pairs(Stream,Clusters1),
+	writeln('aligning sequences'),
 	align_sequences(Clusters1,Clusters2),
 	add_number_of_organisms(Clusters2,Clusters3),
 	add_average_cluster_length(Clusters3,Clusters4),
@@ -111,15 +112,12 @@ add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile) :-
 	writeln('Sorting by combined score: '),
 	sort(Clusters8,Clusters9),
 	reverse(Clusters9,Clusters10),
-
 	writeln('Writing to file: '),
 	terms_to_file(SortedClustersFile,Clusters10),
 	close(Stream).
 	
 normalize_measure(M,Clusters,ClustersNorm) :-
 	range_for_measure(M,Clusters,9999999,-9999999,Min,Max),
-	writeln(min(Min)),
-	writeln(max(Max)),
 	normalize_measure_rec(M,Min,Max,Clusters,ClustersNorm).
 
 normalize_measure_rec(_,_,_,[],[]).
