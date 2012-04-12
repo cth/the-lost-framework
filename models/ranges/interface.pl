@@ -180,6 +180,7 @@ add_sequence_field([RangesFile,FastaFile],_Options,OutputFile) :-
 
 add_sequence_field_rec([],_,[]).
 add_sequence_field_rec([Gene|GenesRest],Genome,[UpdatedGene|UpdatedRest]) :-
+	write('.'),
 	gene_left(Gene,Left),
 	gene_right(Gene,Right),
 	gene_strand(Gene,Strand),
