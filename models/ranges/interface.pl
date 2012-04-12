@@ -1,5 +1,5 @@
 :- task(as_fasta([text(prolog(ranges(gene)))], [sequence_functor(sequence)], text(fasta))).
-:- task(take([text(prolog(ranges(gene)))], [count(10)], [text(prolog(ranges(gene)))])).
+:- task(range_take([text(prolog(ranges(gene)))], [count(10)], text(prolog(ranges(gene))))).
 :- task(translate([text(prolog(ranges(gene)))], [sequence_functor(sequence),genecode(11)], text(prolog(ranges(gene))))).
 :- task(add_extra_field([text(prolog(ranges(gene)))],[extra_field(extra(na))],text(prolog(ranges(gene))))).
 :- task(sort_by_field([text(prolog(ranges(gene)))],[sort_field(na)],text(prolog(ranges(gene))))).
@@ -77,17 +77,21 @@ create_fasta_entry(GeneTerm,SeqFunc,FastaEntry) :-
 	atom_concat_list(HeaderElemList,HeaderAtom),
 	to_fasta(HeaderAtom,Sequence,FastaEntry).
 
-%% take(+InputFiles,+Options,+OutputFile)
+%% range_take(+InputFiles,+Options,+OutputFile)
 % ==
 % InputFiles = [InputFile]
 % ==
 % OutputFile contains the the N first elements of InputFile, where N is determined by option count
-take([InputFile],Options,OutputFile) :-
+range_take([InputFile],Options,OutputFile) :-
 	get_option(Options,count,Count),
 	terms_from_file(InputFile,Terms),
+        writeln('loaded terms'),
 	take(Count,Terms,Taken),
-	writeln(Taken),
-	terms_to_file(OutputFile,Taken).
+        writeln('writing temrs to file'),
+	terms_to_file(OutputFile,Taken),
+        writeln(done).
+
+
 
 %% translate(+InputFile,+Options,+OutputFile)
 % ==
