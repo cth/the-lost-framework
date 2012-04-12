@@ -4,7 +4,7 @@
 % Parameters::
 values(iid,[a,t,g,c]).
 
-values(emission(start),[(a,t,g),(c,t,g),(g,t,g),(t,t,g)]).
+values(emission(start),[(a,t,a),(a,t,g),(a,t,t),(a,t,c),(c,t,g),(g,t,g),(t,t,g)]).
 
 values(emission(ala),[(g,c,a),(g,c,c),(g,c,g),(g,c,t)]).
 values(emission(arg),[(a,g,a),(a,g,g),(c,g,a),(c,g,c),(c,g,g),(c,g,t)]).
