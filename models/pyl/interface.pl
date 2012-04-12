@@ -189,7 +189,7 @@ train_codon_model([InputFile],_Options,OutputFile) :-
 	
 %% score_with_codon_model(+InputFiles,+Options,+OutputFile)
 score_with_codon_model([InputFile,SwitchFile],_Options,OutputFile) :-
-	terms_from_file(InputFiles,Genes),
+	terms_from_file(InputFile,Genes),
 	prism(codon_model),
 	restore_sw(SwitchFile),
 	score_genes(Genes,ScoredGenes),
