@@ -1,0 +1,25 @@
+# STOCKHOLM 1.0
+
+#=GF AU	WAR
+
+A_arabaticum                       UAG------GGCUGCGA-A---A-CAGCAU----U-G---A------------GUCCUG-C-CGG-AUGUAUUGCUGCA-GACCAUGACGGC-G-----GGAUGAAAG-A-AUCUGAU-A-G-C--C-AUGA-G--GU-A-------------UCCCAGUU--A----AAU--G
+D_acetoxidan                       UAGGGGAA-UGAAACUU-CAC-UU-UCAC-------C----U--G----------CC-G-GAGU--UAU--C-GCUGCA-G--AUUUUCC-C-G------GUG---GG-A--UGA--G-GC--CU--U----CU-GACAGCCA--U------GAGGUAUCA-CAGUUAAAU--G
+M_acetivoran                       UAGGGCCCAGAGACCUCCCUGUC--CGCUCAGGGAAAC--AU--CUC----A------G-C-CG--ACU--G-CGCAGG-C--GGG--AUGC-A-----G-------A----GCA-----------------C----------UGACAGCCACGAGGUCUCGCAAC-UUAA-CG
+M_acetivoran-7                     UAGGGCCC-G-G-AGAC-----U-------UCCCUGUCUGCUCAGGGAAAUAUAUCC-U-C-UG--ACU--G-CGUUGG-C--GGC--CAGAUCUCUUCGGAUA---G----CC-------------A----C-----------GA-A-----GUCU-C-C-CAGCUCAAC--G
+M_barkeri_fu                       UAGGGCCCAGAGACCUCACUGUCCGCCCAG-GGAAAC---AU--U-------------U-C-CG--CUG--A-CUGUG--C--CGG--CGGA-AU----GA-C---CU----GUA-----------------C----------GGACAGUCACGAGGUCUCGCAACUCUGU--G
+M_barkeri_fu-1                     UAGGGCCCAGAGACCUCCCUGUCCGCUCAG-GGAAAU---AU--U-------------U-C-CG--CUG--A-CUGCG--C--CGG--CGGA-AU----GA-C---CU----GCA-----------------C----------GGACAGCCACGAGGUCUCGCAA--CUAAACG
+M_barkeri_fu-2                     UAGGGCCCAGAGACCUCCCUGUCCGCUCAG-GGAAAU---AU--U-------------U-C-CG--CUG--A-CUGCG--C--CGG--CGGA-AU----GA-C---CU----GCA-----------------C----------GGACAGCCACGAGGUCUCGCAA--CUAAACG
+M_burtonii_D                       UAGGGACC-UGAGACUU-----C--CCUGU------C----------------CGC--U-C-AG--GGAA-A-CAUCGC-U--UCCGACUGU-GUC---GGUGG--UC----AGG-UA-ACAAGUG-AC-AGCC-AC-------G--------AAGUAUCA-CAGCUCAAC--G
+M_burtonii_D-5                     UAGGGACCAGAGACUUCCCUGUCA--U------CUCA---GG--GUA----A-CAUC-G-C-UU--CCG--A-CUGUG--U--CGG--UGGC-CA----GAUG----A----CAA-----------------G----------UGACAGCCACGAAGUAUCACAGCUCAAC--G
+M_evestigatu                       UAGGGACCCGAGACCUCACUGUCUGCUCC--AGGUAA---CA--UCU-------------C-UG--CUG--A-UGCUG--U--CGG--CGGA-CU----UA-A---CC----CUG-----------------C----------AGACAGCCAUGAGGUCUCACAG--CUUAAUG
+M_evestigatu-8                     UAGGGACCCGAGACCUCACUGUCUGCUCC--AGGUAA---CA--UCU-------------C-UG--CUG--A-UGCUG--U--CGG--CGGA-CU----UA-A---CC----CUG-----------------C----------AGACAGCCAUGAGGUCUCACAG--CUUAAUG
+M_mahii_DSM_                       UAGGGCCCUGAGACUUC-C---CU----G-------U------------------CU-G---CA--CAG--G-GUAACA-U--CGG--UG-C-A------G-A----C----UG--UG-UCGGUGGUAUGAACUCCAACGACA-GCCA----CGAAGUCUCCCAGCUGAAC--G
+M_mahii_DSM_-0                     UAGGGCCCUGAGACUUC-C---CU----G-------U------------------CU-G---CA--CAG--G-GUAACA-U--CGG--UG-C-A------G-A----C----UG--UG-UCGGUGGUAUGAACUCCAACGACA-GCCA----CGAAGUCUCCCAGCUGAAC--G
+M_mazei_uid3                       UA-------GGGACC-A-------GAG-AC----U------------------UCCCUGUC-AGCUCAGG-GAAAUAUAUCCUCUG-ACUGC-AU----GGGAG--GCCAGAUCUCAUCAGA-CAGCCACGAAG-UGU-C--------------ACAGCUC--A----AC---G
+M_mazei_uid3-6                     UA-------GGGACC-A-------GAG-AC----U------------------UCCCUGUC-AGCUCAGG-GAAAUAUAUCCUCUG-ACUGC-AU----GGGAG--GCCAGAUCUCAUCAGA-CAGCCACGAAG-UGU-C--------------ACAGCUC--A----AC---G
+M_zhilinae_D                       UAGGGUCCUGAGACUUCACUGACU-GC-C-------C------------------AG-G-GUAA--CAU--C-GCUGCC-G--AUG--CA-C-C------U-G----G----UG---G-CA--UG--A--A-CU-CAAAUGAUAGUCA----UGAAGUCUCUCAGCUAAAC--G
+M_zhilinae_D-3                     UAGGGUCCUGAGACUUCACUGACU-GC-C-------C------------------AG-G-GUAA--CAU--C-GCUGCC-G--AUG--CA-C-C------U-G----G----UG---G-CA--UG--A--A-CU-CAAAUGAUAGUCA----UGAAGUCUCUCAGCUAAAC--G
+M_zhilinae_D-4                     UAGGGUCCUGAGACUUCACUGACU-GC-C-------C------------------AG-G-GUAA--CAU--C-GCUGCC-G--AUG--CA-C-C------U-G----G----UG---G-CA--UG--A--A-CU-CAAAUGAUAGUCA----UGAAGUCUCUCAGCUAAAC--G
+#=GC SS_cons                       ..((((...((((((((((((((((((((((((((........))))......((((((.(.((.(((((.((......))).))).))))).).....))))..)))....)))).((.((.((..........)).)))).))))))...)))))))))...))))......
+#=GC RF                            UAGGGMCCWGRGACYUCMCUGWCUgCYCMbwrgrWaHcugMUcaKyuaaauauyyMSuKuCwHRsuCWKdaRwSUUDSMuBmyCKGkaCKGMuMUcuucGRdRgaaSScagaUSWswKcMMrrYKgyAwsRaCKcYRWmKrmwRGWCAgccaYGARGUCUCDCARCUMWAMayG
+//

@@ -1,0 +1,23 @@
+# STOCKHOLM 1.0
+
+#=GF AU	WAR
+
+Acetohalobiu                       UAGGUAGGUGUAGGUGA--C---CCUAAUGGAAUGG-UCAUCAGUCA-C--------GC-AUU--A----GC--UUC--GGGCAUGGGCGG--A---------GUACGUACUGC-C-----GGAG-ACCUG--GUAGC---GCGCAUGC--------
+M_acetivoran                       UAGAUCGGG-G-UCGGC--G---ACCCUCUGGGU-AUGCCGAUUU-C-C-C------AC-AUA--A--U-GGCCUCA--GG-UAUGACCG---G-GA------UCAGA-GCAGC-C-----GGCG-AUCUU--GUUGC---AAGGAUG--------C
+M_acetivoran-3                     UAGAUC-GGGG-UCGGC--G---ACCCUCUGGGU-AUGCCGAUUUCC-CA--------C-AU---A----AU--G-G--CUU-C--AGGU-------------AU--G-ACCGGGAUAAGAGCUGCAGGCGACCUGGUCGCAAGGAUGG--------
+M_acetivoran-4                     UAGAUCGGG-G-UCGGC--G---ACCCUCUGGGU-AUGCCGAUUU-C-C-C------AC-AUA--A--U-GGCUUCA--GG-UAUGACCGG--G-A-------UCAGA-GCAGC-A-----GGCG-ACCUU--GUUGC---AAGGAUG--------C
+M_barkeri_fu                       UAGAUCGGG-G-UCGGC--G---ACCCAAUGGGU-AUGCCGAU-C--GCAC------AC-AUA--A--U-GG--CUU--CA-GGU-AUGACA-GGAA------UGAGA-GCUGC-A-----GGAG-ACCUU--GUUGC---AAGAAUG--------G
+M_barkeri_fu-2                     UAGAUCGGA-G-UCGGC--G---ACCCGAUGGGU-AUGCCGAU-U---U-C------CC-AUA-UA--A-UGGCUUC--AGGUAUGACUGG--A-A-------UUAGA-GCUGC-A-----GGUG-ACCUU--GUUGC---AAGAAUG--------G
+M_burtonii_D                       UAGAUC-GGUG-UUGGU--G---ACCCAAUGGGU-AUGCCAAUCU---CAC------AC-AUC--A--U-GGCUUCC--GG-UAUGACCGG--A-A-------UCAGG-GCAGC-U-----GGUG-ACCUU--GUUGC---AAGGAUG--------C
+M_burtonii_D-5                     U------AGAU-UGGUGUUGGUGACCCAAUGGGU-A-UGCCAAU--C-UC-ACA----C-AUC--A-UGGCU--UCC--GGU-AUGACCGG-UAUG-------AG--A-GCAGC-U-----GGUG-ACCUU--GUUGC---AAGGAUGC--------
+M_mahii_DSM_                       UAGAUA-GGAG-UUGGC--G---ACCCCAUAGGU-AUGCCAAUCU-CACAUAUCAUGGC-AUC--C--G-GU-CUUA--CAGGAAUGCGUG-CA---------GCC----G-GU-G-----ACCU-UG-UU--G-CC----A-GGAUGC--------
+M_mahii_DSM_-0                     UAGAUA-GGAG-UUGGC--G---ACCCAAUCGGU-AUGCCAAUCU-CACAUAUCAUGGC-AUC--C--G-GU-CUUA--CAGGAAUGCGUG-CA---------GCC----G-GU-G-----ACCU-UG-UU--G-CC----A-GGAUGC--------
+M_mahii_DSM_-1                     UAG-----GAG-UUGGC--G---ACCCAAUCGGU-AUGCCAAUCU-CACAUAUCAUGGC-AUC--C--G-GU-CUUA--CAGGAAUGCGUG-CA---------GCC----G-GU-G-----ACCU-UG-UU--G-CC----A-GGAUGCA----GUU
+M_mazei_uid3                       UAGAUCGGG-G-UCGGC--G---ACCCUCUGGGU-AUGCCGAU-C---U-C-------C--C---A-----C-AUAA--UG-G-CUUCAGGU-AUGACAGGAAUGAGA-GCAGC-A-----GGAG-ACCUU--GUUGC---AAG---G-A----UGC
+M_mazei_uid3-6                     UAGAUCGGG-G-UCGGC--G---ACCCUCUGGGU-AUGCCGAU-C---U-C-------C--C---A-----C-AUAAUGGC-CUCAGGC----AUGACAGGAAUGAGA-GCAGC-A-----GGAG-ACCUU--GUUGC---AAG---G-A----UGC
+M_mazei_uid3-7                     UAGAUC-GGGG-UCGGC--G---ACCCUCUGGGU-AUGCCGAUUUCC-CACAUAAUGGC-UUC--A-GGUAU--GAC--AGG-A--AU-G-------------AG--A-GCAGC-A-----GGAG-ACCUU--GUUGC---AAGGAUGC--------
+M_zhilinae_D                       UAGAUAGGA-G-UCGGC--G---ACCCAAUGGGU-AUGCCGAU-U---U-C-------CCACA-UAA-U-GACCUCC--GG-AAUGAGCGG--U-A-------UCAGA-GCAGC-A-----GGGG-AUCUU--GUUGC---AAG---G-A----UGC
+Methanohalob                       UAGGUAGGA-G-UCGGC--G---ACCCGGUGGGU-AUGCCGAU-------A------GCACACGUAUCC-GC-AUCC--GG-UAUGACCGG-UA-U-------GCGU--GC-AG-------GUGG-AGAC---CUU-------G-UUGCAAGAAUGC
+#=GC SS_cons                       ......(((((.((((((.....((((...))).).)))))))..)).).)......(((.(...(..(.((..(((..((......))).).).........)))..(.(((((......((.....))..)))))).....).))))........
+#=GC RF                            UAGAUMGGGRGaUYGGCuuGgugACCCWMUGGGUgAUGCCRAUYUcCaYAYaumaugRCmAUMguAwbKkGYcMUYMugSRKKAUKACSKGwyAuRacaggaaUCAGAuGCWGCgAuaagaGSHGcACCUUacGUUGCcgcAAGGAUGCaagaaugC
+//
