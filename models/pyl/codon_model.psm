@@ -5,6 +5,10 @@
 :-set_prism_flag(learn_mode,both).
 :-set_prism_flag(viterbi_mode,hparams).
 
+%msw(A,B) :-
+%	values(A,C),
+%	member(B,C).
+
 % Parameters::
 values(iid,[a,t,g,c]).
 
@@ -47,17 +51,14 @@ iid_model([X|R]) :-
 codon_model(Obs):-
         recursion(state(start,1),Obs).
 
-% termination:
-recursion(end,[]).
-
 recursion(state(start,1),[X|[Y|[Z|R]]]):-
         msw(emission(start),(X,Y,Z)),
         msw(transition(aa(start)),NS),
-        recursion(NS,R).
+	next(NS,1,s,N),
+        recursion(N,R).
 
-recursion(state(stop,3),[X|[Y|[Z|R]]]):-
-        msw(emission(stop),(X,Y,Z)),
-        recursion(end,R).
+recursion(state(stop,3),[X,Y,Z]):-
+        msw(emission(stop),(X,Y,Z)).
 
 % Handle amber codon
 % When we encounter an amber codon, we just emit it with no effect 
@@ -66,7 +67,6 @@ recursion(State,[t,a,g|R]):-
 	recursion(State,R).
 	
 recursion(state(S,P),[X|[Y|[Z|R]]]):-
-	[X,Y,Z] \= [t,a,g],
 	msw(emission(S),(X,Y,Z)),
 	msw(transition(aa(S)),NS),
 	msw(transition(sg),SG),
@@ -84,4 +84,13 @@ score_sequence(Sequence,Score) :-
 	prob(codon_model(Sequence),CodonModelProb),
 	prob(iid_model(Sequence),IIDModelProb),
 	Score is CodonModelProb - IIDModelProb.
+
+test1 :-
+	codon_model([a,t,a,a,a,    t,a,g,    a,a,a,a,a,a,a,t,a,a]).
+
+test2 :-
+	codon_model([a,t,a,a,a,    t,a,g,    a,a,a,a,a,a,a,t,a,a]).
 	
+test3 :-
+	length([a,t,g,a,g,g,a,a,a,t,t,g,c,a,t,t,t,a,a,a,c,a,a,t,c,c,a,c,a,a,a,a,t,t,t,a,a,c,c,a,t,t,g,a,g,g,a,t,t,t,g,a,a,t,a,a,g,a,t,a,a,a,a,a,g,a,g,a,a,a,c,a,c,c,a,t,a,t,a,a,a,c,t,a,a,g,a,t,g,c,a,g,a,g,t,t,c,a,a,g,c,t,g,t,t,a,t,t,c,t,t,g,t,c,a,t,g,a,a,a,g,g,g,a,g,a,c,a,a,g,c,a,a,a,g,c,a,g,a,t,t,g,c,c,g,a,a,t,a,t,c,t,t,g,a,t,a,t,a,a,g,t,g,a,a,c,a,a,a,c,c,a,t,a,a,g,a,a,a,a,t,a,c,g,t,t,g,c,t,t,a,c,t,t,t,a,a,t,g,a,a,g,g,t,g,g,a,g,t,t,g,a,a,a,a,a,c,t,g,c,t,t,c,a,t,g,t,a,t,c,a,a,a,a,a,a,a,c,c,g,g,g,a,a,g,a,c,c,g,c,c,a,a,g,g,c,t,a,a,c,c,a,a,t,g,a,a,c,a,a,a,a,a,g,a,a,g,a,g,g,t,c,a,a,a,g,a,g,g,t,a,c,t,g,a,a,a,c,a,a,t,c,a,c,c,a,t,c,a,g,a,g,g,t,t,g,g,t,t,t,t,a,g,t,a,c,c,c,a,t,a,c,t,a,c,t,t,g,g,a,a,t,t,g,t,a,a,a,a,c,c,c,t,c,g,c,t,g,c,t,t,a,c,a,t,t,c,a,t,g,a,t,a,c,a,t,a,c,g,g,c,g,t,t,a,a,a,t,a,t,a,c,a,t,c,a,g,a,t,g,g,t,g,t,t,t,g,g,c,g,c,a,t,g,c,t,t,c,t,t,a,a,g,a,t,g,g,a,t,t,t,t,c,g,t,t,a,t,a,a,t,c,g,t,c,c,c,a,c,t,t,a,t,g,t,a,t,t,a,g,c,c,a,a,a,g,c,t,g,a,t,c,c,g,g,a,a,a,a,a,c,a,a,a,a,a,g,c,t,t,t,t,c,a,a,g,a,t,g,a,g,c,t,g,g,a,a,g,a,g,t,t,a,a,a,a,a,a,a,t,c,t,c,a,c,t,g,a,a,t,g,t,g,a,a,a,t,a,c,t,c,c,t,a,t,a,t,g,t,g,g,a,t,g,c,a,t,c,t,c,a,c,a,t,t,a,g,g,g,a,t,t,a,t,c,a,a,g,g,t,t,t,a,c,a,a,c,g,a,g,c,a,t,g,g,t,t,c,c,c,a,a,a,a,g,g,t,g,a,g,c,a,a,a,a,a,a,a,g,a,t,t,a,a,g,a,c,c,t,a,t,g,g,a,c,a,c,c,a,t,g,c,a,a,a,a,g,t,t,a,c,a,t,t,a,t,a,c,g,g,t,g,c,t,t,t,a,a,a,c,t,a,c,t,a,t,a,c,g,g,g,t,a,a,a,g,t,t,t,t,t,t,g,t,g,t,a,a,a,t,t,a,t,g,a,c,a,a,a,a,t,c,g,a,t,g,c,a,g,a,a,a,a,a,t,t,c,a,a,a,g,a,t,t,t,t,c,t,t,a,a,a,a,a,a,t,t,g,g,t,a,t,c,a,c,a,t,t,t,t,t,t,a,a,a,a,g,a,t,g,a,c,a,t,t,t,c,t,a,a,a,a,t,t,t,a,c,a,t,t,g,t,t,c,t,t,g,a,t,a,a,t,g,c,a,a,g,a,g,t,t,c,a,t,c,a,t,g,c,a,a,a,a,t,t,a,c,t,t,a,a,a,g,a,c,t,t,t,t,t,a,g,a,c,g,a,g,c,a,t,a,a,g,g,a,t,c,a,t,c,t,g,t,t,t,t,t,g,a,a,g,t,t,t,c,t,t,c,c,a,c,c,c,t,a,c,t,c,a,c,c,c,a,a,t,c,t,g,a,a,t,t,g,c,a,t,a,g,a,a,g,a,g,t,t,a,t,g,g,a,a,a,t,g,g,t,t,a,a,a,a,a,a,t,a,c,a,g,c,t,a,t,t,t,a,t,a,a,t,c,g,c,t,t,t,c,a,t,a,a,a,a,a,t,g,c,t,t,c,a,g,a,a,a,t,t,c,a,a,a,a,a,t,c,t,g,t,t,g,a,c,t,c,g,t,t,t,t,t,a,g,a,g,g,a,a,a,t,c,a,a,a,t,g,c,t,g,t,t,c,g,g,a,a,g,a,t,g,t,g,a,a,a,a,a,g,a,g,a,c,t,t,t,g,c,g,t,t,t,a,a],X),
+	writeln(X).

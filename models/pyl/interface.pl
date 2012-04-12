@@ -181,7 +181,7 @@ train_codon_model([InputFile],_Options,OutputFile) :-
         writeln(here1),
 	terms_from_file(InputFile,Genes),
         writeln(here2),
-	findall(codon_model(Sequence),(member(Gene,Genes),gene_extra_field(Gene,sequence,Sequence)),TrainingGoals),
+	findall(codon_model(Sequence),(member(Gene,Genes),gene_extra_field(Gene,sequence,Sequence),length(Sequence,SLen),0 is SLen mod 3),TrainingGoals),
 	prism(codon_model),
         writeln(here3),
 	learn(TrainingGoals),
