@@ -24,6 +24,8 @@
 
 :- task(train_codon_model([text(prolog(ranges(gene)))],[],text(prism(parameters)))).
 
+:- use(genedb).
+
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
 % ==
@@ -175,9 +177,12 @@ rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailO
 % ==
 % train the codon model. We assume all the genes to have an extra field 'sequence' containing the nucleic acid sequence
 train_codon_model([InputFile],_Options,OutputFile) :-
-	terms_from_file(InputFiles,Genes),
+        writeln(here1),
+	terms_from_file(InputFile,Genes),
+        writeln(here2),
 	findall(codon_model(Sequence),(member(Gene,Genes),gene_extra_field(Gene,sequence,Sequence)),TrainingGoals),
 	prism(codon_model),
+        writeln(here3),
 	learn(TrainingGoals),
 	save_sw(OutputFile).
 	
