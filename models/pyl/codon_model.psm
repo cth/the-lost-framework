@@ -1,6 +1,13 @@
 % Gene finder model for P-ORFs
 % Based on https://github.com/somork/codonhmm/blob/master/e_adph_5xcv/models/aa_adph_cv.psm
 
+:-set_prism_flag(scaling,log_exp).
+:-set_prism_flag(log_viterbi,on).
+
+:-set_prism_flag(learn_mode,both).
+:-set_prism_flag(default_sw_h,uniform).
+:-set_prism_flag(viterbi_mode,hparams).
+
 % Parameters::
 values(iid,[a,t,g,c]).
 
