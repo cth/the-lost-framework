@@ -2,7 +2,7 @@
 % Based on https://github.com/somork/codonhmm/blob/master/e_adph_5xcv/models/aa_adph_cv.psm
 
 % Parameters::
-values(iid,[a,t,g,c])
+values(iid,[a,t,g,c]).
 
 values(emission(start),[(a,t,g),(c,t,g),(g,t,g),(t,t,g)]).
 
@@ -69,17 +69,12 @@ recursion(state(S,P),[X|[Y|[Z|R]]]):-
 	next(NS,P,SG,N),
 	recursion(N,R).
 
-recursion(state(S,P),[X|[Y|[Z|R]]]):-
-        msw(emission(S),(X,Y,Z)),
-        msw(transition(aa(S)),NS),
-        recursion(state(NS),R).
-
 next(NS,1,s,state(NS,1)).
 next(NS,1,g,state(NS,2)).
 next(NS,2,s,state(NS,2)).
 next(NS,2,g,state(NS,3)).
 next(NS,3,s,state(NS,3)).
-next(NS,3,g,state(stop,3)).
+next(_,3,g,state(stop,3)).
 
 score_sequence(Sequence,Score) :-
 	prob(codon_model(Sequence),CodonModelProb),
