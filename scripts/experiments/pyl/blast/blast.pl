@@ -33,16 +33,31 @@ safe_genes(Organism) <- ranges::filter(genes(Organism),[regex_no_match_extra_fie
 
 genome_fasta(Genome) <- genome_link(Genome,URL) | file::get(URL).
 
+
+% Get .rnt file containing rna genes for Genome
+rnt_file(Genome) <- rna_link(Genome,URL) | file::get(URL).
+
+% Parse .rnt file into prolog based representation
+rnas(Genome) <- rnt::parse(rnt_file(Genome)).
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Training a codon model for each organism
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Add the sequence to all the annotated genes of the genome
 genes_with_sequence(O) <- ranges::add_sequence_field(safe_genes(O),genome_fasta(O)).
 
+% Construct a set of training genes. Rather than use all genes of the genome
+% (which may take a while) we just pick the 100 first genes and train on those
 training_genes(O) <- ranges::range_take(genes_with_sequence(O), [count(100)]).
 
+% Train the model:
 codon_model(O) <- pyl::train_codon_model(training_genes(O)).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Extraction and instrumentation of P-ORFs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Extract all candidate p-orfs 
 porfs_01(Genome) <- pyl::candidate_orfs(genome_fasta(Genome),[sequence_identifier(Genome)]).
@@ -58,12 +73,6 @@ porfs_04(Genome) <- ranges::translate(porfs_03(Genome), [sequence_functor(pylis_
 
 % Score each p-orf sequence using the codon model
 porfs_05(Genome) <- pyl::score_with_codon_model(porfs_03(Genome),codon_model(Genome)).
-
-% Get .rnt file containing rna genes for Genome
-rnt_file(Genome) <- rna_link(Genome,URL) | file::get(URL).
-
-% Parse .rnt file into prolog based representation
-rnas(Genome) <- rnt::parse(rnt_file(Genome)).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,17 +109,25 @@ all_results_sorted <- ranges::sort_by_field(all_results,[sort_field(evalue)]).
 
 results_trimmed <- pyl::trim_blast_hits(all_results_sorted).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Clustering of hits
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clusters, clusters_detail <- pyl::hit_clusters(results_trimmed).
 
 clusters(SortBy), clusters_detail(SortBy) <- pyl::rank_clusters([clusters,clusters_detail],[sort_by(SortBy)]).
 
 all_results_different_sorted <- ranges::sort_by_field(all_results_different,[sort_field(evalue)]).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Prolog goals for running the script in various ways
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 rerun_partial :-
         findall(Genome,genome_link(Genome,_Link),Genomes),
                 foreach(DatabaseGenome in Genomes,
                         foreach(QueryGenome in Genomes, (
+				rerun(hits_with_query(DatabaseGenome,QueryGenome)),
                                 rerun(hits_with_match(DatabaseGenome,QueryGenome)),
                                 rerun(blast_results_rna_overlaps(DatabaseGenome,QueryGenome))
                                 )
@@ -125,4 +142,3 @@ go :- run(all_results_sorted).
 go_test :-
         Org = 'Desulfobacterium_autotrophicum_HRM2_uid20931',
         run(hits_with_match(Org,Org)).
-
