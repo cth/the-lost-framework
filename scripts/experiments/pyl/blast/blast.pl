@@ -33,7 +33,6 @@ safe_genes(Organism) <- ranges::filter(genes(Organism),[regex_no_match_extra_fie
 
 genome_fasta(Genome) <- genome_link(Genome,URL) | file::get(URL).
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Training a codon model for each organism
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,34 +44,40 @@ training_genes(O) <- ranges::range_take(genes_with_sequence(O), [count(100)]).
 codon_model(O) <- pyl::train_codon_model(training_genes(O)).
 
 
-
-
-
-
 % Extract all candidate p-orfs 
-porfs_all_candidates(Genome) <- pyl::candidate_orfs(genome_fasta(Genome),[sequence_identifier(Genome)]).
+porfs_01(Genome) <- pyl::candidate_orfs(genome_fasta(Genome),[sequence_identifier(Genome)]).
 
 % Filter all candidate p-orfs which have less than 100 bases downstream the UAG
-porfs_long_candidates1(Genome) <- pyl::candidate_pylis(porfs_all_candidates(Genome)).
+porfs_02(Genome) <- pyl::candidate_pylis(porfs_01(Genome)).
 
 % Add the sequence downstream the UAG as an extra field to all candidates
-porfs_long_candidates2(Genome) <- pyl::add_downstream_inframe_stops_sequences(porfs_long_candidates1(Genome)).
+porfs_03(Genome) <- pyl::add_downstream_inframe_stops_sequences(porfs_02(Genome)).
 
 % Add a translated protein sequence of the the sequence downstream the UAG to all porfs
-porfs_translated(Genome) <- ranges::translate(porfs_long_candidates2(Genome), [sequence_functor(pylis_sequence)]).
+porfs_04(Genome) <- ranges::translate(porfs_03(Genome), [sequence_functor(pylis_sequence)]).
+
+% Score each p-orf sequence using the codon model
+porfs_05(Genome) <- pyl::score_with_codon_model(porfs_03(Genome),codon_model(Genome)).
+
+% Get .rnt file containing rna genes for Genome
+rnt_file(Genome) <- rna_link(Genome,URL) | file::get(URL).
+
+% Parse .rnt file into prolog based representation
+rnas(Genome) <- rnt::parse(rnt_file(Genome)).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Reciprocal blast
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Convert the protein sequence of all porfs to fasta file which functions as queries 
 % to tblastn
-porfs_blast_queries(Genome) <- ranges::as_fasta(porfs_translated(Genome),[sequence_functor(protein_sequence)]).
+blast_queries(Genome) <- ranges::as_fasta(porfs_04(Genome),[sequence_functor(protein_sequence)]).
 
 % Create a blast database from each genome
 blastdb(Genome) <- blast::makeblastdb(genome_fasta(Genome)).
 
-rnt_file(Genome) <- rna_link(Genome,URL) | file::get(URL).
-
-rnas(Genome) <- rnt::parse(rnt_file(Genome)).
-
-blast_results_xml(DatabaseGenome,QueryGenome) <- blast::tblastn([blastdb(DatabaseGenome),porfs_blast_queries(QueryGenome)]).
+blast_results_xml(DatabaseGenome,QueryGenome) <- blast::tblastn([blastdb(DatabaseGenome),blast_queries(QueryGenome)]).
 
 blast_results(DatabaseGenome,QueryGenome) <- blast::parse_xml(blast_results_xml(DatabaseGenome,QueryGenome)).
 
@@ -80,20 +85,16 @@ blast_results2(DatabaseGenome,QueryGenome) <- ranges::add_extra_field(blast_resu
 
 blast_results_no_self_hits(DatabaseGenome,QueryGenome) <- blast::remove_self_hits(blast_results2(DatabaseGenome,QueryGenome)).
 
-% Add the query orf (with full data)
-hits_with_query(DatabaseGenome,QueryGenome) <- pyl::hits_match_query_orfs([blast_results_no_self_hits(DatabaseGenome,QueryGenome), porfs_long_candidates2(QueryGenome)]).
+% Add the query orf (with full data) to each hit
+hits_with_query(DatabaseGenome,QueryGenome) <- pyl::hits_match_query_orfs([blast_results_no_self_hits(DatabaseGenome,QueryGenome), porfs_05(QueryGenome)]).
 
-hits_with_match(DatabaseGenome,QueryGenome) <- pyl::hits_matching_pylis_orfs([hits_with_query(DatabaseGenome,QueryGenome), porfs_long_candidates2(DatabaseGenome)], [min_overlap(90)]).
+hits_with_match(DatabaseGenome,QueryGenome) <- pyl::hits_matching_pylis_orfs([hits_with_query(DatabaseGenome,QueryGenome), porfs_05(DatabaseGenome)], [min_overlap(90)]).
 
 blast_results_no_gene_overlaps(DatabaseGenome,QueryGenome) <- pyl::hits_no_gene_overlaps(hits_with_match(DatabaseGenome,QueryGenome),safe_genes(DatabaseGenome)).
 
 blast_results_rna_overlaps(DatabaseGenome,QueryGenome) <- pyl::hits_rna_match([blast_results_no_gene_overlaps(DatabaseGenome,QueryGenome),rnas(DatabaseGenome)]).
 
-%blast_results_scored(DatabaseGenome,QueryGenome) <- pyl::score_with_codon_model(blast_results_rna_overlaps(DatabaseGenome,QueryGenome),
-
 all_results <- append_all((genome_link(GenomeA,_),genome_link(GenomeB,_)),blast_results_rna_overlaps(GenomeA,GenomeB)).
-
-%all_results_different <- append_all((genome_link(GenomeA,_),genome_link(GenomeB,_), GenomeA \= GenomeB),blast_results_rna_overlaps(GenomeA,GenomeB)).
 
 all_results_sorted <- ranges::sort_by_field(all_results,[sort_field(evalue)]).
 
