@@ -16,8 +16,8 @@ rnafold('/usr/local/bin/RNAfold').
 pmcomp_align(A,B,Distance) :-
 	% create fasta file
 	debug(pmcomp_align, 'Creating fasta sequence: align_input.fasta'),
-	gene_extra_field(A,pylis,SeqA),
-	gene_extra_field(B,pylis,SeqB),	
+	gene_extra_field(A,pylis_sequence,SeqA),
+	gene_extra_field(B,pylis_sequence,SeqB),
 	to_fasta('sequenceA',SeqA,FastaA),
 	to_fasta('sequenceB',SeqB,FastaB),
 	append(FastaA,FastaB,Fasta),
@@ -35,7 +35,9 @@ pmcomp_align(A,B,Distance) :-
 	atom_concat_list([PMCOMP,' sequenceA_dp.ps sequenceB_dp.ps > pmcomp_results.dat'],PMCOMPCmd),
 	debug(pmcomp_align, ['running pmcomp.pl: ', PMCOMPCmd]),
 	system(PMCOMPCmd),
-	parse_pmcomp('pmcomp_results.dat',Distance).
+        debug(pmcomp_align,'parsing results:'),
+	parse_pmcomp('pmcomp_results.dat',Distance),
+        debug(pmcomp_align,'parsed pmcomp results').
 	
 test_align :-
 	terms_from_file('two_sequences.pl',[A,B]),
@@ -60,16 +62,28 @@ score(Score) -->
     	"recalculated score: ",
 		integer(NonFractionPart),
 		".",
+        /*
         digit(F1),
         digit(F2), % Just the two most significant digits
         digits(_Rest), % If there are more digits than we can handle
+        */
+        most_significant_digits(SigDigits),
         {
-                atom_codes(Atom,[F1,F2]),
+                atom_codes(Atom,SigDigits),
                 atom_integer(Atom,Fractional),
                 move_after_comma(Fractional,FractionFloat),
                 Score is NonFractionPart + FractionFloat
         },
         newline.
+
+most_significant_digits([F1,F2]) --> 
+        digit(F1),
+        digit(F2), % Just the two most significant digits
+        digits(_Rest). % If there are more digits than we can handle
+
+most_significant_digits([F1]) --> 
+        digit(F1),
+        digits(_Rest). % If there are more digits than we can handle
 
 integer(Integer) -->
 	digits(Digits),

@@ -41,4 +41,17 @@ dna_translate(Genecode, [C1,C2,C3|DNARest], [AA|AARest]) :-
 	dna_translate(Genecode,DNARest,AARest).
 
 	
-	
+%% translate(+GeneCode,+List_Nucleotides,-List_AA)
+translate(_GeneCode,[],[]) :-
+        !.
+
+translate(_GeneCode,[_],[]) :-
+        !.
+
+translate(_GeneCode,[_,_],[]) :-
+        !.
+
+translate(GeneCode,[N1,N2,N3|RestOrf],[A|RestAs]):-
+        genecode(GeneCode,[N1,N2,N3],A),
+        translate(GeneCode,RestOrf,RestAs).
+

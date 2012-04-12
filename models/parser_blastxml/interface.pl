@@ -2,6 +2,8 @@
 :- lost_include_api(interface). 
 :- lost_include_api(xml).
 
+:- task(parse_xml([xml(blast)],[],text(prolog(ranges(gene))))).
+
 % Generate a file of predicate based on Blast XML report.
 
 	    

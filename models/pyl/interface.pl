@@ -110,7 +110,7 @@ hits_no_gene_overlaps([HitsFile,GenesFile],_Options,OutputFile) :-
 % rna_match(RNA).
 hits_rna_match([HitListFile,RNAFile],_Options,OutputFile) :-
 	cl(hit_match),
-	no_rna_overlap(HitListFile,RNAFile,OutputFile).
+	rna_overlap(HitListFile,RNAFile,OutputFile).
 
 
 %% hits_matching_list

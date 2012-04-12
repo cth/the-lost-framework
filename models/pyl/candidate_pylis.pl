@@ -24,7 +24,7 @@ process_stream(N,InStream,OutStream) :-
 % Skip ORFs with more than one in frame amber codon
 process_orf_term(Orf,_) :-
 	gene_extra_field(Orf,in_frame_stops,Stops),
-    length(Stops,NumStops),
+        length(Stops,NumStops),
    	NumStops > 1,
 	!.
 	

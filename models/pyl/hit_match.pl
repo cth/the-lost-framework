@@ -34,7 +34,7 @@ filter_by_gene_overlap(HitsFile,GenesFile,OutputFile) :-
 
 filter_by_gene_overlap_rec([],_,_).
 filter_by_gene_overlap_rec([Hit|Hits],Genes,HitsOut) :-
-	(hit_region_overlapped(Hit,Genes) ->
+	(once(hit_region_overlapped(Hit,Genes)) ->
 		write('-')
 		;
 		write('+'),
@@ -54,7 +54,7 @@ hit_region_overlapped(Hit,Genes) :-
 	gene_extra_field(Hit,hit_left,HitLeft),
 	gene_extra_field(Hit,hit_right,HitRight),
 	HitLength is 1 + HitRight - HitLeft,
-	overlap_length((HitLeft,HitRight),(GeneLeft,GeneRight),OverlapLength),
+	once(overlap_length((HitLeft,HitRight),(GeneLeft,GeneRight),OverlapLength)),
 	OverlapLength >= HitLength.
 
 annotate_hits_with_rnas(HitsIn,RNAs,HitsOut) :-
@@ -152,6 +152,10 @@ test2 :-
 test3 :-
         overlap_length((1424660,1424758),(1424698,1424798),L),
         writeln(L).
+
+test4 :-
+        overlap_length((2383193,2383291),(2383247,2384551),L),
+        writeln(L).
 	
 	
 % Swap if inverse order	
@@ -188,4 +192,5 @@ overlap_length((Left1,Right1),(Left2,Right2),OverlapLength) :-
 
 
 overlap_length((Left1,Right1),(Left2,Right2),0) :-
+        writeq(ol((Left1,Right1),(Left2,Right2))),nl, 
         throw(uncaught_case( (Left1,Right1),(Left2,Right2))).

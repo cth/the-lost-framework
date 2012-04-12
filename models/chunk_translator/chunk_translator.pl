@@ -10,10 +10,11 @@
 % 	mode =0 : entire chunk is translated
 %--------------------------------------------------------------------------------------------------
 
-chunk_translator(FileIn,Mode,GeneCode,AFastaOut):-
+chunk_translator(FileIn,Mode,GeneCode,SequenceFunctor,AFastaOut):-
 	chunk_translator_init(FileIn,FileInStream,AFastaOut,AFastaStream),
 	read(FileInStream,Term),
-	chunk_translator_main(Term,Mode,GeneCode,FileInStream, AFastaStream),
+	chunk_translator_main(Term,Mode,GeneCode,SequenceFunctor,FileInStream, AFastaStream),
+        writeln('**************'),
 	chunk_translator_cleanup(FileInStream, AFastaStream).
 
 
@@ -22,8 +23,9 @@ chunk_translator_main(end_of_file,_Mode,_GeneCode,_FileIn,_FastaOut) :-
         !.
 
 % mode = 0 : entire chunk is translated
-chunk_translator_main(chunk(Id,Left,Right,Dir,Frm,Extra_Infos),0,GeneCode,FileInStream,AFastaStream):-
-        member(sequence(Seq),Extra_Infos),
+%chunk_translator_main(chunk(Id,Left,Right,Dir,Frm,Extra_Infos),0,GeneCode,FileInStream,AFastaStream):-
+chunk_translator_main(Term,0,GeneCode,SequenceFunctor,FileInStream,AFastaStream):-
+        gene_extra_field(Term,SeqFun,Seq),
         !,
 	translate(GeneCode,Seq,AA_Sequence),
         (AA_Sequence = [] ->

@@ -71,6 +71,7 @@ align_with_relevant(Gene,[OtherGene|Rest],[Alignment|AlignmentsRest]) :-
 	align_with_relevant(Gene,Rest,AlignmentsRest).
 	
 align_with_relevant(Gene,[_OtherGene|Rest],AlignmentsRest) :-
+        writeln('not a valid aligment!!!!!!!!!!!!!!!!!!!!!!'),
 	align_with_relevant(Gene,Rest,AlignmentsRest).
 
 	
@@ -78,9 +79,10 @@ align(A,B,(Cost,IdA,IdB)) :-
 	sequence_id(A,IdA),
 	sequence_id(B,IdB),
 	align_method(Method),
-	AlignGoal =.. [ Method, A, B, Cost ],
-	call(AlignGoal).
-	
+	AlignGoal =.. [ Method, A, B, Score ],
+	call(AlignGoal),
+        Cost is 1 / Score.
+
 pseudo_align(A,B,(inf,IdA,IdB)) :-
 	sequence_id(A,IdA),
 	sequence_id(B,IdB).

@@ -49,6 +49,7 @@ align_pmcomp([InputFile],Options,OutputFile) :-
 	forall(member(Opt,Options),assert(Opt)),
 	cl(pmcomp),
 	cl(constrained_align),
+	write('calling build alignments'),
 	build_alignments(InputFile,OutputFile),
 	check_or_fail(file_exists(OutputFile), 'alignments file not produced!').
 

@@ -4,7 +4,7 @@
 :- lost_include_api(io).
 :- lost_include_api(genecode).
 
-:- task(translate([text(prolog(ranges(gene)))], [mode(0),genecode(11)], text(fasta(ffa)))).
+:- task(translate([text(prolog(ranges(gene)))], [mode(0),genecode(11)], text(fasta))).
 
 lost_input_formats(annotate, [text(prolog(ranges(gene)))]).
 lost_output_format(annotate, _Options, text(fasta(ffa))).
@@ -25,10 +25,10 @@ lost_option_values(annotate,mode,[0,1]).
 % Translates each chunk in ChunkFile to get the amino acid sequence. 
 % The option =|mode|= determines whether to run translate entire chunk =|mode=0|= or the longest orf in chunk =|mode=1|=.
 % The translated chunks are written OutputFile which in a multi-fasta format.
-annotate([Chunk_File],Options,Translated_Chunk_File) :-
+translate([Chunk_File],Options,Translated_Chunk_File) :-
 	write('LoSt chunk Translator: '),nl,
 	get_option(Options,mode,Mode),
 	get_option(Options,genecode,Genecode_Number),
 	cl('chunk_translator.pl'), % Load the actual PRISM model
-	chunk_translator(Chunk_File,Mode,Genecode_Number,Translated_Chunk_File),
+	check_or_fail(chunk_translator(Chunk_File,Mode,Genecode_Number,Translated_Chunk_File), error),
 	write('LoSt chunk translator completed succesfully'),nl.
