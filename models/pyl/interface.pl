@@ -25,6 +25,7 @@
 :- task(train_codon_model([text(prolog(ranges(gene)))],[],text(prism(parameters)))).
 
 :- use(genedb).
+:- task(score_with_codon_model([text(prolog(ranges(gene))),text(prism(parameters))],[],text(prolog(ranges(gene))))).
 
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
@@ -186,6 +187,20 @@ train_codon_model([InputFile],_Options,OutputFile) :-
 	learn(TrainingGoals),
 	save_sw(OutputFile).
 	
+%% score_with_codon_model(+InputFiles,+Options,+OutputFile)
+score_with_codon_model([InputFile,SwitchFile],_Options,OutputFile) :-
+	terms_from_file(InputFiles,Genes),
+	prism(codon_model),
+	restore_sw(SwitchFile),
+	score_genes(Genes,ScoredGenes),
+	terms_to_file(OutputFile,ScoredGenes).
+	
+score_genes([],[]).
+score_genes([Gene|GenesRest],[ScoredGene|ScoredGenesRest]) :-
+	gene_extra_field(Gene,sequence,Sequence),
+	score_sequence(Sequence,Score),
+	gene_add_extra_field(Gene,codon_score,Score,ScoredGene),
+	score_genes(GenesRest,ScoredGenesRest).
 	
 	
 	
