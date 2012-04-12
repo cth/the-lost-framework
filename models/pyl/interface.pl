@@ -22,6 +22,8 @@
 
 :- task(rank_clusters([text(prolog(ranges(gene))),text(prolog(ranges(gene)))],[sort_by(size)], [text(prolog(ranges(gene))),text(prolog(ranges(gene)))])).
 
+:- task(train_codon_model([text(prolog(ranges(gene)))],[],text(prism(parameters)))).
+
 
 %% candidate_orfs(+InputFiles,+Options,+OutputFile)
 % ==
@@ -165,4 +167,21 @@ rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailO
 	cl(rank_clusters),
 	get_option(Options,sort_by,diversity),
 	rank_by_diversity(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
+
+
+%% train_codon_model(+InputFiles,+Options,+OutputFile)
+% == 
+% InputFiles = [ GenesFile ],
+% ==
+% train the codon model. We assume all the genes to have an extra field 'sequence' containing the nucleic acid sequence
+train_codon_model([InputFile],_Options,OutputFile) :-
+	terms_from_file(InputFiles,Genes),
+	findall(codon_model(Sequence),(member(Gene,Genes),gene_extra_field(Gene,sequence,Sequence)),TrainingGoals),
+	prism(codon_model),
+	learn(TrainingGoals),
+	save_sw(OutputFile).
+	
+	
+	
+	
 	
