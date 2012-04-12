@@ -31,9 +31,23 @@ genes(Organism) <- ptt::parse(ptt(Organism),[genome_key(Organism)]).
 % The list of words is taken from easygene paper
 safe_genes(Organism) <- ranges::filter(genes(Organism),[regex_no_match_extra_fields([product("^.*(predicted|putative|unknown|possible|hypothetical|probable).*$")])]).
 
-codon_model(Organism) <- pyl::train_codon_model(ptt(Organism)).
-
 genome_fasta(Genome) <- genome_link(Genome,URL) | file::get(URL).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Training a codon model for each organism
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+genes_with_sequence(O) <- ranges::add_sequence_field(safe_genes(O),genome_fasta(O)).
+
+training_genes(O) <- ranges::range_take(genes_with_sequence(O), [count(100)]).
+
+codon_model(O) <- pyl::train_codon_model(training_genes(O)).
+
+
+
+
+
 
 % Extract all candidate p-orfs 
 porfs_all_candidates(Genome) <- pyl::candidate_orfs(genome_fasta(Genome),[sequence_identifier(Genome)]).
@@ -73,9 +87,9 @@ hits_with_match(DatabaseGenome,QueryGenome) <- pyl::hits_matching_pylis_orfs([hi
 
 blast_results_no_gene_overlaps(DatabaseGenome,QueryGenome) <- pyl::hits_no_gene_overlaps(hits_with_match(DatabaseGenome,QueryGenome),safe_genes(DatabaseGenome)).
 
-% FIXME: link together rna and gene matches...
-
 blast_results_rna_overlaps(DatabaseGenome,QueryGenome) <- pyl::hits_rna_match([blast_results_no_gene_overlaps(DatabaseGenome,QueryGenome),rnas(DatabaseGenome)]).
+
+%blast_results_scored(DatabaseGenome,QueryGenome) <- pyl::score_with_codon_model(blast_results_rna_overlaps(DatabaseGenome,QueryGenome),
 
 all_results <- append_all((genome_link(GenomeA,_),genome_link(GenomeB,_)),blast_results_rna_overlaps(GenomeA,GenomeB)).
 
