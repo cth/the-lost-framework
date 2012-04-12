@@ -3,8 +3,6 @@
 % Extract a range from the genome as a list
 ************************************************************/
 
-:- use(fasta).
-
 load_genome(FastaFile,HashTable) :-
 	retractall(base(_,_,_)),
 	open(FastaFile,read,In),
@@ -15,6 +13,15 @@ load_genome(FastaFile,HashTable) :-
 	writeln('Done.'),
 	close(In).
 
+
+% Read the fasta header (first line)
+read_fasta_header(In,[Next|Rest]) :-
+	get_char(In,Next),
+	Next \= '\n',
+	!,
+	read_fasta_header(In,Rest).
+read_fasta_header(_,[]).
+	
 load_next_base(Pos,In,_HashTable) :-
 	peek_char(In,end_of_file),
 	get_char(In,end_of_file),
