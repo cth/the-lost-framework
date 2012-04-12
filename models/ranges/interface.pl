@@ -86,6 +86,7 @@ take([InputFile],Options,OutputFile) :-
 	get_option(Options,count,Count),
 	terms_from_file(InputFile,Terms),
 	take(Count,Terms,Taken),
+	writeln(Taken),
 	terms_to_file(OutputFile,Taken).
 
 %% translate(+InputFile,+Options,+OutputFile)
