@@ -89,3 +89,20 @@ decrement_position(Pos,Subtract,NewPos) :-
 
 decrement_position(Pos,Subtract,NewPos) :-
 	NewPos is Pos - Subtract.
+
+downcase([],[]).
+downcase(['A'|Xs],[a|Ys]) :- !, downcase(Xs,Ys).
+downcase(['G'|Xs],[g|Ys]) :- !, downcase(Xs,Ys).
+downcase(['C'|Xs],[c|Ys]) :- !, downcase(Xs,Ys).
+downcase(['T'|Xs],[t|Ys]) :- !, downcase(Xs,Ys).
+downcase([X|Xs],[X|Ys]) :- downcase(Xs,Ys).
+
+complement([],[]).
+complement([X|Xs],[Y|Ys]) :-
+	base_complement(X,Y),
+	complement(Xs,Ys).
+
+base_complement(a,t).
+base_complement(t,a).
+base_complement(c,g).
+base_complement(g,c).
