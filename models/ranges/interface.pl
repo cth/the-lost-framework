@@ -39,6 +39,8 @@
 				range([default,default]) % A range [RangeMin,RangeMax] used to filter genes with a length in this range
 			],
 			text(prolog(ranges(gene))))).
+			
+:- task(add_sequence_field([text(prolog(ranges(gene))),text(fasta)],[],text(prolog(ranges(gene))))).
 
 :- use(fasta).
 :- use(genedb).
@@ -164,5 +166,33 @@ wrap_by_field(Field,[T|Ts],[[Value,T]|Ws]) :-
 unwrap([],[]).
 unwrap([[_,T]|Ws],[T|Ts]) :-
 		unwrap(Ws,Ts).
+		
+%% add_sequence_field(+InputFiles,+Options,+OutputFiles)
+% ==
+% InputFiles = [ RangesFile, FastaFile ]
+% ==
+add_sequence_field([RangesFile,FastaFile],_Options,OutputFile) :-
+	cl(genome),
+	load_genome(FastaFile,GenomeTable),
+	terms_from_file(RangesFile,Ranges),
+	add_sequence_field_rec(Ranges,GenomeTable,UpdatedRanges),
+	terms_to_file(OutputFile,UpdatedRanges).
+
+add_sequence_field_rec([],_,[]).
+add_sequence_field_rec([Gene|GenesRest],Genome,[UpdatedGene|UpdatedRest]) :-
+	gene_left(Gene,Left),
+	gene_right(Gene,Right),
+	gene_strand(Gene,Strand),
+	get_range(Left,Right,Genome,Sequence1),
+	((Strand == '+') ->
+		Sequence = Sequence1
+		;
+		reverse(Sequence1,RevSeq),
+		complement(RevSeq,Sequence)
+	),
+	gene_add_extra_field(Gene,sequence,Sequence,UpdatedGene),
+	add_sequence_field_rec(GenesRest,Genome,UpdatedRest).
+
+	
 
 
