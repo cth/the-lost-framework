@@ -2,119 +2,49 @@
 
 :- use(fasta).
 
+rank_by_feature(Feature,ClustersDetailFile,RankedClustersFile) :-
+        add_measures(ClustersDetailFile,ClustersWithFeatures),!,
+        add_feature_key(Feature,ClustersWithFeatures,ClustersByFeature),!,
+        sort(ClustersByFeature,SortedClustersFeature),!,
+        add_feature_key(Feature,SortedClusters,SortedClustersFeature),!,
+        reverse(SortedClusters,RankedClusters),!,
+        terms_to_file(RankedClustersFile,RankedClusters).
 
+add_feature_key(_FeatureKey,[],[]).
+add_feature_key(FeatureKey,[cluster(Features,Members)|Cs],[[Value,cluster(Features,Members)]|Fs]) :-
+        FeatureMatch =.. [ FeatureKey, Value ],
+        member(FeatureMatch,Features),
+        add_feature_key(FeatureKey,Cs,Fs).
 	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Rank by size
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-rank_by_size(ClustersFile,ClustersDetailFile,SortedClustersFile,SortedClustersDetailFile) :-
-	terms_from_file(ClustersFile,Clusters),
-	sort_clusters_by_size(Clusters,SortedClusters),
-	terms_to_file(SortedClustersFile,SortedClusters),
-	[ClustersDetailFile],
-	findall(cluster(Cluster,Details),(member(cluster(Cluster),SortedClusters), cluster_matches(Cluster,Details)),SortedClustersDetail),
-	terms_to_file(SortedClustersDetailFile,SortedClustersDetail).
-
-sort_clusters_by_size(Clusters,ClustersBySizeDescending) :-
-	add_cluster_size(Clusters,ClustersWithSize),
-	sort(ClustersWithSize,ClustersWithSizeBySize),
-	add_cluster_size(ClustersBySizeAscending,ClustersWithSizeBySize),
-	reverse(ClustersBySizeAscending,ClustersBySizeDescending).
-
-add_cluster_size([],[]).
-add_cluster_size([cluster(Cluster)|ClusterRest],[[Size,cluster(Cluster)]|SizeClusterRest]) :-
-	length(Cluster,Size),
-	writeln(Size),
-	add_cluster_size(ClusterRest,SizeClusterRest).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Rank by average ORF size in cluster
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-rank_by_average_length(ClustersFile,ClustersDetailFile,SortedClustersFile,SortedClustersDetailFile) :-
-	terms_from_file(ClustersFile,Clusters),
-	sort_clusters_by_average_length(Clusters,SortedClusters),
-	terms_to_file(SortedClustersFile,SortedClusters),
-	[ClustersDetailFile],
-	findall(cluster(Cluster,Details),(member(cluster(Cluster),SortedClusters), cluster_matches(Cluster,Details)),SortedClustersDetail),
-	terms_to_file(SortedClustersDetailFile,SortedClustersDetail).
-
-sort_clusters_by_average_length(Clusters,ClustersBySizeDescending) :-
-	add_average_cluster_length(Clusters,ClustersWithAvgLength),
-	sort(ClustersWithAvgLength,ClustersWithAvgLengthByAvgLength),
-	add_average_cluster_length(ClustersByAvgLengthAscending,ClustersWithAvgLengthByAvgLength),
-	reverse(ClustersByAvgLengthAscending,ClustersBySizeDescending).
-/*n
-add_average_cluster_length([],[]).
-add_average_cluster_length([Cluster|ClusterRest],[[AvgLength,Cluster]|SizeClusterRest]) :-
-	average_cluster_length(Cluster,AvgLength),
-	add_average_cluster_length(ClusterRest,SizeClusterRest).
-*/
-
-average_cluster_length(cluster(_,Cluster),AvgLength) :-
-	average_cluster_length(cluster(Cluster),AvgLength).
-
-average_cluster_length(cluster(Cluster),AvgLength) :-
-	write('Average_cluster_length: '),
-	findall(L,(member([_,Left,Right|_],Cluster),L is Right-Left),Lengths),
-	length(Cluster,NumElems),
-	sumlist(Lengths,TotalLengths),
-	AvgLength is TotalLengths / NumElems.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Rank by number of organisms
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-rank_by_organisms(ClustersFile,ClustersDetailFile,SortedClustersFile,SortedClustersDetailFile) :-
-	terms_from_file(ClustersFile,Clusters),
-	sort_clusters_by_number_of_organisms(Clusters,SortedClusters),
-	terms_to_file(SortedClustersFile,SortedClusters),
-	[ClustersDetailFile],
-	findall(cluster(Cluster,Details),(member(cluster(Cluster),SortedClusters), cluster_matches(Cluster,Details)),SortedClustersDetail),
-	terms_to_file(SortedClustersDetailFile,SortedClustersDetail).	
-
-sort_clusters_by_number_of_organisms(Clusters,SortedClusters) :-
-	add_organisms(Clusters,ClustersA),
-	sort(ClustersA,ClustersB),
-	add_organisms(ClustersC,ClustersB),
-	reverse(ClustersC,SortedClusters).
-
-add_organisms([],[]).
-add_organisms([cluster(Cluster)|ClusterRest],[[NumOrganisms,cluster(Cluster)]|OrgClusterRest]) :-
-	findall(Organism,member([Organism|_],Cluster),OrganismsDup),
-	eliminate_duplicate(OrganismsDup,Organisms),
-	length(Organisms,NumOrganisms),
-	writeln(NumOrganisms),
-	add_organisms(ClusterRest,OrgClusterRest).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Rank by diversity measure
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-rank_by_diversity(ClustersFile,ClustersDetailFile,SortedClustersFile,F) :-
-	add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile),
-	atom_concat_list(['touch ',F],Cmd),
-	system(Cmd).
-	
-add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile) :-
+add_measures(ClustersDetailFile,ClustersWithFeatures) :-
 	open(ClustersDetailFile,read,Stream),
-	clusters_with_pylis_pairs(Stream,Clusters1),
+        writeln('open clusters detail file'),
+	clusters_with_features(Stream,Clusters1),
 	writeln('aligning sequences'),
 	analyze_clusters_with_features(Clusters1,Clusters2),
+        writeln('analyzed clusters with features'),
 %	align_sequences(Clusters1,Clusters2),
 	add_number_of_organisms(Clusters2,Clusters3),
+        writeln('added number of organisms'),
 	add_average_cluster_length(Clusters3,Clusters4),
+        writeln('added average cluster length'),
+        ClustersWithFeatures = Clusters4,
+        /*
 	normalize_measure(organisms,Clusters4,Clusters5),
+        writeln('added normalized organisms'),
 	normalize_measure(diversity,Clusters5,Clusters6),
+        writeln('added normalized diversity'),
 	normalize_measure(orf_length,Clusters6,Clusters7),
+        writeln('added normalized orf length'),
 	writeln('add_combined_measure'),
 	add_combined_measure(Clusters7,Clusters8),
 	writeln('Sorting by combined score: '),
-	sort(Clusters8,Clusters9),
+	%sort(Clusters8,Clusters9),
+	sort(Clusters4,Clusters9),
 	reverse(Clusters9,Clusters10),
 	writeln('Writing to file: '),
 	terms_to_file(SortedClustersFile,Clusters10),
+        */
 	close(Stream).
 	
 normalize_measure(M,Clusters,ClustersNorm) :-
@@ -175,24 +105,17 @@ sort_cluster_by_score(Clusters,ClustersSorted) :-
 	findall(Cluster,(member([Score,[O,L,R,S,F,UAG,Score]],ClusterByScoresSorted),Cluster=cluster([O,L,R,S,F,UAG,Score])),ClustersSorted).
 	
 clusters_with_features(Stream1,[[Cluster,PylisPairs,Scores]|Rest]) :-
-	write('.'),
+	write('+'),
 	once(read(Stream1,cluster_matches(Cluster,Matches))),
 	pylis_sequences_from_matches(Matches,PylisPairs),
 	scores_from_matches(Matches,ScorePairs),
 	flatten(ScorePairs,ScoresDup),
 	eliminate_duplicate(ScoresDup,Scores),
 	!,
-	clusters_with_pylis_pairs(Stream1,Rest).
+	clusters_with_features(Stream1,Rest).
 
-clusters_with_pylis_pairs(Stream1,[[Cluster,PylisPairs]|Rest]) :-
-	write('.'),
-	once(read(Stream1,cluster_matches(Cluster,Matches))),
-	pylis_sequences_from_matches(Matches,PylisPairs),
-	!,
-	clusters_with_pylis_pairs(Stream1,Rest).
-	
-clusters_with_pylis_pairs(_,[]).
-		
+clusters_with_features(_,[]).
+
 pylis_sequences_from_matches([],[]).
 pylis_sequences_from_matches([blast_match(_,_LeftA,_RightA,_StrandA,_FrameA,ExtraMatch)|RestMatches],[[PylSeqA,PylSeqB]|RestSeqs]) :-
 	member(match_to(orf(_,_LeftB,_RightB,_StrandB,_FrameB,ExtraB)), ExtraMatch),!,
@@ -209,8 +132,11 @@ scores_from_matches([blast_match(_,_LeftA,_RightA,_StrandA,_FrameA,ExtraMatch)|R
 	member(codon_score(ScoreB),ExtraB),!,
 	scores_from_matches(RestMatches,RestScores).
 	
+analyze_clusters_with_features([],[]).
 analyze_clusters_with_features([[Cluster,PylisPairs,Scores]|Rest],[cluster([diversity(AlignmentScore),codon_score(CodonScore)],Cluster)|RestScored]) :-
 	% Calculate alignment score:
+        %writeln(analyze(Cluster)),
+        %writeln(scores(Scores)),
 	align_pairs(PylisPairs,AlignScores),
 	length(AlignScores,NumAlignScores),
 	sumlist(AlignScores,AlignTotal),
@@ -220,18 +146,6 @@ analyze_clusters_with_features([[Cluster,PylisPairs,Scores]|Rest],[cluster([dive
 	sumlist(Scores,CodonTotal),
 	CodonScore is CodonTotal / NumCodonScores,
 	analyze_clusters_with_features(Rest,RestScored).
-
-/*
-align_sequences([],[]).
-
-align_sequences([[Cluster,PylisPairs]|Rest],[cluster([diversity(AverageScore)],Cluster)|RestScored]) :-
-	write('.'),
-	align_pairs(PylisPairs,Scores),
-	length(Scores,NumScores),
-	sumlist(Scores,Total),
-	AverageScore is Total / NumScores,
-	align_sequences(Rest,RestScored).
-*/
 
 align_pairs([],[]).
 align_pairs([[Seq1,Seq2]|SeqRest],[Score|ScoresRest]) :-
