@@ -101,13 +101,14 @@ add_measures(ClustersFile,ClustersDetailFile,SortedClustersFile) :-
 	open(ClustersDetailFile,read,Stream),
 	clusters_with_pylis_pairs(Stream,Clusters1),
 	writeln('aligning sequences'),
-	align_sequences(Clusters1,Clusters2),
+	analyze_clusters_with_features(Clusters1,Clusters2),
+%	align_sequences(Clusters1,Clusters2),
 	add_number_of_organisms(Clusters2,Clusters3),
 	add_average_cluster_length(Clusters3,Clusters4),
 	normalize_measure(organisms,Clusters4,Clusters5),
 	normalize_measure(diversity,Clusters5,Clusters6),
 	normalize_measure(orf_length,Clusters6,Clusters7),
-	writeln('add_combined_measure'),	
+	writeln('add_combined_measure'),
 	add_combined_measure(Clusters7,Clusters8),
 	writeln('Sorting by combined score: '),
 	sort(Clusters8,Clusters9),
@@ -172,6 +173,16 @@ sort_cluster_by_score(Clusters,ClustersSorted) :-
 	findall(ByScore,(member(cluster([O,L,R,S,F,UAG,Score]),Clusters),ByScore=[Score,[O,L,R,S,F,UAG,Score]]),ClustersByScores),
 	sort(ClustersByScores,ClusterByScoresSorted),
 	findall(Cluster,(member([Score,[O,L,R,S,F,UAG,Score]],ClusterByScoresSorted),Cluster=cluster([O,L,R,S,F,UAG,Score])),ClustersSorted).
+	
+clusters_with_features(Stream1,[[Cluster,PylisPairs,Scores]|Rest]) :-
+	write('.'),
+	once(read(Stream1,cluster_matches(Cluster,Matches))),
+	pylis_sequences_from_matches(Matches,PylisPairs),
+	scores_from_matches(Matches,ScorePairs),
+	flatten(ScorePairs,ScoresDup),
+	eliminate_duplicate(ScoresDup,Scores),
+	!,
+	clusters_with_pylis_pairs(Stream1,Rest).
 
 clusters_with_pylis_pairs(Stream1,[[Cluster,PylisPairs]|Rest]) :-
 	write('.'),
@@ -189,7 +200,28 @@ pylis_sequences_from_matches([blast_match(_,_LeftA,_RightA,_StrandA,_FrameA,Extr
 	member(pylis_sequence(PylSeqA),ExtraA),!,
 	member(pylis_sequence(PylSeqB),ExtraB),!,
 	pylis_sequences_from_matches(RestMatches,RestSeqs).
-		
+	
+scores_from_matches([],[]).
+scores_from_matches([blast_match(_,_LeftA,_RightA,_StrandA,_FrameA,ExtraMatch)|RestMatches],[[ScoreA,ScoreB]|RestScores]) :-
+	member(match_to(orf(_,_LeftB,_RightB,_StrandB,_FrameB,ExtraB)), ExtraMatch),!,
+	member(query_orf(orf(_,_LeftA,_RightA,_StrandA,_FrameA,ExtraA)), ExtraMatch),!,
+	member(codon_score(ScoreA),ExtraA),!,
+	member(codon_score(ScoreB),ExtraB),!,
+	scores_from_matches(RestMatches,RestScores).
+	
+analyze_clusters_with_features([[Cluster,PylisPairs,Scores]|Rest],[cluster([diversity(AlignmentScore),codon_score(CodonScore)],Cluster)|RestScored]) :-
+	% Calculate alignment score:
+	align_pairs(PylisPairs,AlignScores),
+	length(AlignScores,NumAlignScores),
+	sumlist(AlignScores,AlignTotal),
+	AlignmentScore is AlignTotal / NumAlignScores,
+	% Calculate average codon score
+	length(Scores,NumCodonScores),
+	sumlist(Scores,CodonTotal),
+	CodonScore is CodonTotal / NumCodonScores,
+	analyze_clusters_with_features(Rest,RestScored).
+
+/*
 align_sequences([],[]).
 
 align_sequences([[Cluster,PylisPairs]|Rest],[cluster([diversity(AverageScore)],Cluster)|RestScored]) :-
@@ -199,6 +231,7 @@ align_sequences([[Cluster,PylisPairs]|Rest],[cluster([diversity(AverageScore)],C
 	sumlist(Scores,Total),
 	AverageScore is Total / NumScores,
 	align_sequences(Rest,RestScored).
+*/
 
 align_pairs([],[]).
 align_pairs([[Seq1,Seq2]|SeqRest],[Score|ScoresRest]) :-
