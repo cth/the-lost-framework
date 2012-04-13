@@ -89,7 +89,7 @@ report_clusters(I,[Cluster|ClustersRest],SimpleClusterStream,DetailClusterStream
 		;
 		writeq(SimpleClusterStream,cluster(ClusterWithUAG)),
 		write(SimpleClusterStream,'.\n'),
-		writeq(DetailClusterStream,cluster_matches(Cluster,UniqMatches)),
+		writeq(DetailClusterStream,cluster_matches(ClusterWithUAG,UniqMatches)),
 		write(DetailClusterStream,'.\n')),
 	!,
 	I1 is I + 1,
