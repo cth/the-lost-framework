@@ -19,9 +19,10 @@ add_feature_key(FeatureKey,[cluster(Features,Members)|Cs],[[Value,cluster(Featur
 add_measures(ClustersDetailFile,ClustersWithFeatures) :-
 	open(ClustersDetailFile,read,Stream),
         writeln('open clusters detail file'),
-	clusters_with_features(Stream,Clusters1),
+	clusters_with_features(Stream,Clusters1),!,
+        nl,
 	writeln('aligning sequences'),
-	analyze_clusters_with_features(Clusters1,Clusters2),
+	analyze_clusters_with_features(Clusters1,Clusters2),!,
         writeln('analyzed clusters with features'),
 %	align_sequences(Clusters1,Clusters2),
 	add_number_of_organisms(Clusters2,Clusters3),
