@@ -2,13 +2,19 @@
 
 :- use(fasta).
 
-rank_by_feature(Feature,ClustersDetailFile,RankedClustersFile) :-
-        add_measures(ClustersDetailFile,ClustersWithFeatures),!,
+rank_by_feature(Feature,ClustersWithFeaturesFile,RankedClustersFile) :-
+        terms_from_file(ClustersWithFeaturesFile,ClustersWithFeatures),
+        %add_measures(ClustersDetailFile,ClustersWithFeatures),!,
         add_feature_key(Feature,ClustersWithFeatures,ClustersByFeature),!,
         sort(ClustersByFeature,SortedClustersFeature),!,
         add_feature_key(Feature,SortedClusters,SortedClustersFeature),!,
         reverse(SortedClusters,RankedClusters),!,
         terms_to_file(RankedClustersFile,RankedClusters).
+
+add_features(ClustersDetailFile,ClustersWithFeaturesFile) :-
+        add_measures(ClustersDetailFile,ClustersWithFeatures),
+        terms_to_file(ClustersWithFeaturesFile,ClustersWithFeatures).
+
 
 add_feature_key(_FeatureKey,[],[]).
 add_feature_key(FeatureKey,[cluster(Features,Members)|Cs],[[Value,cluster(Features,Members)]|Fs]) :-

@@ -107,6 +107,8 @@ all_results <- append_all((genome_link(GenomeA,_),genome_link(GenomeB,_)),blast_
 
 all_results_sorted <- ranges::sort_by_field(all_results,[sort_field(evalue)]).
 
+all_results_different_sorted <- ranges::sort_by_field(all_results_different,[sort_field(evalue)]).
+
 results_trimmed <- pyl::trim_blast_hits(all_results_sorted).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,9 +117,12 @@ results_trimmed <- pyl::trim_blast_hits(all_results_sorted).
 
 clusters, clusters_detail <- pyl::hit_clusters(results_trimmed).
 
-clusters(SortBy), clusters_detail(SortBy) <- pyl::rank_clusters([clusters,clusters_detail],[sort_by(SortBy)]).
+clusters_with_features <- pyl::add_cluster_features(clusters_detail).
 
-all_results_different_sorted <- ranges::sort_by_field(all_results_different,[sort_field(evalue)]).
+pruned_clusters <- pyl::prune_clusters(clusters_with_features).
+
+clusters(SortBy) <- pyl::rank_clusters([pruned_clusters],[sort_by(SortBy)]).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Prolog goals for running the script in various ways

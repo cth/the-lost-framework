@@ -20,7 +20,11 @@
 
 :- task(hit_clusters([text(prolog(ranges(gene)))],[], [text(prolog(ranges(gene))),text(prolog(ranges(gene)))])).
 
+:- task(add_cluster_features([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
+
 :- task(rank_clusters([text(prolog(ranges(gene)))],[sort_by(size)], text(prolog(ranges(gene))))).
+
+:- task(prune_clusters([text(prolog(ranges(gene)))],[], text(prolog(ranges(gene))))).
 
 :- task(train_codon_model([text(prolog(ranges(gene)))],[],text(prism(parameters)))).
 
@@ -150,33 +154,26 @@ hit_clusters([InputFile],_Options,[ClustersSimple,ClustersDetailed]) :-
 	cl(hit_closure),
 	hit_closure(InputFile,ClustersSimple,ClustersDetailed).
 
+%% add_cluster_features(+InputFile,+Options,+OutputFile)
+% 
+add_cluster_features([ClustersDetailIn],_Options,ClustersOut) :-
+        cl(rank_clusters),
+        add_features(ClustersDetailIn,ClustersOut). 
+
 %% rank_clusters(Clusters,File)
 %
-/*
-rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
-	get_option(Options,sort_by,size),
-	cl(rank_clusters),
-	rank_by_size(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
-
-rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
-	get_option(Options,sort_by,average_orf_length),
-	cl(rank_clusters),
-	rank_by_average_length(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
-	
-rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
-	get_option(Options,sort_by,number_of_organisms),
-	cl(rank_clusters),
-	rank_by_organisms(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
-	
-rank_clusters([ClustersIn,ClustersDetailIn],Options,[ClustersOut,ClustersDetailOut]) :-
-	get_option(Options,sort_by,diversity),
-	cl(rank_clusters),
-	rank_by_diversity(ClustersIn,ClustersDetailIn,ClustersOut,ClustersDetailOut).
-*/
 rank_clusters([ClustersDetailIn],Options,ClustersOut) :-
        get_option(Options,sort_by,RankFeature), 
        cl(rank_clusters),
        rank_by_feature(RankFeature,ClustersDetailIn,ClustersOut).
+
+
+
+%% prune_clusters(+InputFiles,+Options,+OutputFile)
+% 
+prune_clusters([ClustersIn],_Options,ClustersOut) :-
+        cl(prune_clusters),
+        prune_clusters(ClustersIn,ClustersOut).
 
 %% train_codon_model(+InputFiles,+Options,+OutputFile)
 % == 
@@ -204,9 +201,10 @@ score_with_codon_model([InputFile,SwitchFile],_Options,OutputFile) :-
 score_genes([],[]).
 score_genes([Gene|GenesRest],[ScoredGene|ScoredGenesRest]) :-
 	gene_extra_field(Gene,sequence,Sequence),
-	score_sequence(Sequence,Score),
+	score_codon_sequence(Sequence,Score),
 	gene_add_extra_field(Gene,codon_score,Score,ScoredGene),
 	score_genes(GenesRest,ScoredGenesRest).
+
 	
 	
 	
