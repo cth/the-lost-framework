@@ -135,6 +135,7 @@ scores_from_matches([blast_match(_,_LeftA,_RightA,_StrandA,_FrameA,ExtraMatch)|R
 	
 analyze_clusters_with_features([],[]).
 analyze_clusters_with_features([[Cluster,PylisPairs,Scores]|Rest],[cluster([diversity(AlignmentScore),codon_score(CodonScore)],Cluster)|RestScored]) :-
+        write('+'),
 	% Calculate alignment score:
         %writeln(analyze(Cluster)),
         %writeln(scores(Scores)),
@@ -150,6 +151,7 @@ analyze_clusters_with_features([[Cluster,PylisPairs,Scores]|Rest],[cluster([dive
 
 align_pairs([],[]).
 align_pairs([[Seq1,Seq2]|SeqRest],[Score|ScoresRest]) :-
+        write('.'),
 	edit(Seq1,Seq2,Score),
 	align_pairs(SeqRest,ScoresRest).
 
