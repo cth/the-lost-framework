@@ -30,28 +30,26 @@ add_measures(ClustersDetailFile,ClustersWithFeatures) :-
 	writeln('aligning sequences'),
 	analyze_clusters_with_features(Clusters1,Clusters2),!,
         writeln('analyzed clusters with features'),
-%	align_sequences(Clusters1,Clusters2),
 	add_number_of_organisms(Clusters2,Clusters3),
         writeln('added number of organisms'),
 	add_average_cluster_length(Clusters3,Clusters4),
         writeln('added average cluster length'),
-        ClustersWithFeatures = Clusters4,
-        /*
-	normalize_measure(organisms,Clusters4,Clusters5),
+        add_bases_upstream(Clusters4,Clusters5),
+	normalize_measure(organisms,Clusters5,Clusters6),
         writeln('added normalized organisms'),
-	normalize_measure(diversity,Clusters5,Clusters6),
+	normalize_measure(diversity,Clusters6,Clusters7),
         writeln('added normalized diversity'),
-	normalize_measure(orf_length,Clusters6,Clusters7),
+	normalize_measure(orf_length,Clusters7,Clusters8),
         writeln('added normalized orf length'),
-	writeln('add_combined_measure'),
-	add_combined_measure(Clusters7,Clusters8),
-	writeln('Sorting by combined score: '),
-	%sort(Clusters8,Clusters9),
-	sort(Clusters4,Clusters9),
-	reverse(Clusters9,Clusters10),
-	writeln('Writing to file: '),
-	terms_to_file(SortedClustersFile,Clusters10),
-        */
+        normalize_measure(codon_score,Clusters8,Clusters9),
+        writeln('added normalized codon score'),
+        normalize_measure(avg_upstream_uag,Clusters9,Clusters10),
+        writeln('added normalized avg_upstream_uag score'),
+        add_codon_and_upstream(Clusters10,Clusters11),
+        writeln('added codon+upstream'),
+	add_combined_measure(Clusters11,Clusters12),
+	writeln('added_combined_measure'),
+        ClustersWithFeatures = Clusters12,
 	close(Stream).
 	
 normalize_measure(M,Clusters,ClustersNorm) :-
@@ -62,7 +60,7 @@ normalize_measure_rec(_,_,_,[],[]).
 normalize_measure_rec(M,Min,Max,[cluster(Measures,C)|ClustersRest],[cluster([NewRelMeasure|Measures],C)|ClustersNormRest]) :-
 	univ(MatchMeasure,[ M, Value]),
 	member(MatchMeasure,Measures),
-	RelativeMeasure is (Value-Min) / (Max-Min),
+	RelativeMeasure is ((Value-Min)+1) / ((Max-Min)+1),
 	atom_concat('relative_',M,RelM),
 	univ(NewRelMeasure,[ RelM, RelativeMeasure ]),
 	normalize_measure_rec(M,Min,Max,ClustersRest,ClustersNormRest).
@@ -82,13 +80,46 @@ total_for_measure(M,[cluster(Measures,_)|Cs],Total) :-
 	total_for_measure(Cs,TotalRest),
 	Total is Value + TotalRest.
 	
+add_codon_and_upstream([],[]).
+add_codon_and_upstream([cluster(Measures,Cluster)|ClusterRest],[cluster([codon_and_upstream(Combined)|Measures],Cluster)|OrgClusterRest]) :-
+        member(relative_avg_upstream_uag(UAGUP),Measures),
+        member(relative_codon_score(Score),Measures),
+	Combined is 1 - (1/(UAGUP * Score)),
+	add_codon_and_upstream(ClusterRest,OrgClusterRest).
+
 add_combined_measure([],[]).
 add_combined_measure([cluster(Measures,Cluster)|ClusterRest],[cluster([combined(Combined)|Measures],Cluster)|OrgClusterRest]) :-
-	member(relative_diversity(Diversity),Measures),
+        OrganismsWeight = 0.5,
+        OrfLengthWeight = 0.044,
+        DiversityWeight = 0.008, 
+        UpstreamUAGWeight = 0.25,
+        CodonScoreWeight = 0.055,
+        CodonAndUpstreamWeight = 0.5, 
 	member(relative_organisms(Organisms),Measures),
-%	member(relative_orf_length(OrfLength),Measures),	
-	Combined is Diversity * Organisms,
+        member(relative_orf_length(OrfLength),Measures),
+        member(relative_diversity(Diversity),Measures),
+        member(relative_avg_upstream_uag(UAGUP),Measures),
+        member(relative_codon_score(CodonScore),Measures),
+        member(codon_and_upstream(CodonAndUpstream),Measures),
+	Combined is (1 / 1 + exp(        Organisms *  OrganismsWeight +
+                                        CodonScore * CodonScoreWeight +
+                                        Diversity * DiversityWeight +  
+                                        OrfLength * OrfLengthWeight + 
+                                        CodonAndUpstream * CodonAndUpstreamWeight)),
 	add_combined_measure(ClusterRest,OrgClusterRest).
+
+add_bases_upstream([],[]).
+add_bases_upstream([cluster(Measures,Cluster)|ClusterRest],[cluster([avg_upstream_uag(AvgBasesUpstream)|Measures],Cluster)|OrgClusterRest]) :-
+        findall(BasesUpstream,(member(C,Cluster), bases_upstream(C,BasesUpstream)), AllBasesUpstream),
+        length(AllBasesUpstream,NumElems),
+        sumlist(AllBasesUpstream,TotalBasesUpstream),
+        AvgBasesUpstream is TotalBasesUpstream / NumElems,!,
+        add_bases_upstream(ClusterRest,OrgClusterRest).
+
+bases_upstream([_,_Left,Right,-,_,UAG],Bases) :-
+        Bases is Right - UAG - 2.
+bases_upstream([_,Left,_Right,+,_,UAG],Bases) :-
+        Bases is UAG - Left.
 
 add_number_of_organisms([],[]).
 add_number_of_organisms([cluster(Measures,Cluster)|ClusterRest],[cluster([organisms(NumOrganisms)|Measures],Cluster)|OrgClusterRest]) :-
