@@ -80,8 +80,34 @@ cluster(3,[['Desulfosporosinus_orientis_DSM_765_uid66191',1148959,1150428,+,2,11
 ['Methanosarcina_mazei_uid300',3574111,3575520,+,2,3575182]]).
 
 
-gene(GeneName,Start,End) :-
-        cluster(Id,Members),
+cluster(4,[['Desulfotomaculum_acetoxidans_DSM_771_uid27947',3836631,3837962,-,1,3836933],['Desulfitobacterium_hafniense_DCB_2_uid205',2360341,2361672,+,2,2361370],['Thermincola_potens',1959432,1959812,-,1,1959731]]).
+
+cluster(5,[['Methanococcoides_burtonii_DSM_6242_uid9634',2188121,2189380,-,3,2188252],['Methanosalsum_zhilinae_DSM_4017_uid40771',1122241,1123398,+,2,1122271]]).
+
+cluster(6,[['Methanosarcina_barkeri_fusaro_uid103',2617283,2617435,+,3,2617307],['Methanohalophilus_mahii_DSM_5219_uid30711',1482157,1483830,-,2,1483578],['Methanosarcina_acetivorans_uid290',1024642,1027569,-,2,1026924]]).
+
+cluster(7,[['Methanosarcina_barkeri_fusaro_uid103',4504139,4504447,-,3,4504333],['Desulfotomaculum_acetoxidans_DSM_771_uid27947',2792936,2794099,+,3,2793923]]).
+
+cluster(8,[['Desulfobacterium_autotrophicum_HRM2_uid20931',5380723,5381007,+,2,5380867],['Desulfobacterium_autotrophicum_HRM2_uid20931',2079396,2081291,+,1,2081151]]).
+
+cluster(9,[['Acetohalobium_arabaticum',738072,740156,-,1,738335],['Acetohalobium_arabaticum',432989,433285,-,3,433213]]).
+
+cluster(10,[['Methanosarcina_mazei_uid300',1264436,1264795,-,3,1264582],['Methanosarcina_barkeri_fusaro_uid103',1305777,1306166,-,1,1305935],['Methanosarcina_acetivorans_uid290',5421456,5422163,-,1,5421599]]).
+
+cluster(11,[['Methanosarcina_acetivorans_uid290',3625664,3626353,+,3,3625967],['Methanosarcina_barkeri_fusaro_uid103',4234148,4234840,-,3,4234546]]).
+
+cluster(12,[['Methanosarcina_barkeri_fusaro_uid103',4403838,4404233,-,1,4404107],['Methanosarcina_acetivorans_uid290',1743550,1744263,+,2,1744096]]).
+
+cluster(13,[['Methanosarcina_acetivorans_uid290',769760,770119,+,3,769928],['Methanosarcina_mazei_uid300',2167935,2168558,+,1,2168409]]).
+
+cluster(14,[['Methanosarcina_acetivorans_uid290',478325,478831,-,3,478534],['Methanosarcina_barkeri_fusaro_uid103',1508504,1509040,-,3,1508731]]).
+
+
+
+
+
+gene(Cluster,GeneName,Start,End) :-
+        cluster(Cluster,Members),
         member(Gene,Members),
         Gene = [ Organism, Left, Right, Strand, _Frame, _UAG ],
         ((Strand == +) -> 
@@ -90,7 +116,7 @@ gene(GeneName,Start,End) :-
                 ;
                 Start = Right,
                 End = Left),
-        atom_concat_list([Organism, '_c', Id, '_', Left, '_', Right],GeneName).
+        atom_concat_list([Organism, '_c', Cluster, '_', Left, '_', Right],GeneName).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,8 +127,8 @@ gene(GeneName,Start,End) :-
 genome(G) <- genome_gene_link(G,Link) | file::get(Link).
 
 % Extract the sequence of the the gene G
-geneseq(gene(G,Start,End)) <- 
-        gene(G,Start,End),
+geneseq(gene(Cluster,G,Start,End)) <- 
+        gene(Cluster,G,Start,End),
         ((Start > End) ->
                 ReverseComplement = true,
                 Left = End,
@@ -121,10 +147,16 @@ gene_uag_annot(G) <- pyl::annotate_orfs_with_in_frame_stops(geneseq(G)).
 %% Annotate G with the sequence 100 bp downstream the in-frame uag
 gene_pyl(G) <- pyl::add_downstream_inframe_stops_sequences( gene_uag_annot(G) ).
 
-all_geneseq <- append_all(gene(G,S,E), geneseq(gene(G,S,E))).
-
 %% Merge all PYL genes in one file
-all_pyl_genes <- append_all(gene(G,S,E), gene_pyl(gene(G,S,E))).
+cluster_genes(C)  <- append_all(gene(C,G,S,E), gene_pyl(gene(C,G,S,E))).
 
-fasta <- ranges::as_fasta(all_pyl_genes, [sequence_functor(pylis_sequence)]).
+% Create multi-fasta file for cluster C
+pylis_fasta(C) <- ranges::as_fasta(cluster_genes(C), [sequence_functor(pylis_sequence)]).
+
+porf_fasta(C) <- ranges::as_fasta(cluster_genes(C), [sequence_functor(sequence)]).
+
+go :-
+        findall(I,cluster(I,_),ClusterIds),
+        forall(member(Id,ClusterIds), run(porf_fasta(Id))).
+
 
