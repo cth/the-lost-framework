@@ -81,7 +81,10 @@ align(A,B,(Cost,IdA,IdB)) :-
 	align_method(Method),
 	AlignGoal =.. [ Method, A, B, Score ],
 	call(AlignGoal),
-        Cost is 1 / Score.
+        ((Score > 0) ->
+                Cost is 1 / Score
+                ;
+                Cost = 1).
 
 pseudo_align(A,B,(inf,IdA,IdB)) :-
 	sequence_id(A,IdA),
