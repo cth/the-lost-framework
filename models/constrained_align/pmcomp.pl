@@ -76,6 +76,21 @@ score(Score) -->
         },
         newline.
 
+score(Score) -->
+    	"recalculated score: ",
+        "-",
+	integer(NonFractionPart),
+	".",
+        most_significant_digits(SigDigits),
+        {
+                atom_codes(Atom,SigDigits),
+                atom_integer(Atom,Fractional),
+                move_after_comma(Fractional,FractionFloat),
+                Score is -1 * (NonFractionPart + FractionFloat)
+        },
+        newline.
+
+
 most_significant_digits([F1,F2]) --> 
         digit(F1),
         digit(F2), % Just the two most significant digits
