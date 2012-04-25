@@ -10,6 +10,7 @@ organism_link('Methanohalobium_evestigatum_Z_7303_uid37945','ftp://ftp.ncbi.nlm.
 organism_link('Methanosarcina_mazei_uid300','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Methanosarcina_mazei_uid300/AE008384').
 organism_link('Methanosarcina_barkeri_fusaro_uid103','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Methanosarcina_barkeri_fusaro_uid103/CP000099').
 organism_link('Methanosalsum_zhilinae_DSM_4017_uid40771','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Methanosalsum_zhilinae_DSM_4017_uid40771/CP002101').
+organism_link('Desulfosporosinus_orientis_DSM_765_uid66191','ftp://ftp.ncbi.nlm.nih.gov/genbank/genomes/Bacteria/Desulfosporosinus_orientis_DSM_765_uid66191/CP003108').
 
 genome_link(Organism,GenomeLink) :-
         organism_link(Organism,OrganismLink),
@@ -142,7 +143,10 @@ rerun_partial :-
         rerun(all_results_sorted).
 
 
-go :- run(all_results_sorted).
+%go :- run(all_results_sorted).
+
+go :-
+        rerun(clusters(combined)).
 
 go_test :-
         Org = 'Desulfobacterium_autotrophicum_HRM2_uid20931',
