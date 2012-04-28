@@ -1,6 +1,8 @@
 :- ['../../lost.pl'].
 
 :- use(fasta).
+:- use(dnaseq).
+:- [pmcomp].
 
 rank_by_feature(Feature,ClustersWithFeaturesFile,RankedClustersFile) :-
         terms_from_file(ClustersWithFeaturesFile,ClustersWithFeatures),
@@ -45,11 +47,14 @@ add_measures(ClustersDetailFile,ClustersWithFeatures) :-
         writeln('added normalized codon score'),
         normalize_measure(avg_upstream_uag,Clusters9,Clusters10),
         writeln('added normalized avg_upstream_uag score'),
-        add_codon_and_upstream(Clusters10,Clusters11),
+        normalize_measure(syn_codons,Clusters10,Clusters11),
+        normalize_measure(pmcomp,Clusters11,Clusters12),
+        normalize_measure(diversity_ratio,Clusters12,Clusters13),
+        add_codon_and_upstream(Clusters13,Clusters14),
         writeln('added codon+upstream'),
-	add_combined_measure(Clusters11,Clusters12),
+	add_combined_measure(Clusters14,Clusters15),
 	writeln('added_combined_measure'),
-        ClustersWithFeatures = Clusters12,
+        ClustersWithFeatures = Clusters15,
 	close(Stream).
 	
 normalize_measure(M,Clusters,ClustersNorm) :-
@@ -84,7 +89,7 @@ add_codon_and_upstream([],[]).
 add_codon_and_upstream([cluster(Measures,Cluster)|ClusterRest],[cluster([codon_and_upstream(Combined)|Measures],Cluster)|OrgClusterRest]) :-
         member(relative_avg_upstream_uag(UAGUP),Measures),
         member(relative_codon_score(Score),Measures),
-	Combined is 1 - (1/(UAGUP * Score)),
+	Combined is sqrt(UAGUP * Score),
 	add_codon_and_upstream(ClusterRest,OrgClusterRest).
 
 add_combined_measure([],[]).
@@ -101,11 +106,19 @@ add_combined_measure([cluster(Measures,Cluster)|ClusterRest],[cluster([combined(
         member(relative_avg_upstream_uag(UAGUP),Measures),
         member(relative_codon_score(CodonScore),Measures),
         member(codon_and_upstream(CodonAndUpstream),Measures),
-	Combined is (1 / 1 + exp(        Organisms *  OrganismsWeight +
-                                        CodonScore * CodonScoreWeight +
-                                        Diversity * DiversityWeight +  
-                                        OrfLength * OrfLengthWeight + 
-                                        CodonAndUpstream * CodonAndUpstreamWeight)),
+/*	Combined is 1 /  exp( -1 * (Organisms *  OrganismsWeight +
+                                    OrfLength * OrfLengthWeight + 
+                                    Diversity * DiversityWeight +  
+                                    UAGUP *  UpstreamUAGWeight +
+                                    CodonScore * CodonScoreWeight +
+                                    CodonAndUpstream * CodonAndUpstreamWeight)),
+*/
+        Combined is Organisms *  OrganismsWeight +
+                 OrfLength * OrfLengthWeight + 
+                 Diversity * DiversityWeight +  
+                 UAGUP *  UpstreamUAGWeight +
+                 CodonScore * CodonScoreWeight +
+                 CodonAndUpstream * CodonAndUpstreamWeight,
 	add_combined_measure(ClusterRest,OrgClusterRest).
 
 add_bases_upstream([],[]).
@@ -171,7 +184,7 @@ scores_from_matches([blast_match(_,_LeftA,_RightA,_StrandA,_FrameA,ExtraMatch)|R
 	scores_from_matches(RestMatches,RestScores).
 	
 analyze_clusters_with_features([],[]).
-analyze_clusters_with_features([[Cluster,PylisPairs,Scores]|Rest],[cluster([diversity(AlignmentScore),codon_score(CodonScore)],Cluster)|RestScored]) :-
+analyze_clusters_with_features([[Cluster,PylisPairs,Scores]|Rest],[cluster([diversity_ratio(RatioScore),pmcomp(PMAlignmentScore),syn_codons(ProtAlignmentScore),diversity(AlignmentScore),codon_score(CodonScore)],Cluster)|RestScored]) :-
         write('+'),
 	% Calculate alignment score:
         %writeln(analyze(Cluster)),
@@ -180,17 +193,80 @@ analyze_clusters_with_features([[Cluster,PylisPairs,Scores]|Rest],[cluster([dive
 	length(AlignScores,NumAlignScores),
 	sumlist(AlignScores,AlignTotal),
 	AlignmentScore is AlignTotal / NumAlignScores,
+
+        align_pairs_protein(PylisPairs,ProtAlignScores),
+        sumlist(ProtAlignScores,ProtAlignTotal),
+        ProtAlignmentScore is ProtAlignTotal / NumAlignScores,
+
+        align_pairs_pmcomp(PylisPairs,PMAlignScores),
+        sumlist(PMAlignScores,PMTotal),
+        PMAlignmentScore is PMTotal / NumAlignScores,
+
+        align_pairs_ratio(PylisPairs,Ratios),
+        sumlist(Ratios,RatiosTotal),
+        RatioScore is RatiosTotal / NumAlignScores,
+
 	% Calculate average codon score
 	length(Scores,NumCodonScores),
 	sumlist(Scores,CodonTotal),
 	CodonScore is CodonTotal / NumCodonScores,
 	analyze_clusters_with_features(Rest,RestScored).
 
+align_pairs_protein([],[]).
+align_pairs_protein([[Seq1,Seq2]|SeqRest],[Score1|ScoresRest]) :-
+        write('#'),
+        translate(11,Seq1,ProtSeq1),
+        translate(11,Seq2,ProtSeq2),
+        hamming(ProtSeq1,ProtSeq2,Score),
+        ((Score == 0) ->
+                Score1 = 0
+                ;
+                Score1 is 1 / Score),
+        align_pairs_protein(SeqRest,ScoresRest).
+
 align_pairs([],[]).
 align_pairs([[Seq1,Seq2]|SeqRest],[Score|ScoresRest]) :-
-        write('.'),
+        write('*'),
 	edit(Seq1,Seq2,Score),
 	align_pairs(SeqRest,ScoresRest).
+
+
+align_pairs_ratio([],[]).
+align_pairs_ratio([[Seq1,Seq2]|SeqRest],[Ratio|RatiosRest]) :-
+        split_seq(Seq1,Seq1First,Seq1Last),
+        split_seq(Seq2,Seq2First,Seq2Last),
+        edit(Seq1First,Seq2First,FirstDist),
+        edit(Seq1Last,Seq2Last,LastDist),
+        Ratio is 1 + LastDist / 1 + FirstDist,
+        align_pairs_ratio(SeqRest,RatiosRest).
+
+split_seq(Seq,Part1,Part2) :-
+        length(Seq,SeqLen),
+        HalfLen is SeqLen // 2,
+        length(Part1,HalfLen),
+        length(Part2,HalfLen),
+        append(Part1,Part2,Seq).
+
+
+
+align_pairs_pmcomp([],[]).
+align_pairs_pmcomp([[Seq1,Seq2]|SeqRest],[Score|ScoresRest]) :-
+        write('.'),
+        pmcomp_align(Seq1,Seq2,Score),
+        align_pairs_pmcomp(SeqRest,ScoresRest).
+
+/*
+%% Dummy implementation - substitute with real one when ready
+align_pairs_pmcomp([],[]).
+align_pairs_pmcomp([[_Seq1,_Seq2]|SeqRest],[1|ScoresRest]) :-
+        write('.'),
+        %pmcomp_align(Seq1,Seq2,Score),
+        align_pairs_pmcomp(SeqRest,ScoresRest).
+*/
+
+hamming([],[],0).
+hamming([X|Xs],[X|Ys],Dist) :- hamming(Xs,Ys,Dist).
+hamming([X|Xs],[Y|Ys],Dist) :- X \= Y, hamming(Xs,Ys,Dist1), Dist is 1 + Dist1.
 
 :- table edit/3.
 
