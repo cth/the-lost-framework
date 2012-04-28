@@ -9,12 +9,38 @@ annotate_orfs(OrfsFile,OutputFile) :-
 	
 annotate_with_amber_codons([],[]).
 
+% Skip sequences which do not have module 3 lengths (e.g. with
+% frameshifts).
+annotate_with_amber_codons([Orf|Rest],UpdatedRest) :-
+	gene_extra_field(Orf,sequence,Sequence),
+        length(Sequence,SeqLen),
+        (1 is SeqLen mod 3 ; 2 is SeqLen mod 3),!, 
+        write('!'),
+	annotate_with_amber_codons(Rest,UpdatedRest).
+
+% Skip sequences if it is only the last codon that is uag
+annotate_with_amber_codons([Orf|Rest],UpdatedRest) :-
+	gene_extra_field(Orf,sequence,Sequence),
+	uag_positions(1,Sequence,[_]),
+        reverse(Sequence,[g,a,t|_]),
+        !,
+        write(','),
+	annotate_with_amber_codons(Rest,UpdatedRest).
+
+annotate_with_amber_codons([Orf|Rest],UpdatedRest) :-
+	gene_extra_field(Orf,sequence,Sequence),
+	uag_positions(1,Sequence,[]),!,
+        write('.'),
+	annotate_with_amber_codons(Rest,UpdatedRest).
+
 annotate_with_amber_codons([Orf|Rest],[UpdatedOrf|UpdatedRest]) :-
+        write('+'),
 	gene_extra_field(Orf,sequence,Sequence),
 	uag_positions(1,Sequence,RelativePositions),
 	calculate_absolute_positions(Orf,RelativePositions,AbsolutePositions),
 	gene_add_extra_field(Orf,in_frame_stops,AbsolutePositions,UpdatedOrf),
 	annotate_with_amber_codons(Rest,UpdatedRest).
+
 
 % must 
 uag_positions(_,[],[]).
@@ -24,7 +50,8 @@ uag_positions(Pos,[t,a,g|SeqRest],[Pos|RestMatch]) :-
 	NextPos is Pos + 3,
 	uag_positions(NextPos,SeqRest,RestMatch).
 	
-uag_positions(Pos,[_,_,_|SeqRest],RestMatch) :-
+uag_positions(Pos,[X,Y,Z|SeqRest],RestMatch) :-
+        [X,Y,Z] \= [t,a,g],
 	NextPos is Pos + 3,
 	uag_positions(NextPos,SeqRest,RestMatch).
 

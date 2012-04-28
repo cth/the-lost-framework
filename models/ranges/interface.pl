@@ -3,6 +3,7 @@
 :- task(translate([text(prolog(ranges(gene)))], [sequence_functor(sequence),genecode(11)], text(prolog(ranges(gene))))).
 :- task(add_extra_field([text(prolog(ranges(gene)))],[extra_field(extra(na))],text(prolog(ranges(gene))))).
 :- task(sort_by_field([text(prolog(ranges(gene)))],[sort_field(na)],text(prolog(ranges(gene))))).
+:- task(add_sequence_field([text(prolog(ranges(gene))),text(fasta)],text(prolog(ranges(gene))))).
 
 :- task(filter(
 		[text(prolog(ranges(gene))),text(prolog(sequence))],
