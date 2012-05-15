@@ -40,6 +40,7 @@ cluster(1,[['Desulfosporosinus_orientis_DSM_765_uid66191',1161726,1163195,+,1,11
 ['Desulfosporosinus_orientis_DSM_765_uid66191',1712230,1713753,+,2,1713214],
 ['Thermincola_potens',32574,34106,-,1,33107]]).
 
+/*
 cluster(2,[['Methanohalophilus_mahii_DSM_5219_uid30711',1152100,1153476,-,2,1152873],
 ['Methanohalophilus_mahii_DSM_5219_uid30711',1168508,1169884,-,3,1169281],
 ['Methanosarcina_acetivorans_uid290',3707674,3709050,+,2,3708277],
@@ -102,20 +103,14 @@ cluster(13,[['Methanosarcina_acetivorans_uid290',769760,770119,+,3,769928],['Met
 
 cluster(14,[['Methanosarcina_acetivorans_uid290',478325,478831,-,3,478534],['Methanosarcina_barkeri_fusaro_uid103',1508504,1509040,-,3,1508731]]).
 
+*/
 
 
 
-
-gene(Cluster,GeneName,Start,End) :-
+gene(Cluster,GeneName,Left,Right,Strand) :-
         cluster(Cluster,Members),
         member(Gene,Members),
         Gene = [ Organism, Left, Right, Strand, _Frame, _UAG ],
-        ((Strand == +) -> 
-                Start = Left,
-                End = Right
-                ;
-                Start = Right,
-                End = Left),
         atom_concat_list([Organism, '_c', Cluster, '_', Left, '_', Right],GeneName).
 
 
@@ -127,9 +122,9 @@ gene(Cluster,GeneName,Start,End) :-
 genome(G) <- genome_gene_link(G,Link) | file::get(Link).
 
 % Extract the sequence of the the gene G
-geneseq(gene(Cluster,G,Start,End)) <- 
-        gene(Cluster,G,Start,End),
-        ((Start > End) ->
+geneseq(gene(Cluster,G,Left,Right,Strand)) <- 
+        gene(Cluster,G,Left,Right,Strand),
+        ((Strand == '-') ->
                 ReverseComplement = true,
                 Left = End,
                 Right = Start
@@ -148,7 +143,7 @@ gene_uag_annot(G) <- pyl::annotate_orfs_with_in_frame_stops(geneseq(G)).
 gene_pyl(G) <- pyl::add_downstream_inframe_stops_sequences( gene_uag_annot(G) ).
 
 %% Merge all PYL genes in one file
-cluster_genes(C)  <- append_all(gene(C,G,S,E), gene_pyl(gene(C,G,S,E))).
+cluster_genes(C)  <- append_all(gene(C,G,S,L,R), gene_pyl(gene(C,G,S,L,R))).
 
 % Create multi-fasta file for cluster C
 pylis_fasta(C) <- ranges::as_fasta(cluster_genes(C), [sequence_functor(pylis_sequence)]).
@@ -158,5 +153,4 @@ porf_fasta(C) <- ranges::as_fasta(cluster_genes(C), [sequence_functor(sequence)]
 go :-
         findall(I,cluster(I,_),ClusterIds),
         forall(member(Id,ClusterIds), run(porf_fasta(Id))).
-
 
