@@ -1,6 +1,5 @@
 :- [annotated_pylis].
-:- ['pyl_add_cluster_features_3015_1.gen'].
-%:- ['rank_by_organisms.pl'].
+:- ['rank_by_organisms.pl'].
 
 go :-
 	findall(annotated(Organism,Left,Right,Strand,Frame,Extra),gb(Organism,Left,Right,Strand,Frame,Extra),AnnotatedGenes),
@@ -28,9 +27,9 @@ go :-
 	nl,writeln('--- Linear regression ranking: ---'),nl,
 	load_clauses('rank_by_organisms.pl',AllClusters),
 	assert(best_ranks([1000000])),
-	assert(best_weights(na)),
-	!,
-	linear_regression_ranking(AllClusters,HashCodes).
+	assert(best_weights(na)).
+%	!,
+%	linear_regression_ranking(AllClusters,HashCodes).
 	
 	
 in_clusters([],[],[],[]).
