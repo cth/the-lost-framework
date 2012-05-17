@@ -13,17 +13,22 @@ go :-
 	eliminate_duplicate(RelevantClusters,UniqClusters),
 	report_cluster_features(UniqClusters),
 	writeln('Ranking: '),
-	cluster_hashcodes(UniqClusters,HashCodes),
-	write_rank_for_file(HashCodes,'rank_by_organisms.pl'),
-	write_rank_for_file(HashCodes,'rank_by_diversity.pl'),
-	write_rank_for_file(HashCodes,'rank_by_codon_score.pl'),
-	write_rank_for_file(HashCodes,'rank_by_pmcomp.pl'),
-	write_rank_for_file(HashCodes,'rank_by_orf_length.pl'),
-	write_rank_for_file(HashCodes,'rank_by_syn_codons.pl'),
-	write_rank_for_file(HashCodes,'rank_by_avg_upstream_uag.pl'),
-	write_rank_for_file(HashCodes,'rank_by_codon_and_upstream.pl'),
-	write_rank_for_file(HashCodes,'rank_by_pmcomp_and_diversity.pl'),
-	write_rank_for_file(HashCodes,'rank_by_combined.pl'),
+        cluster_ids(UniqClusters,Ids),
+        writeln(ids(Ids)),
+	write_rank_for_file(Ids,'rank_by_organisms.pl'),
+	write_rank_for_file(Ids,'rank_by_diversity.pl'),
+	write_rank_for_file(Ids,'rank_by_codon_score.pl'),
+%	write_rank_for_file(HashCodes,'rank_by_pmcomp.pl'),
+%	write_rank_for_file(HashCodes,'rank_by_orf_length.pl'),
+	write_rank_for_file(Ids,'rank_by_syn_codons.pl'),
+	write_rank_for_file(Ids,'rank_by_downstream.pl'),
+	write_rank_for_file(Ids,'rank_by_upstream_downstream.pl'),
+	write_rank_for_file(Ids,'rank_by_avg_upstream_uag.pl'),
+%	write_rank_for_file(HashCodes,'rank_by_codon_and_upstream.pl'),
+%	write_rank_for_file(HashCodes,'rank_by_pmcomp_and_diversity.pl'),
+%	write_rank_for_file(HashCodes,'rank_by_combined.pl'),
+	write_rank_for_file(Ids,'rank_by_pmcomp_upstream.pl'),
+	write_rank_for_file(Ids,'rank_by_pmcomp_diversity_syncodons.pl'),
 	nl,writeln('--- Linear regression ranking: ---'),nl,
 	load_clauses('rank_by_organisms.pl',AllClusters),
 	assert(best_ranks([1000000])),
@@ -81,11 +86,11 @@ report_cluster_features(Clusters) :-
 	forall(member(F,Features),(writeln(F),report_measure(F,Clusters),nl)).
 	
 
-cluster_hashcodes([],[]).
+cluster_ids([],[]).
 
-cluster_hashcodes([cluster(Features,_)|Cs],[HashCode|RestHash]) :-
-	hash_code(Features,HashCode),
-	cluster_hashcodes(Cs,RestHash).
+cluster_ids([cluster(Features,_)|Cs],[Id|RestHash]) :-
+        member(id(Id),Features),
+	cluster_ids(Cs,RestHash).
 
 report_measure(_Measure,[]).
 
@@ -103,11 +108,11 @@ report_measure(Measure,[cluster(Features,_)|Cs]) :-
 	write(','),
 	report_measure(Measure,Cs).
 	
-write_rank_for_file(HashCodes,File) :-
+write_rank_for_file(Ids,File) :-
 	load_clauses(File,Clauses),
-	calc_rank(Clauses,HashCodes,Ranks,AvgRank,RelRank),
+	calc_rank(Clauses,Ids,Ranks,AvgRank,RelRank),
 	writeln(File),
-	write(HashCodes),
+	write(Ids),
 	write('\t\t'),
 	write(Ranks),	
 	write('\t\t'),
@@ -116,17 +121,19 @@ write_rank_for_file(HashCodes,File) :-
 	write(RelRank),
 	nl.
 		
-calc_rank(Clusters,HashCodes,Ranks,AvgRank,RelRank) :-
-	findall(Rank,(member(HashCode,HashCodes),rank_for_cluster(HashCode,Clusters,Rank)),Ranks),
+calc_rank(Clusters,Ids,Ranks,AvgRank,RelRank) :-
+	findall(Rank,(member(ID,Ids),rank_for_cluster(ID,Clusters,Rank)),Ranks),
 	sumlist(Ranks,Total),
 	length(Ranks,NumRanks),
+        %writeln(total(Total)),
+        %writeln(numranks(NumRanks)),
 	AvgRank is Total / NumRanks,
 	RelRank is 1 / AvgRank.
 
-rank_for_cluster(HashCode,Clusters,Rank) :-
+rank_for_cluster(ID,Clusters,Rank) :-
 	member(C1,Clusters),
 	C1=cluster(Features,_),
-	hash_code(Features,HashCode),
+        member(id(ID),Features),
 	nth1(Rank,Clusters,C1).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -173,7 +180,7 @@ linear_regression_ranking_rec(0,_,WeightsInOut,WeightsInOut,_,_).
 
 linear_regression_ranking_rec(N,LearningRate,WeightsIn,WeightsOut,Clusters,KnownClusters) :-
 	N > 0,
-	cluster_hashcodes(KnownClusters,KnownCodes),
+        cluster_ids(KnownClusters,KnownCodes),
 	calculate_ranks(Clusters,WeightsIn,KnownCodes,Ranks),
 	update_weights(WeightsIn,LearningRate,Ranks,KnownClusters,WeightsNext),
 %	writeln(weights(WeightsNext)),
